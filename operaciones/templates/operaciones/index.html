@@ -1,0 +1,212 @@
+{% extends 'operaciones/base.html' %}
+{% load static %}
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="page-header">
+            <h1 class="h2">
+                Panel de control
+            </h1>
+            <p class="text-muted">Resumen general del sistema de operaciones</p>
+        </div>
+    </div>
+</div>
+
+<!-- Tarjetas de Resumen -->
+<div class="row mb-5">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card summary-card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="card-title text-muted mb-2">PTEs</h6>
+                        <h3 class="text-primary mb-0" id="total-ptes">{{ total_ptes }}</h3>
+                        <small class="text-muted">Proyectos activos</small>
+                    </div>
+                    <div class="icon-circle bg-primary text-white">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent">
+                <a href="{% url 'operaciones:lista_pte' %}" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-list me-1"></i>Ver todos
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card summary-card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="card-title text-muted mb-2">OTEs</h6>
+                        <h3 class="text-success mb-0" id="total-otes">{{ total_otes }}</h3>
+                        <small class="text-muted">Órdenes activas</small>
+                    </div>
+                    <div class="icon-circle bg-success text-white">
+                        <i class="fas fa-tasks"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent">
+                <a href="{% url 'operaciones:lista_ote' %}" class="btn btn-sm btn-outline-success">
+                    <i class="fas fa-list me-1"></i>Ver todos
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card summary-card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="card-title text-muted mb-2">Producción</h6>
+                        <h3 class="text-warning mb-0" id="total-produccion">{{ total_produccion }}</h3>
+                        <small class="text-muted">Registros totales</small>
+                    </div>
+                    <div class="icon-circle bg-warning text-white">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent">
+                <a href="{% url 'operaciones:lista_produccion' %}" class="btn btn-sm btn-outline-warning">
+                    <i class="fas fa-list me-1"></i>Ver todos
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card summary-card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="card-title text-muted mb-2">Volumen Total</h6>
+                        <h3 class="text-info mb-0" id="volumen-total">0</h3>
+                        <small class="text-muted">Unidades producidas</small>
+                    </div>
+                    <div class="icon-circle bg-info text-white">
+                        <i class="fas fa-cubes"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent">
+                <span class="text-muted small">Actualizado en tiempo real</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Acciones Rápidas -->
+<div class="row mb-5">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-light">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-bolt me-2"></i>Acciones Rápidas
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <a href="#" class="btn btn-primary w-100 py-3">
+                            <i class="fas fa-plus-circle fa-2x mb-2"></i><br>
+                            Nuevo PTE
+                        </a>
+                    </div>
+                    <div class="col-md-4">
+                        <a href="#" class="btn btn-success w-100 py-3">
+                            <i class="fas fa-plus-circle fa-2x mb-2"></i><br>
+                            Nueva OTE
+                        </a>
+                    </div>
+                    <div class="col-md-4">
+                        <a href="#" class="btn btn-warning w-100 py-3">
+                            <i class="fas fa-plus-circle fa-2x mb-2"></i><br>
+                            Nuevo Registro
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Actividad Reciente -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-light">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-history me-2"></i>Actividad Reciente
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Tipo</th>
+                                <th>Descripción</th>
+                                <th>Fecha</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="actividad-reciente">
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-4">
+                                    <i class="fas fa-spinner fa-spin me-2"></i>Cargando actividad...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Cargar estadísticas adicionales
+    function cargarEstadisticas() {
+        $.ajax({
+            url: '{% url "operaciones:api_estadisticas" %}',
+            method: 'GET',
+            success: function(data) {
+                $('#volumen-total').text(data.volumen_total.toLocaleString());
+            },
+            error: function() {
+                console.log('Error cargando estadísticas');
+            }
+        });
+    }
+    
+    // Función placeholder para actividad reciente
+    function cargarActividadReciente() {
+        // Esta función se implementará cuando tengas el endpoint
+        setTimeout(function() {
+            $('#actividad-reciente').html(
+                '<tr><td colspan="4" class="text-center text-muted py-4">' +
+                'Módulo de actividad en desarrollo</td></tr>'
+            );
+        }, 1000);
+    }
+    
+    // Inicializar
+    cargarEstadisticas();
+    cargarActividadReciente();
+    
+    // Actualizar cada 30 segundos
+    setInterval(function() {
+        cargarEstadisticas();
+    }, 30000);
+});
+</script>
+{% endblock %}

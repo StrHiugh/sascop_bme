@@ -1,0 +1,177 @@
+{% extends 'operaciones/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="header-modulo padding-bottom-20px">
+    <div class="d-flex justify-content-between align-items-center flex-wrap">
+        <div>
+            <!-- Migas de pan actualizadas -->
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-2">
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'operaciones:index' %}" class="text-decoration-none">
+                            Inicio
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item active">PTE's </li>
+                </ol>
+            </nav>
+            <!-- Título -->
+            <h1 class="h2 fw-bold mb-0">PROPUESTA TECNICO ECONOMICO</h1>
+        </div>
+    </div>
+</div>
+
+<div class="bm-content">
+    <div class="bm-cont-elementos">
+        <div class="bm-cont-elementos-body">
+            <!-- Barra de búsqueda actualizada -->
+            <div class="row mb-3">
+                <!-- Buscador -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0">
+                            <i class="fas fa-search"></i>
+                        </span>
+                        <input type="text" class="form-control border-start-0" 
+                            id="filtro_buscar" placeholder="Enter para filtrar">
+                    </div>
+                </div>
+
+                <!-- Select cantidad -->
+                <div class="col-md-3 col-lg-2">
+                    <select class="form-select" id="select-length">
+                        <option value="10">10 registros</option>
+                        <option value="25">25 registros</option>
+                        <option value="50">50 registros</option>
+                        <option value="100">100 registros</option>
+                    </select>
+                </div>
+
+                <!-- Botones -->
+                <div class="col-md-3 col-lg-6 d-flex justify-content-md-end gap-2 mt-2 mt-md-0">
+                    <a href="#" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>
+                        <span>Crear nuevo</span>
+                    </a>
+                    <button class="btn btn-outline-secondary" id="btn-panel-filtros">
+                        <i class="fas fa-filter me-2"></i>
+                        Filtros
+                    </button>
+                </div>
+            </div>
+
+            </div>
+            <!-- Tabla actualizada -->
+            <div class="table-responsive">
+                <table id="datatable-ejemplo" class="table table-hover w-100">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Folio</th>
+                            <th>Nombre</th>
+                            <th>Descripción</th>
+                            <th>Estatus</th>
+                            <th class="text-center">Opciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>001</td>
+                            <td>Computadora IOS44</td>
+                            <td>Sistema de computo de última generación todo en uno.</td>
+                            <td>
+                                <span class="badge bg-primary">Disponible</span>
+                            </td>
+                            <td class="text-center">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="#" class="btn btn-outline-primary" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="#" class="btn btn-outline-secondary" title="Configurar">
+                                        <i class="fas fa-cog"></i>
+                                    </a>
+                                    <button class="btn btn-outline-danger" title="Eliminar">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>002</td>
+                            <td>Computadora IOS44</td>
+                            <td>Sistema de computo de última generación todo en uno.</td>
+                            <td>
+                                <span class="badge bg-danger">No disponible</span>
+                            </td>
+                            <td class="text-center">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="#" class="btn btn-outline-primary" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="#" class="btn btn-outline-secondary" title="Configurar">
+                                        <i class="fas fa-cog"></i>
+                                    </a>
+                                    <button class="btn btn-outline-danger" title="Eliminar">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Panel de Filtros con Offcanvas de Bootstrap 5 -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="panelFiltros">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title">Filtros</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body">
+        <form id="form-filtros">
+            <div class="mb-3">
+                <label class="form-label">Estado</label>
+                <select class="form-select" id="filtro-estado">
+                    <option value="">Todos los estados</option>
+                    <option value="disponible">Disponible</option>
+                    <option value="no-disponible">No disponible</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Tipo</label>
+                <select class="form-select" id="filtro-tipo">
+                    <option value="">Todos los tipos</option>
+                    <option value="computadora">Computadora</option>
+                    <option value="servidor">Servidor</option>
+                </select>
+            </div>
+            <div class="d-grid gap-2">
+                <button type="button" class="btn btn-primary" id="aplicar-filtros">
+                    <i class="fas fa-check me-2"></i>Aplicar Filtros
+                </button>
+                <button type="button" class="btn btn-outline-secondary" id="limpiar-filtros">
+                    <i class="fas fa-eraser me-2"></i>Limpiar Filtros
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // JavaScript para el panel de filtros
+    document.addEventListener('DOMContentLoaded', function() {
+        const filtrosOffcanvas = new bootstrap.Offcanvas(document.getElementById('panelFiltros'));
+        
+        document.getElementById('btn-panel-filtros').addEventListener('click', function() {
+            filtrosOffcanvas.show();
+        });
+        
+        // Aquí puedes agregar más funcionalidad para los filtros
+    });
+</script>
+{% endblock %}
