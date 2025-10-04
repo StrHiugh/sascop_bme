@@ -14,6 +14,7 @@
 /* Sidebar - Color Gris con Sombra */
 #left-panel {
     width: 250px;
+    max-width: 250px;
     font-family: "Roboto";
     font-size: 13px;
     background: #434c5b;
@@ -475,26 +476,32 @@
 }
 
 /* ////////////////////// HEADER MODULO SECCION ACTUALIZADO //////////////////////////////// */
+
 .bm-content {
-    padding: 6.25rem 1.25rem 2.5rem 1.25rem;
+    padding: 2rem 1.25rem 2.5rem 1.25rem; /* Todo en padding */
     display: block;
 }
 
+.sidebar-collapsed .bm-content {
+    padding: 2rem 1.25rem 2.5rem 1.25rem;
+}
+
 .bm-content-index-modulo {
-    padding-top: 9.375rem;
+    padding: 8rem 1.25rem 2.5rem 1.25rem;
 }
 
 .header-modulo {
-    width: calc(100% - 285px);
+    width: calc(100% - 1px);
     min-height: 5rem;
     background: #fff;
     padding: 0.625rem 1.25rem 0 1.25rem;
     border-bottom: 1px solid #dee2e6;
-    position: fixed;
+    position: sticky;
     z-index: 90;
-    top: 4.125rem;
+    /* top: 0.125rem; */
     transition: all 0.3s ease;
-    left: 265px;
+    /* left: 85px; */
+    transition: all 0.3s ease;
 }
 
 .header-modulo h1 {
@@ -586,7 +593,7 @@
 
 /* Para sidebar colapsado */
 .sidebar-collapsed .header-modulo {
-    width: calc(100% - 135px);
+    width: calc(100% - 20px);
     left: 115px;
 }
 
@@ -615,4 +622,278 @@
 /* Opcional: hover de los inactivos */
 .breadcrumb-item a:hover {
     color: #f05a2b; /* azul al pasar el mouse */
+}
+
+.btn.btn-primary{
+    background-color: #f05a2b;
+    border-color: #f05a2b;
+}
+
+.table > thead > tr > th {
+    vertical-align: middle;
+    border-bottom: 1px solid #dfe4ea;
+    border-top: 1px solid #dfe4ea!important;
+    
+}
+
+
+.pagination > .disabled > a, .pagination > .disabled > a:focus, .pagination > .disabled > a:hover, .pagination > .disabled > span, .pagination > .disabled > span:focus, .pagination > .disabled > span:hover {
+    border: none;
+}
+
+.pagination > li > a, .pagination > li > span {
+    box-shadow: none;
+    color: #434c5b;
+    border: none;
+    font-size: 13px;
+    font-weight: 600;
+    margin-left: 2px;
+}
+
+.smart-style-1 .pagination > .active > a, .smart-style-1 .pagination > .active > a:focus, .smart-style-1 .pagination > .active > a:hover, .smart-style-1 .pagination > .active > span, .smart-style-1 .pagination > .active > span:focus, .smart-style-1 .pagination > .active > span:hover {
+    background-color: #dfe4ea;
+    border-color: #dfe4ea;
+    border-radius: 5px;
+    color: #434c5b;
+}
+
+.pagination > li > a:focus, .pagination > li > a:hover, .pagination > li > span:focus, .pagination > li > span:hover  {
+    background-color: #dfe4ea;
+    border-color: #dfe4ea;
+    border-radius: 5px;
+    color: #434c5b;
+}
+
+.row.mb-3 {
+  margin-bottom: 0rem !important; /* mucho más compacto */
+}
+
+.dataTable-width-100{
+    width: 100% !important;
+}
+.dataTables_length label{
+    width: 100% !important;
+}
+div.dataTables_info {
+    font-size: 0.875rem !important;
+    color: #6c757d !important;
+}
+
+div.dataTables_info span {
+    color: #6c757d !important;
+    font-weight: 600;
+}
+
+table.dataTable thead .sorting_asc,
+table.dataTable thead .sorting_desc,
+table.dataTable thead .sorting {
+    padding-right: 30px!important;
+}
+
+.no-padding .dataTables_wrapper table, .no-padding > table {
+    border-bottom: 1px solid #dfe4ea!important;
+}
+
+table.dataTable > tbody > tr.child ul {
+    display: block!important;
+}
+
+table.dataTable.dtr-inline.collapsed > tbody > tr > td.child {
+    background: #f4f5f7!important;
+}
+
+table.dataTable .row-detail td ul li {
+    text-align: left!important;
+}
+
+table.dataTable.nowrap th, table.dataTable.nowrap td{
+    white-space:nowrap
+}
+
+
+table .table-icon-static {
+    font-size: 20px;
+    text-decoration: none;
+    color: #434c5b;
+    margin-right: 8px;
+    opacity: 1;
+    transition: all .3s;
+    cursor: initial;
+}
+
+table .table-icon-static:hover {
+    color: #242527;
+}
+
+table .table-icon {
+    font-size: 16px;
+    text-decoration: none;
+    color: #434c5b;
+    margin-right: 8px;
+    opacity: 1;
+    transition: all .3s;
+    cursor: pointer;
+}
+
+table .table-icon.eliminar:hover,
+table .table-icon.elimina:hover,
+table .table-icon.eliminar_detalle:hover,
+table .table-icon.eliminar_mp:hover,
+table .table-icon.eliminar-detalle:hover,
+table .table-icon.eliminar-impuesto:hover,
+table .table-icon.eliminar-producto:hover,
+table .table-icon.eliminar_producto:hover,
+table .table-icon.eliminar-venta:hover,
+table .table-icon.eliminarProducto:hover,
+table .table-icon.eliminar_precio:hover,
+table .table-icon.eliminar-arqueo:hover,
+table .table-icon.eliminar-movimiento:hover,
+table .table-icon.cancelar-timbrado:hover,
+table .table-icon .la-trash:hover,
+table .table-icon .la-trash:hover
+{
+   color: #e84c3d!important;
+}
+
+table .table-icon.disabled, table .table-icon.disabled i {
+    opacity: .4;
+    cursor: not-allowed;
+    color: #434c5b!important;
+}
+
+table .table-icon.disabled:hover, table .table-icon.disabled:hover i {
+    opacity: .4;
+    cursor: not-allowed;
+    color: #434c5b!important;
+}
+
+table .table-icon.disabled, table .table-icon i.disabled {
+    opacity: .4;
+    cursor: not-allowed;
+    color: #434c5b!important;
+}
+
+table .table-icon i.disabled:hover {
+    opacity: .4;
+    cursor: not-allowed;
+    color: #434c5b!important;
+}
+
+#tabla_paginate .paginate_button.page-item.active .page-link {
+    background-color: #f05a2b !important;
+    border-color: #f05a2b !important;
+    color: white !important;
+}
+
+#tabla_paginate .paginate_button.page-item.active .page-link:hover {
+    background-color: #d94a1f !important;
+    border-color: #d94a1f !important;
+    color: white !important;
+}
+
+/* Estilos para los detalles del PTE */
+.detalle-pte-container {
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-left: 4px solid #25215d;
+}
+
+.detalle-pte-content {
+    background: white;
+    padding: 1rem;
+    border-radius: 0.375rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.detalle-pte-content h6 {
+    color: #25215d;
+    font-weight: 600;
+}
+
+/* Estilo para fila expandida */
+tr.shown {
+    background-color: #f8f9fa !important;
+}
+/* Estilos para menús desplegables */
+.nav-item.has-submenu {
+    position: relative;
+}
+
+.nav-item.has-submenu .dropdown-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+}
+
+.nav-item.has-submenu .dropdown-arrow {
+    font-size: 12px;
+    transition: transform 0.3s ease;
+    margin-left: auto;
+}
+
+.nav-item.has-submenu.active .dropdown-arrow {
+    transform: rotate(180deg);
+}
+
+/* Submenu */
+.submenu {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.nav-item.has-submenu.active .submenu {
+    max-height: 500px; /* Ajusta según la cantidad de items */
+}
+
+.submenu .nav-item {
+    margin: 0;
+}
+
+.submenu .nav-link {
+    padding-left: 3rem !important;
+    padding-top: 0.6rem !important;
+    padding-bottom: 0.6rem !important;
+    font-size: 12px;
+    border-left: 3px solid transparent;
+}
+
+.submenu .nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    border-left-color: #69707c;
+}
+
+.submenu .nav-link.active {
+    background-color: rgba(13, 110, 253, 0.15);
+    color: #ffffff;
+    border-left-color: #69707c;
+}
+
+.submenu .nav-link i {
+    font-size: 11px;
+    width: 16px;
+}
+
+.sidebar-collapsed .submenu {
+    display: none !important;
+}
+
+.sidebar-collapsed .nav-item.has-submenu .dropdown-arrow {
+    display: none;
+}
+
+/* Quitar flecha automática de Bootstrap de dropdown-toggle */
+.nav-link.dropdown-toggle::after {
+    display: none !important;
+    content: none !important;
+}
+.nav-link.dropdown-toggle.show::after,
+.nav-item.has-submenu.active .nav-link.dropdown-toggle::after {
+    display: none !important;
+    content: none !important;
 }

@@ -1,123 +1,242 @@
-document.addEventListener('DOMContentLoaded', function() {
-    // Inicializar DataTable
-    const tablaPtes = $('#tabla-ptes').DataTable({
+$(document).ready(function () {
+    window.tablaPte = $("#tabla").DataTable({
         processing: true,
         serverSide: true,
         responsive: true,
+        order: [[1, "desc"]],
+        lengthMenu: [10, 25, 50, 100],
+        dom: '<"row"<"col-sm-12 col-md-6"l>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
+        language: {
+            "lengthMenu": "_MENU_",
+            "info": "Mostrando _START_ de _TOTAL_ registros.",
+            "infoFiltered": "(filtrado de _MAX_ registros)",
+            "paginate": {
+                "previous": "‹",
+                "next": "›"
+            }
+        },
         ajax: {
-            url: URL_DATATABLE_PTES,
-            type: 'GET'
+            url: urlDatatable,
+            type: "GET",
+            data: function (extra) {
+                extra.filtro = $("#filtro-buscar").val();
+                extra.estado = $("#slc-estado").val();
+            }
         },
         columns: [
-            { data: 'id', visible: false },
-            { data: 'codigo' },
-            { data: 'descripcion' },
-            { 
-                data: 'estado',
-                render: function(data, type, row) {
-                    const estados = {
-                        'pendiente': '<span class="badge bg-warning">Pendiente</span>',
-                        'en_progreso': '<span class="badge bg-primary">En Progreso</span>',
-                        'completado': '<span class="badge bg-success">Completado</span>',
-                        'cancelado': '<span class="badge bg-danger">Cancelado</span>'
-                    };
-                    return estados[data] || data;
-                }
-            },
-            { 
-                data: 'fecha_inicio',
-                render: function(data) {
-                    return data ? new Date(data).toLocaleDateString('es-ES') : '-';
-                }
-            },
-            { 
-                data: 'fecha_fin',
-                render: function(data) {
-                    return data ? new Date(data).toLocaleDateString('es-ES') : '-';
-                }
-            },
-            { data: 'responsable' },
-            { 
-                data: 'avance',
-                render: function(data) {
-                    return `
-                        <div class="progress" style="height: 20px;">
-                            <div class="progress-bar" role="progressbar" style="width: ${data}%;" aria-valuenow="${data}" aria-valuemin="0" aria-valuemax="100">
-                                ${data}%
-                            </div>
-                        </div>
-                    `;
-                }
+            {
+                "data": null,
+                "title": "",
+                "width": "1%",
+                "render": function (data, type, row) {
+                    // Mostrar ícono + si tiene detalles
+                    let ampliar = "";
+                    ampliar = `<a class="table-icon detalle-pte" title="Ver detalles">
+                                    <i class="fas fa-plus-square"></i>
+                                </a>`;
+                    return ampliar;
+                },
+                "orderable": false
             },
             {
-                data: 'id',
-                render: function(data, type, row) {
+                "data": "id",
+                "visible": false
+            },
+            {
+                "data": "id_tipo_id",
+                "title": "Tipo"
+            },
+            {
+                "data": "oficio_pte",
+                "title": "PTE"
+            },
+            {
+                "data": "descripcion_trabajo",
+                "title": "Descripción"
+            },
+            {
+                "data": "responsable_proyecto",
+                "title": "Responsable"
+            },
+            {
+                "data": null,
+                "title": "Opciones",
+                "class": "text-center",
+                "width": "150px",
+                "orderable": false,
+                render: function (fila) {
                     return `
-                        <div class="btn-group btn-group-sm" role="group">
-                            <a href="${URL_DETALLE_PTE}/${data}" class="btn btn-outline-primary" title="Ver">
-                                <i class="fas fa-eye"></i>
-                            </a>
-                            <a href="${URL_EDITAR_PTE}/${data}" class="btn btn-outline-secondary" title="Editar">
-                                <i class="fas fa-edit"></i>
-                            </a>
-                            <button class="btn btn-outline-danger btn-eliminar" data-id="${data}" title="Eliminar">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
+                        <a class="table-icon ver-detalle" title="Ver" data-id="${fila.id}">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                        <a class="table-icon editar_pte" title="Editar" data-id="${fila.id}">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <a class="table-icon eliminar_pte" title="Eliminar" data-id="${fila.id}">
+                            <i class="fas fa-trash"></i>
+                        </a>
                     `;
-                },
-                orderable: false,
-                className: 'text-center'
+                }
             }
         ],
-        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
-        pageLength: 10,
-        lengthMenu: [10, 25, 50, 100]
+        drawCallback: function (settings) {
+            $("[data-toggle='tooltip']").tooltip();
+        }
     });
 
-    // Búsqueda personalizada
-    $('#search-input').on('keyup', function() {
-        tablaPtes.search(this.value).draw();
+    // Evento para expandir detalles del PTE
+    $("#tabla tbody").on("click", ".detalle-pte", function () {
+        let tr = $(this).closest("tr");
+        let row = tablaPte.row(tr);
+        let pteId = row.data().id;
+
+        if (row.child.isShown()) {
+            // Cerrar detalles
+            let tablaDetalle = $(`#tabla-detalle-pte_${pteId}`);
+            if (tablaDetalle.length && $.fn.DataTable.isDataTable(tablaDetalle)) {
+                // Destruir el DataTable hijo si existe
+                tablaDetalle.DataTable().destroy();
+                tablaDetalle.empty(); // Limpiar el contenido de la tabla
+            }
+            
+            row.child.hide(); // Ocultar el child
+            tr.removeClass('shown');
+            $(this).find('i').removeClass('fa-minus-square').addClass('fa-plus-square'); // Cambiar ícono
+        } else {
+            // Abrir detalles
+            $(this).find('i').removeClass('fa-plus-square').addClass('fa-minus-square');
+            
+            row.child(
+                $(`<div class="detalle-pte-container"></div>`).html(
+                    fnHTMLTablaDetallePTE(pteId)
+                )
+            ).show();
+            
+            // Inicializar DataTable de detalles
+            let tablaDetallePTE = $(`#tabla-detalle-pte_${pteId}`).DataTable({
+                processing: true,
+                serverSide: true,
+                responsive: true,
+                searching: false,
+                paging: false,
+                info: false,
+                ajax: {
+                    url: urlDatatableDetalle,
+                    type: "GET",
+                    data: function(extra) {
+                        extra.pte_header_id = pteId;
+                    }
+                },
+                columns: [
+                    {
+                        "data": "id_paso_nombre",
+                        "title": "Paso"
+                    },
+                    {
+                        "data": "estatus_pte_texto",
+                        "title": "Estatus",
+                        "render": function(data, type, row) {
+                            const estatusClasses = {
+                                'Pendiente': 'bg-warning',
+                                'En Proceso': 'bg-primary', 
+                                'Completado': 'bg-success',
+                                'Rechazado': 'bg-danger'
+                            };
+                            return `<span class="badge ${estatusClasses[data] || 'bg-secondary'}">${data}</span>`;
+                        }
+                    },
+                    {
+                        "data": "total_homologado",
+                        "title": "Total Homologado",
+                        "class": "text-right",
+                        "render": function(data) {
+                            return `$${parseFloat(data).toLocaleString('es-MX', {minimumFractionDigits: 2})}`;
+                        }
+                    },
+                    {
+                        "data": "fecha_entrega",
+                        "title": "Fecha Entrega",
+                        "render": function(data) {
+                            return data ? new Date(data).toLocaleDateString('es-ES') : '-';
+                        }
+                    },
+                    {
+                        "data": "comentario",
+                        "title": "Comentario"
+                    },
+                    {
+                        "data": null,
+                        "title": "Acciones",
+                        "class": "text-center",
+                        "render": function(fila) {
+                            return `
+                                <a class="table-icon editar-paso" title="Editar paso" data-id="${fila.id}">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a class="table-icon cambiar-estatus" title="Cambiar estatus" data-id="${fila.id}">
+                                    <i class="fas fa-sync-alt"></i>
+                                </a>
+                            `;
+                        }
+                    }
+                ]
+            });
+            
+            tr.addClass('shown');
+        }
     });
 
-    // Cambiar número de registros por página
-    $('#page-length').on('change', function() {
-        tablaPtes.page.len(this.value).draw();
+    // Búsqueda por Enter
+    $("#filtro-buscar").keypress(function (event) {
+        if (event.which == 13) {
+            tablaPte.draw();
+        }
     });
 
-    // Manejar panel de filtros
-    const panelFiltros = new bootstrap.Offcanvas(document.getElementById('panel-filtros'));
-    
-    $('#btn-filtros').on('click', function() {
-        panelFiltros.show();
+    // Mover select de length
+    $("#tabla_length").detach().appendTo("#select-length");
+
+    // Panel de filtros
+    $("#btn-panel-filtros").on("click", function () {
+        fn_show_panel("#panel-filtro");
     });
 
     // Aplicar filtros
-    $('#aplicar-filtros').on('click', function() {
-        const estado = $('#filtro-estado').val();
-        const responsable = $('#filtro-responsable').val();
-        const fechaDesde = $('#filtro-fecha-desde').val();
-        const fechaHasta = $('#filtro-fecha-hasta').val();
-
-        // Aquí implementarías la lógica de filtrado
-        console.log('Aplicando filtros:', { estado, responsable, fechaDesde, fechaHasta });
-        
-        // Cerrar panel
-        panelFiltros.hide();
+    $("#filtrar").on("click", function () {
+        tablaPte.draw();
+        fn_show_panel();
     });
 
     // Limpiar filtros
-    $('#limpiar-filtros').on('click', function() {
-        $('#form-filtros')[0].reset();
+    $("#limpiar").on("click", function () {
+        $("#slc-estado").val("");
+        tablaPte.draw();
     });
 
     // Eliminar PTE
-    $(document).on('click', '.btn-eliminar', function() {
+    $(document).on("click", ".eliminar_pte", function () {
         const pteId = $(this).data('id');
-        
         if (confirm('¿Estás seguro de que deseas eliminar este PTE?')) {
-            // Aquí iría la llamada AJAX para eliminar
             console.log('Eliminando PTE:', pteId);
+
         }
     });
+
+    // Editar PTE
+    $(document).on("click", ".editar_pte", function () {
+        const pteId = $(this).data('id');
+        window.location.href = `${urlEditar}/${pteId}`;
+    });
+
 });
+
+// Función para generar HTML de la tabla de detalles
+function fnHTMLTablaDetallePTE(pteId) {
+    return `
+        <div class="detalle-pte-content">
+            <h6 class="mb-3">Detalles del PTE - Pasos del Proceso</h6>
+            <table id="tabla-detalle-pte_${pteId}" class="table table-sm table-bordered">
+            </table>
+        </div>
+    `;
+}

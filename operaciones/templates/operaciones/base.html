@@ -71,9 +71,66 @@
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'operaciones:lista_produccion' %}">
-                            <i class="fas fa-chart-bar"></i>
+                            <i class="fas fa-industry"></i>
                             <span class="nav-text">Producción</span>
                         </a>
+                    </li>
+                    <li class="nav-item has-submenu">
+                        <a class="nav-link dropdown-toggle hidden">
+                            <i class="fa-solid fa-rectangle-list"></i>
+                            <span class="nav-text">Catálogos</span>
+                            <i class="fas fa-chevron-down dropdown-arrow"></i>
+                        </a>
+                        <ul class="submenu">
+                            <li class="nav-item">
+                                <a class="nav-link" href="#">
+                                    <i class="fas fa-clipboard"></i>
+                                    <span class="nav-text">Sábana de productos</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#">
+                                    <i class="fa-solid fa-scroll"></i>
+                                    <span class="nav-text">Partidas no REC</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'operaciones:lista_tipos' %}">
+                                    <i class="fa-solid fa-square-poll-vertical"></i>
+                                    <span class="nav-text">Tipos (parámetros)</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'operaciones:lista_tipos' %}">
+                                    <i class="fa-solid fa-square-poll-horizontal"></i>
+                                    <span class="nav-text">Pasos PTE's</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#">
+                                    <i class="fa-solid fa-signs-post"></i>
+                                    <span class="nav-text">Sitios</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#">
+                                    <i class="fa-solid fa-weight-scale"></i>
+                                    <span class="nav-text">Unidades de medida</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#">
+                                    <i class="fas fa-tags"></i>
+                                    <span class="nav-text">Estado de cobro</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#">
+                                    <i class="fa-solid fa-sailboat"></i>
+                                    <span class="nav-text">Embarcaciónes</span>
+                                </a>
+                            </li>
+                        </ul>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="#">
@@ -87,7 +144,7 @@
             <div id="sidebar-footer" class="sidebar-footer">
                 <div class="footer-content">
                     <div class="footer-info">
-                        <span class="footer-text">&copy; 2025 BME SUBTEC - Sistema de Operaciones</span>
+                        <span class="footer-text">&copy; 2025 BME SUBTEC - SASCOP</span>
                         <span class="footer-version">v1.0.0</span>
                     </div>
                 </div>
@@ -95,7 +152,6 @@
         </aside>
         <!-- Main Content Area -->
         <div class="main-content-area">
-            <!-- Top Header Bar (fuera del sidebar) -->
             <div class="top-header-bar">
                 <div class="top-header-content">
                     <div class="top-header-left">

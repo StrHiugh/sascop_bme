@@ -38,6 +38,9 @@ $(document).ready(function() {
     
     // Validación del formulario de login
     $('.login-form').submit(function(e) {
+        e.preventDefault(); // ← Esto evita el envío inmediato
+        iniciarLoader();
+        const form = this;
         const username = $('input[name="username"]').val();
         const password = $('input[name="password"]').val();
 
@@ -46,7 +49,7 @@ $(document).ready(function() {
             return false;
         }
         
-        // Mostrar spinner solo si los campos están completos
+        // Mostrar spinner
         const button = $('.login-btn');
         const originalText = button.html();
         
@@ -55,9 +58,10 @@ $(document).ready(function() {
             Iniciando sesión...
         `);
         
-        // Timeout de seguridad para evitar spinner ciclado (10 segundos máximo)
+        // Esperar 5 segundos antes de enviar el formulario
         setTimeout(function() {
-            button.prop('disabled', false).html(originalText);
+            form.submit();
+            terminarLoader();
         }, 2000);
     });
     

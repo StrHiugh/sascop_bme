@@ -12,10 +12,15 @@
                             Inicio
                         </a>
                     </li>
-                    <li class="breadcrumb-item active">PTE's </li>
+                    <li class="breadcrumb-item">
+                        <a href="#" class="text-decoration-none">
+                            Catálogos
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item active">Tipos </li>
                 </ol>
             </nav>
-            <h1 class="h2 fw-bold mb-0">PROPUESTA TECNICO ECONOMICO</h1>
+            <h1 class="h2 fw-bold mb-0">TIPOS</h1>
         </div>
         <!-- Lado derecho: botones -->
         <div class="d-flex gap-2 mt-2 mt-md-0">
@@ -93,10 +98,10 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{% static 'operaciones/js/modulos/pte/lista_pte.js'%}?v=1.0.0"></script>
+<script src="{% static 'operaciones/js/modulos/pte/catalogos/lista_tipos.js'%}?v=1.0.0"></script>
 
 <script>
-    var urlDatatable = "{% url 'operaciones:datatable_ptes' %}";
+    var urlDatatable = "{% url 'operaciones:datatable_tipos' %}";
     var urlDatatableDetalle = "{% url 'operaciones:datatable_pte_detalle' %}";
     {% comment %} var urlEditar = "{% url 'operaciones:editar_pte' 0 %}".replace('/0', ''); {% endcomment %}
     

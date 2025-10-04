@@ -54,7 +54,7 @@ class PTEDetalle(models.Model):
 
     class Meta:
         db_table = 'pte_detalle'
-        ordering = ['id_paso__orden']
+        ordering = ['id_paso']
 
     def __str__(self):
         return f"Detalle {self.id} - PTE {self.id_pte_header.oficio_pte}"

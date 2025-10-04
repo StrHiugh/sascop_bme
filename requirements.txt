@@ -1,21 +1,27 @@
-# requirements_minimal.txt
-Django==4.2.7
-psycopg2-binary==2.9.7
-whitenoise==6.4.0
-python-dotenv==1.0.0
-gunicorn==21.2.0
-beautifulsoup4==4.12.2
-lxml==4.9.3
-requests==2.31.0
-python-dateutil==2.8.2
-PyYAML==6.0.1
-reportlab==4.0.4
-pypdf2==3.0.1
-XlsxWriter==3.1.2
-qrcode==7.4.2
+asgiref==3.9.2
 attrs==23.1.0
+beautifulsoup4==4.12.2
+certifi==2025.8.3
+charset-normalizer==3.4.3
+Django==4.2.7
+gunicorn==21.2.0
+idna==3.10
+lxml==4.9.3
+packaging==25.0
+pillow==11.3.0
+psycopg2-binary==2.9.7
+PyPDF2==3.0.1
+pypng==0.20220715.0
+python-dateutil==2.8.2
+python-dotenv==1.0.0
+PyYAML==6.0.1
+qrcode==7.4.2
+reportlab==4.0.4
+requests==2.31.0
 six==1.16.0
-
-# cryptography y Pillow - INSTALAR POR SEPARADO SI ES NECESARIO
-# cryptography==41.0.7
-# Pillow==10.0.1
+soupsieve==2.8
+sqlparse==0.5.3
+typing_extensions==4.15.0
+urllib3==2.5.0
+whitenoise==6.4.0
+XlsxWriter==3.1.2

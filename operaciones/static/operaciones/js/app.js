@@ -142,3 +142,44 @@ $(document).ready(function() {
         }
     };
 });
+
+    // Manejo de menús desplegables
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle submenus
+    $('.nav-item.has-submenu .dropdown-toggle').on('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const parent = $(this).closest('.nav-item.has-submenu');
+        const isActive = parent.hasClass('active');
+        
+        // Cerrar todos los submenus
+        $('.nav-item.has-submenu').removeClass('active');
+        
+        // Abrir el actual si no estaba activo
+        if (!isActive) {
+            parent.addClass('active');
+        }
+    });
+    
+    // Cerrar submenus al hacer clic fuera
+    $(document).on('click', function(e) {
+        if (!$(e.target).closest('.nav-item.has-submenu').length) {
+            $('.nav-item.has-submenu').removeClass('active');
+        }
+    });
+    
+    // Activar item actual en submenu
+    function activarSubmenuActual() {
+        const currentUrl = window.location.pathname;
+        
+        $('.submenu .nav-link').each(function() {
+            const linkUrl = $(this).attr('href');
+            if (currentUrl === linkUrl) {
+                $(this).addClass('active');
+                $(this).closest('.nav-item.has-submenu').addClass('active');
+            }
+        });
+    }
+    activarSubmenuActual();
+});

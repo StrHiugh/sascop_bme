@@ -1,28 +1,33 @@
 from django.urls import path
-from . import view
+from .views import login, pte, ote, produccion, api, catalogos
 
 app_name = 'operaciones'
 
 urlpatterns = [
-    path('', view.index, name='index'),
-    path('pte/<int:pte_id>/', view.detalle_pte, name='detalle_pte'),
+    # Login
+    path('accounts/login/', login.custom_login, name='login'),
+    
+    # Página principal
+    path('', pte.index, name='index'),
+    
     # URLs para PTEs
-    path('pte/', view.lista_pte, name='lista_pte'),
-    path('ptes/datatable/', view.datatable_ptes, name='datatable_ptes'),
-    # path('ptes/crear/', view.crear_pte, name='crear_pte'),
-    # path('ptes/editar/<int:pte_id>/', view.editar_pte, name='editar_pte'),
-    path('ptes/detalle/<int:pte_id>/', view.detalle_pte, name='detalle_pte'),
-    # path('ptes/eliminar/<int:pte_id>/', view.eliminar_pte, name='eliminar_pte'),
+    path('pte/', pte.lista_pte, name='lista_pte'),
+    path('pte/<int:pte_id>/', pte.detalle_pte, name='detalle_pte'),
+    path('ptes/datatable/', pte.datatable_ptes, name='datatable_ptes'),
+    path('ptes/detalle/datatable/', pte.datatable_pte_detalle, name='datatable_pte_detalle'),
     
+    # URLs para OTE
+    path('ote/', ote.lista_ote, name='lista_ote'),
     
+    # URLs para Producción
+    path('produccion/', produccion.lista_produccion, name='lista_produccion'),
     
+    #URLs para Catálogos
+    path('catalogos/tipos/', catalogos.lista_tipos, name='lista_tipos'),
+    path('catalogos/tipos/datatable/', catalogos.datatable_tipos, name='datatable_tipos'),
     
-    
-    path('ote/', view.lista_ote, name='lista_ote'),
-    path('produccion/', view.lista_produccion, name='lista_produccion'),
-    
-    # APIs para jQuery
-    path('api/estadisticas/', view.api_estadisticas, name='api_estadisticas'),
-    path('api/ptes/', view.api_ptes, name='api_ptes'),
-    path('api/ptes/<int:pte_id>/', view.api_pte_detalle, name='api_pte_detalle'),
+    # APIs
+    path('api/estadisticas/', api.api_estadisticas, name='api_estadisticas'),
+    path('api/ptes/', api.api_ptes, name='api_ptes'),
+    path('api/ptes/<int:pte_id>/', api.api_pte_detalle, name='api_pte_detalle'),
 ]
