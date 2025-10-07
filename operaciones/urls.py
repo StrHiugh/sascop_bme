@@ -24,7 +24,17 @@ urlpatterns = [
     
     #URLs para Catálogos
     path('catalogos/tipos/', catalogos.lista_tipos, name='lista_tipos'),
-    path('catalogos/tipos/datatable/', catalogos.datatable_tipos, name='datatable_tipos'),
+    path('catalogos/tipos/datatable_tipos/', catalogos.datatable_tipos, name='datatable_tipos'),
+    path('catalogos/embarcaciones/', catalogos.lista_embarcaciones, name='lista_embarcaciones'),
+    path('catalogos/datatable_embarcaciones/', catalogos.datatable_embarcaciones, name='datatable_embarcaciones'),
+    path('catalogos/estado_cobro/', catalogos.lista_cobro, name='lista_cobro'),
+    path('catalogos/datatable_estcobro/', catalogos.datatable_cobro, name='datatable_cobro'),
+    path('catalogos/unidad_medida/', catalogos.lista_unidad_medida, name='lista_unidad_medida'),
+    path('catalogos/datatable_unidad_medida/', catalogos.datatable_unidad_medida, name='datatable_unidad_medida'),
+    path('catalogos/sitios/', catalogos.lista_sitios, name='lista_sitios'),
+    path('catalogos/datatable_sitios/', catalogos.datatable_sitios, name='datatable_sitios'),
+    path('catalogos/pasos/', catalogos.lista_pasos, name='lista_pasos'),
+    path('catalogos/datatable_pasos/', catalogos.datatable_pasos, name='datatable_pasos'),
     
     # APIs
     path('api/estadisticas/', api.api_estadisticas, name='api_estadisticas'),

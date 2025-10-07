@@ -87,7 +87,6 @@ def datatable_pte_detalle(request):
             'id_paso_nombre': detalle.id_paso_id if detalle.id_paso_id else '',
             'estatus_pte': detalle.estatus_pte,
             'estatus_pte_texto': detalle.get_estatus_pte_display(),
-            'total_homologado': float(detalle.total_homologado),
             'fecha_entrega': detalle.fecha_entrega.isoformat() if detalle.fecha_entrega else None,
             'comentario': detalle.comentario or ''
         })

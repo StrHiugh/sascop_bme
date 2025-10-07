@@ -5,9 +5,10 @@ class Paso(models.Model):
     descripcion = models.CharField(max_length=200)
     orden = models.IntegerField()
     activo = models.BooleanField(default=True)
-
+    importancia = models.FloatField(default=0)
+    comentario = models.TextField(blank=True)
     class Meta:
-        db_table = 'paso'
+        db_table = 'cat_paso'
         ordering = ['orden']
 
     def __str__(self):
@@ -27,9 +28,11 @@ class PTEHeader(models.Model):
     descripcion_trabajo = models.TextField()
     fecha_solicitud = models.DateField()
     plazo_dias = models.IntegerField()
+    total_homologado = models.DecimalField(max_digits=15, decimal_places=2, default=0)
     id_orden_trabajo = models.CharField(max_length=100)
     responsable_proyecto = models.CharField(max_length=200)
     estatus = models.IntegerField(choices=ESTATUS_CHOICES, default=1)
+    comentario = models.TextField(blank=True)
 
     class Meta:
         db_table = 'pte_header'
@@ -46,7 +49,6 @@ class PTEDetalle(models.Model):
     ]
     
     id_pte_header = models.ForeignKey(PTEHeader, on_delete=models.CASCADE, related_name='detalles')
-    total_homologado = models.DecimalField(max_digits=15, decimal_places=2)
     estatus_pte = models.IntegerField(choices=ESTATUS_PTE_CHOICES, default=1)
     id_paso = models.ForeignKey(Paso, on_delete=models.CASCADE)
     fecha_entrega = models.DateField(null=True, blank=True)

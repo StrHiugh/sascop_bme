@@ -8,7 +8,7 @@ $(document).ready(function () {
         dom: '<"row"<"col-sm-12 col-md-6"l>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
         language: {
             "lengthMenu": "_MENU_",
-            "info": "Mostrando _START_ de _TOTAL_ registros.",
+            "info": "Mostrando _END_ de _TOTAL_ registros.",
             "infoFiltered": "(filtrado de _MAX_ registros)",
             "paginate": {
                 "previous": "‹",
@@ -20,13 +20,14 @@ $(document).ready(function () {
             type: "GET",
             data: function (extra) {
                 extra.filtro = $("#filtro-buscar").val();
+                console.log("filtro:", extra.filtro);
                 extra.estado = $("#slc-estado").val();
             }
         },
         columns: [
             {
                 "data": "id",
-                "visible": false
+                "title": "ID"
             },
             {
                 "data": "descripcion",
@@ -38,7 +39,14 @@ $(document).ready(function () {
             },
             {
                 "data": "activo",
-                "title": "Estatus"
+                "title": "Estatus",
+                "render": function(data, type, row) {
+                    const estatusTipo = {
+                        'Activo': 'bg-success',
+                        'Inactivo': 'bg-danger'
+                    };
+                    return `<span class="badge ${estatusTipo[data] || 'bg-secondary'}">${data}</span>`;
+                }
             },
             {
                 "data": null,
@@ -48,9 +56,6 @@ $(document).ready(function () {
                     return `
                         <a class="table-icon editar-paso" title="Editar paso" data-id="${fila.id}">
                             <i class="fas fa-edit"></i>
-                        </a>
-                        <a class="table-icon cambiar-estatus" title="Cambiar estatus" data-id="${fila.id}">
-                            <i class="fas fa-sync-alt"></i>
                         </a>
                         <a class="table-icon eliminar_pte" title="Eliminar" data-id="${fila.id}">
                             <i class="fas fa-trash"></i>

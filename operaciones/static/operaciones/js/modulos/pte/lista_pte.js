@@ -8,7 +8,7 @@ $(document).ready(function () {
         dom: '<"row"<"col-sm-12 col-md-6"l>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
         language: {
             "lengthMenu": "_MENU_",
-            "info": "Mostrando _START_ de _TOTAL_ registros.",
+            "info": "Mostrando _END_ de _TOTAL_ registros.",
             "infoFiltered": "(filtrado de _MAX_ registros)",
             "paginate": {
                 "previous": "‹",
@@ -40,7 +40,7 @@ $(document).ready(function () {
             },
             {
                 "data": "id",
-                "visible": false
+                "title": "ID"
             },
             {
                 "data": "id_tipo_id",
@@ -133,6 +133,17 @@ $(document).ready(function () {
                         "title": "Paso"
                     },
                     {
+                        "data": "fecha_entrega",
+                        "title": "Fecha Entrega",
+                        "render": function(data) {
+                            return data ? new Date(data).toLocaleDateString('es-ES') : '-';
+                        }
+                    },
+                    {
+                        "data": "comentario",
+                        "title": "Comentario"
+                    },
+                    {
                         "data": "estatus_pte_texto",
                         "title": "Estatus",
                         "render": function(data, type, row) {
@@ -144,25 +155,6 @@ $(document).ready(function () {
                             };
                             return `<span class="badge ${estatusClasses[data] || 'bg-secondary'}">${data}</span>`;
                         }
-                    },
-                    {
-                        "data": "total_homologado",
-                        "title": "Total Homologado",
-                        "class": "text-right",
-                        "render": function(data) {
-                            return `$${parseFloat(data).toLocaleString('es-MX', {minimumFractionDigits: 2})}`;
-                        }
-                    },
-                    {
-                        "data": "fecha_entrega",
-                        "title": "Fecha Entrega",
-                        "render": function(data) {
-                            return data ? new Date(data).toLocaleDateString('es-ES') : '-';
-                        }
-                    },
-                    {
-                        "data": "comentario",
-                        "title": "Comentario"
                     },
                     {
                         "data": null,

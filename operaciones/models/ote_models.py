@@ -9,7 +9,7 @@ class OTE(models.Model):
         (3, 'Terminada'),
         (4, 'Cancelada'),
     ]    
-    id_tipo = models.ForeignKey(Tipo, on_delete=models.CASCADE, limit_choices_to={'tipo': 'OTE'})
+    id_tipo = models.ForeignKey(Tipo, on_delete=models.CASCADE, limit_choices_to={'tipo': '2'})
     id_oficio_pte = models.ForeignKey(PTEHeader, on_delete=models.CASCADE, to_field='oficio_pte', db_column='id_oficio_pte')
     orden_trabajo = models.CharField(max_length=100, unique=True)
     descripcion_trabajo = models.TextField()
@@ -23,7 +23,7 @@ class OTE(models.Model):
     comentario = models.TextField(blank=True)
 
     class Meta:
-        db_table = 'ote'
+        db_table = 'ot'
 
     def __str__(self):
         return self.orden_trabajo
