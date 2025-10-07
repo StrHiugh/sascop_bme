@@ -1,0 +1,106 @@
+{% extends 'operaciones/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="header-modulo">
+    <div class="d-flex justify-content-between align-items-center flex-wrap">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-2">
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'operaciones:index' %}" class="text-decoration-none">
+                            Inicio
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <a href="#" class="text-decoration-none">
+                            Catálogos
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item active">Unidad medida </li>
+                </ol>
+            </nav>
+            <h1 class="h2 fw-bold mb-0">UNIDADES DE MEDIDA</h1>
+        </div>
+        <!-- Lado derecho: botones -->
+        <div class="d-flex gap-2 mt-2 mt-md-0">
+            <a href="#" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>
+                <span>Crear nuevo</span>
+            </a>
+            <button class="btn btn-outline-secondary" id="btn-panel-filtros">
+                <i class="fas fa-filter me-2"></i>
+                Filtros
+            </button>
+        </div>
+    </div>
+</div>
+
+
+<div class="bm-content">
+    <div class="bm-cont-elementos">
+        <div class="bm-cont-elementos-body">
+            <div class="row mb-3">
+                <div class="col-md-6 col-lg-4">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0">
+                            <i class="fas fa-search"></i>
+                        </span>
+                        <input type="text" class="form-control border-start-0" id="filtro-buscar" placeholder="Enter para filtrar">
+                    </div>
+                </div>
+                <div class="col-md-2 col-lg-2">
+                    <div id="select-length"></div>
+                </div>
+            </div>
+            <!-- Tabla -->
+            <table id="tabla" class="table table-hover dataTable-width-100">
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Panel de Filtros con Offcanvas de Bootstrap 5 -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="panelFiltros">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title">Filtros</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body">
+        <form id="form-filtros">
+            <div class="mb-3">
+                <label class="form-label">Estado</label>
+                <select class="form-select" id="filtro-estado">
+                    <option value="">Todos los estados</option>
+                    <option value="disponible">Disponible</option>
+                    <option value="no-disponible">No disponible</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Tipo</label>
+                <select class="form-select" id="filtro-tipo">
+                    <option value="">Todos los tipos</option>
+                    <option value="computadora">Computadora</option>
+                    <option value="servidor">Servidor</option>
+                </select>
+            </div>
+            <div class="d-grid gap-2">
+                <button type="button" class="btn btn-primary" id="aplicar-filtros">
+                    <i class="fas fa-check me-2"></i>Aplicar Filtros
+                </button>
+                <button type="button" class="btn btn-outline-secondary" id="limpiar-filtros">
+                    <i class="fas fa-eraser me-2"></i>Limpiar Filtros
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'operaciones/js/modulos/pte/catalogos/lista_unidad_medida.js'%}?v=1.0.0"></script>
+
+<script>
+    var urlDatatable = "{% url 'operaciones:datatable_unidad_medida' %}";
+</script>
+{% endblock %}
