@@ -17,10 +17,10 @@
                             Catálogos
                         </a>
                     </li>
-                    <li class="breadcrumb-item active">Estados de cobro </li>
+                    <li class="breadcrumb-item active">Estátus </li>
                 </ol>
             </nav>
-            <h1 class="h2 fw-bold mb-0">ESTADOS DE COBRO</h1>
+            <h1 class="h2 fw-bold mb-0">CATÁLOGO DE ESTATUS</h1>
         </div>
         <!-- Lado derecho: botones -->
         <div class="d-flex gap-2 mt-2 mt-md-0">
@@ -98,7 +98,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{% static 'operaciones/js/modulos/pte/catalogos/lista_cobro.js'%}?v=1.0.0"></script>
+<script src="{% static 'operaciones/js/modulos/pte/catalogos/lista_estatus.js'%}?v=1.0.0"></script>
 
 <script>
     var urlDatatable = "{% url 'operaciones:datatable_cobro' %}";

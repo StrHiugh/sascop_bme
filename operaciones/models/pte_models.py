@@ -1,5 +1,5 @@
 from django.db import models
-from .catalogos_models import Tipo, Sitio
+from .catalogos_models import Estatus, ResponsableProyecto, Tipo, Sitio
 
 class Paso(models.Model):
     descripcion = models.CharField(max_length=200)
@@ -8,7 +8,7 @@ class Paso(models.Model):
     importancia = models.FloatField(default=0)
     comentario = models.TextField(blank=True)
     class Meta:
-        db_table = 'cat_paso'
+        db_table = 'paso'
         ordering = ['orden']
 
     def __str__(self):
@@ -22,15 +22,16 @@ class PTEHeader(models.Model):
         (4, 'Cancelado'),
     ]
     
-    id_tipo = models.ForeignKey(Tipo, on_delete=models.CASCADE, limit_choices_to={'tipo': 'PTE'})
+    id_tipo = models.ForeignKey(Tipo, on_delete=models.CASCADE, limit_choices_to={'nivel_afectacion': 1})
     oficio_pte = models.CharField(max_length=100, unique=True)
     oficio_solicitud = models.CharField(max_length=100)
     descripcion_trabajo = models.TextField()
     fecha_solicitud = models.DateField()
-    plazo_dias = models.IntegerField()
-    total_homologado = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    plazo_dias = models.FloatField()
     id_orden_trabajo = models.CharField(max_length=100)
-    responsable_proyecto = models.CharField(max_length=200)
+    id_responsable_proyecto = models.ForeignKey(ResponsableProyecto, on_delete=models.CASCADE)
+    total_homologado = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    id_estatus_pte = models.ForeignKey(Estatus, on_delete=models.CASCADE, limit_choices_to={'nivel_afectacion': 1})
     estatus = models.IntegerField(choices=ESTATUS_CHOICES, default=1)
     comentario = models.TextField(blank=True)
 
@@ -41,22 +42,15 @@ class PTEHeader(models.Model):
         return self.oficio_pte
 
 class PTEDetalle(models.Model):
-    ESTATUS_PTE_CHOICES = [
-        (1, 'Pendiente'),
-        (2, 'En Proceso'),
-        (3, 'Completado'),
-        (4, 'Rechazado'),
-    ]
-    
     id_pte_header = models.ForeignKey(PTEHeader, on_delete=models.CASCADE, related_name='detalles')
-    estatus_pte = models.IntegerField(choices=ESTATUS_PTE_CHOICES, default=1)
+    estatus_paso = models.ForeignKey(Estatus, on_delete=models.CASCADE, limit_choices_to={'nivel_afectacion': 4})
     id_paso = models.ForeignKey(Paso, on_delete=models.CASCADE)
     fecha_entrega = models.DateField(null=True, blank=True)
     comentario = models.TextField(blank=True)
 
     class Meta:
         db_table = 'pte_detalle'
-        ordering = ['id_paso']
+        ordering = ['id_paso__orden']
 
     def __str__(self):
         return f"Detalle {self.id} - PTE {self.id_pte_header.oficio_pte}"

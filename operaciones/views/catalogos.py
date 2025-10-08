@@ -108,7 +108,7 @@ def datatable_embarcaciones(request):
 @login_required(login_url='/accounts/login/')
 def lista_cobro(request):
     """Lista de todas los estados de cobro"""
-    return render(request, 'operaciones/catalogos/estado_cobro/lista_cobro.html')
+    return render(request, 'operaciones/catalogos/estado_cobro/lista_estatus.html')
 
 def datatable_cobro(request):
     draw = int(request.GET.get('draw', 1))
@@ -116,7 +116,7 @@ def datatable_cobro(request):
     length = int(request.GET.get('length', 10))
     search_value = request.GET.get('filtro', '')
     
-    tipos = EstadoCobro.objects.annotate(
+    tipos = Estatus.objects.annotate(
         estado_texto=Case(
             When(activo=True, then=Value('Activo')),
             When(activo=False, then=Value('Inactivo')),

@@ -14,7 +14,7 @@ class Tipo(models.Model):
     activo = models.BooleanField(default=True)
 
     class Meta:
-        db_table = 'cat_tipo'
+        db_table = 'tipo'
 
     def __str__(self):
         return f"{self.descripcion} ({self.nivel_afectacion})"
@@ -31,7 +31,7 @@ class Sitio(models.Model):
     activo = models.BooleanField(default=True)
 
     class Meta:
-        db_table = 'cat_sitio'
+        db_table = 'sitio'
 
     def __str__(self):
         return self.descripcion
@@ -60,7 +60,7 @@ class Embarcacion(models.Model):
     activo = models.BooleanField(default=True)
     comentario = models.TextField(blank=True)
     class Meta:
-        db_table = 'cat_embarcacion'
+        db_table = 'embarcacion'
 
     def __str__(self):
         return self.descripcion
@@ -70,7 +70,17 @@ class UnidadMedida(models.Model):
     activo = models.BooleanField(default=True)
     comentario = models.TextField(blank=True)
     class Meta:
-        db_table = 'cat_unidad_medida'
+        db_table = 'unidad_medida'
+
+    def __str__(self):
+        return self.descripcion
+    
+class ResponsableProyecto(models.Model):
+    descripcion = models.CharField(max_length=50)
+    activo = models.BooleanField(default=True)
+    comentario = models.TextField(blank=True)
+    class Meta:
+        db_table = 'responsable_proyecto'
 
     def __str__(self):
         return self.descripcion
