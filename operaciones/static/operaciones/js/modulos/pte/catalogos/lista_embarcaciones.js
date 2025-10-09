@@ -20,7 +20,6 @@ $(document).ready(function () {
             type: "GET",
             data: function (extra) {
                 extra.filtro = $("#filtro-buscar").val();
-                console.log("filtro:", extra.filtro);
                 extra.estado = $("#slc-estado").val();
             }
         },
@@ -50,10 +49,10 @@ $(document).ready(function () {
                 "class": "text-center",
                 "render": function(fila) {
                     return `
-                        <a class="table-icon editar-paso" title="Editar paso" data-id="${fila.id}">
+                        <a class="table-icon editar-embarcacion" title="Editar paso" data-id="${fila.id}">
                             <i class="fas fa-edit"></i>
                         </a>
-                        <a class="table-icon eliminar_pte" title="Eliminar" data-id="${fila.id}">
+                        <a class="table-icon eliminar_embarcacion" title="Eliminar" data-id="${fila.id}">
                             <i class="fas fa-trash"></i>
                         </a>
                     `;
@@ -75,37 +74,133 @@ $(document).ready(function () {
     // Mover select de length
     $("#tabla_length").detach().appendTo("#select-length");
 
-    // Panel de filtros
     $("#btn-panel-filtros").on("click", function () {
-        fn_show_panel("#panel-filtro");
+        var offcanvas = new bootstrap.Offcanvas(document.getElementById('panelFiltros'));
+        offcanvas.show();
     });
 
-    // Aplicar filtros
-    $("#filtrar").on("click", function () {
+    $("#aplicar-filtros").on("click", function () {
         tablaPte.draw();
-        fn_show_panel();
+        var offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('panelFiltros'));
+        offcanvas.hide();
     });
 
-    // Limpiar filtros
-    $("#limpiar").on("click", function () {
-        $("#slc-estado").val("");
+    $("#limpiar-filtros").on("click", function () {
+        $("#filtro-estado").val("");
+        $("#filtro-tipo").val("");
         tablaPte.draw();
+        var offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('panelFiltros'));
+        offcanvas.hide();
     });
 
-    // Eliminar PTE
-    $(document).on("click", ".eliminar_pte", function () {
-        const pteId = $(this).data('id');
-        if (confirm('¿Estás seguro de que deseas eliminar este PTE?')) {
-            console.log('Eliminando PTE:', pteId);
-
+    // Abrir panel para crear nueva embarcación
+    $(".btn-primary").on("click", function() {
+        if ($(this).find('span').text().trim() === 'Crear nuevo') {
+            abrirPanelCrear();
         }
     });
 
-    // Editar PTE
-    $(document).on("click", ".editar_pte", function () {
-        const pteId = $(this).data('id');
-        window.location.href = `${urlEditar}/${pteId}`;
-    });
+    // Función para abrir panel de creación
+    function abrirPanelCrear() {
+        // Limpiar formulario
+        $("#formulario-embarcacion")[0].reset();
+        $("#id").val("");
+        $("#panel-title").text("Crear Embarcación");
+        $("#activo").prop("checked", true);
+        
+        // Mostrar panel
+        var offcanvas = new bootstrap.Offcanvas(document.getElementById('panelCrearEditar'));
+        offcanvas.show();
+    }
 
+    $(document).on("click", ".editar-embarcacion", function () {
+        const embarcacion_id = $(this).data('id');
+        abrirPanelEditar(embarcacion_id);
+    });
+    
+    // Función para abrir panel de edición
+    function abrirPanelEditar(id) {
+        BMAjax(
+            urlObtenerEmbarcacion, {id:id}, "GET")
+            .done(function(data) {
+                $("#id").val(data.id);
+                $("#descripcion").val(data.descripcion);
+                $("#comentario").val(data.comentario);
+                $("#panel-title").text("Editar Embarcación");
+                
+                // Mostrar panel
+                var offcanvas = new bootstrap.Offcanvas(document.getElementById('panelCrearEditar'));
+                offcanvas.show();
+            })
+            .fail(function() {
+                aviso("error", {
+                    contenido: "Error al cargar los datos de la embarcación",
+                });
+            });
+    }
+
+    // Guardar embarcación
+    $("#btn-guardar").on("click", function() {
+        const formData = {
+            id: $("#id").val(),
+            descripcion: $("#descripcion").val(),
+            comentario: $("#comentario").val()
+        };
+
+        // Validación básica
+        if (!formData.descripcion.trim()) {
+            aviso("advertencia", {
+                contenido: "La descripción es obligatoria",
+            });
+            return;
+        }
+
+        const url = formData.id ? urlEditarEmbarcacion : urlCrearEmbarcacion;
+        const method = "POST";
+        BMAjax(
+            url, 
+            formData, 
+            method
+        ).done(function(response) {
+            if (response.exito) {
+                var offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('panelCrearEditar'));
+                offcanvas.hide();
+                tablaPte.ajax.reload();
+            }
+        });
+    });
+    
+    // Eliminar PTE
+    $(document).on("click", ".eliminar_embarcacion", function () {
+        const embarcacion_id = $(this).data('id');
+        BMensaje({
+            titulo: "Confirmación",
+            subtitulo: "¿Estás seguro de eliminar esta embarcación?",
+            botones: [
+                {
+                    texto: "Sí, continuar",
+                    clase: "btn-primary",
+                    funcion: function() {
+                        const url = urlEliminarEmbarcacion;
+                        const method = "POST";
+                        BMAjax(
+                            url, 
+                            { embarcacion_id: embarcacion_id },
+                            method
+                        ).done(function(response) {
+                            if (response.exito) {
+                                tablaPte.ajax.reload();
+                            }
+                        });
+                    }
+                },
+                {
+                    texto: "Cancelar", 
+                    clase: "btn-light",
+                    funcion: function() { return }
+                }
+            ]
+        });
+    });
 });
 

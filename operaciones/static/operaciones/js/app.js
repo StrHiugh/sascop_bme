@@ -133,7 +133,6 @@ $(document).ready(function() {
     window.togglePantallaCompleta = function() {
         if (!document.fullscreenElement) {
             document.documentElement.requestFullscreen().catch(err => {
-                console.log(`Error al activar pantalla completa: ${err.message}`);
             });
         } else {
             if (document.exitFullscreen) {
@@ -141,6 +140,12 @@ $(document).ready(function() {
             }
         }
     };
+
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('login_exitoso') === '1') {
+        aviso("exito", "¡Bienvenido! Sesión iniciada correctamente.");
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
 });
 
     // Manejo de menús desplegables
@@ -162,17 +167,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Cerrar submenus al hacer clic fuera
-    $(document).on('click', function(e) {
-        if (!$(e.target).closest('.nav-item.has-submenu').length) {
-            $('.nav-item.has-submenu').removeClass('active');
-        }
-    });
-    
     // Activar item actual en submenu
     function activarSubmenuActual() {
         const currentUrl = window.location.pathname;
-        
         $('.submenu .nav-link').each(function() {
             const linkUrl = $(this).attr('href');
             if (currentUrl === linkUrl) {

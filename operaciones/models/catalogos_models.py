@@ -67,6 +67,7 @@ class Embarcacion(models.Model):
 
 class UnidadMedida(models.Model):
     descripcion = models.CharField(max_length=50)
+    clave = models.CharField(max_length=10)
     activo = models.BooleanField(default=True)
     comentario = models.TextField(blank=True)
     class Meta:

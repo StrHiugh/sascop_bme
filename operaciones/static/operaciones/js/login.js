@@ -2,13 +2,20 @@
 $(document).ready(function() {
     // Verificar si hay error de login desde Django
     if (typeof loginError !== 'undefined' && loginError) {
-        aviso('error', errorMessage || 'Usuario o contraseña incorrectos.');
+        aviso('error', errorMessage || 'Usuario o contraseña incorrectos.')
     }
     
     // Verificar si el usuario ya está logueado (redirección desde Django)
     if (typeof userAuthenticated !== 'undefined' && userAuthenticated) {
         // Redirigir después de mostrar el mensaje
         window.location.href = "{% url 'operaciones:index' %}";
+    }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('logout_exitoso') === '1') {
+        aviso('exito', 'Sesión cerrada correctamente.');
+        // Limpiar URL
+        window.history.replaceState({}, document.title, window.location.pathname);
     }
 
     // Prevenir reenvío del formulario al usar el botón "atrás"
@@ -61,8 +68,8 @@ $(document).ready(function() {
         // Esperar 5 segundos antes de enviar el formulario
         setTimeout(function() {
             form.submit();
-            terminarLoader();
-        }, 2000);
+            finalizarLoader();
+        }, 1000);
     });
     
     // Validación del formulario de recuperación
@@ -88,7 +95,6 @@ $(document).ready(function() {
             // Restaurar botón
             button.prop('disabled', false);
             button.html(originalText);
-            console.log(button.html())
             // Mostrar éxito
             aviso('exito','Se ha enviado un correo con las instrucciones para recuperar su contraseña.');
             

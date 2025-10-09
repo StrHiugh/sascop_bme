@@ -20,7 +20,6 @@ $(document).ready(function () {
             type: "GET",
             data: function (extra) {
                 extra.filtro = $("#filtro-buscar").val();
-                console.log("filtro:", extra.filtro);
                 extra.estado = $("#slc-estado").val();
             }
         },
@@ -32,6 +31,10 @@ $(document).ready(function () {
             {
                 "data": "descripcion",
                 "title": "Descripcion"
+            },
+            {
+                "data": "clave",
+                "title": "Clave"
             },
             {
                 "data": "activo",
@@ -50,10 +53,10 @@ $(document).ready(function () {
                 "class": "text-center",
                 "render": function(fila) {
                     return `
-                        <a class="table-icon editar-paso" title="Editar paso" data-id="${fila.id}">
+                        <a class="table-icon editar-unidad-medida" title="Editar paso" data-id="${fila.id}">
                             <i class="fas fa-edit"></i>
                         </a>
-                        <a class="table-icon eliminar_pte" title="Eliminar" data-id="${fila.id}">
+                        <a class="table-icon eliminar-unidad-medida" title="Eliminar" data-id="${fila.id}">
                             <i class="fas fa-trash"></i>
                         </a>
                     `;
@@ -92,20 +95,121 @@ $(document).ready(function () {
         tablaPte.draw();
     });
 
-    // Eliminar PTE
-    $(document).on("click", ".eliminar_pte", function () {
-        const pteId = $(this).data('id');
-        if (confirm('¿Estás seguro de que deseas eliminar este PTE?')) {
-            console.log('Eliminando PTE:', pteId);
-
+    
+    // Abrir panel para crear nueva embarcación
+    $(".btn-primary").on("click", function() {
+        if ($(this).find('span').text().trim() === 'Crear nuevo') {
+            abrirPanelCrear();
         }
     });
 
-    // Editar PTE
-    $(document).on("click", ".editar_pte", function () {
-        const pteId = $(this).data('id');
-        window.location.href = `${urlEditar}/${pteId}`;
+    // Función para abrir panel de creación
+    function abrirPanelCrear() {
+        // Limpiar formulario
+        $("#formulario-unidad-medida")[0].reset();
+        $("#id").val("");
+        $("#panel-title").text("Crear Unidad Medida");
+        
+        // Mostrar panel
+        var offcanvas = new bootstrap.Offcanvas(document.getElementById('panelCrearEditar'));
+        offcanvas.show();
+    }
+
+    $(document).on("click", ".editar-unidad-medida", function () {
+        const embarcacion_id = $(this).data('id');
+        abrirPanelEditar(embarcacion_id);
     });
+    
+    // Función para abrir panel de edición
+    function abrirPanelEditar(id) {
+        BMAjax(
+            urlObtenerUnidadMedida, {id:id}, "GET")
+            .done(function(data) {
+                $("#id").val(data.id);
+                $("#descripcion").val(data.descripcion);
+                $("#clave").val(data.clave);
+                $("#comentario").val(data.comentario);
+                $("#activo").prop("checked", data.activo);
+                $("#panel-title").text("Editar Unidad Medida");
+                
+                // Mostrar panel
+                var offcanvas = new bootstrap.Offcanvas(document.getElementById('panelCrearEditar'));
+                offcanvas.show();
+            })
+            .fail(function() {
+                aviso("error", {
+                    contenido: "Error al cargar los datos de la unidad de medida",
+                });
+            });
+    }
 
+    // Guardar embarcación
+    $("#btn-guardar").on("click", function() {
+        const formData = {
+            id: $("#id").val(),
+            descripcion: $("#descripcion").val(),
+            clave: $("#clave").val(),
+            comentario: $("#comentario").val()
+        };
+
+        // Validación básica
+        if (!formData.descripcion.trim()) {
+            aviso("advertencia", {
+                contenido: "La descripción es obligatoria",
+            });
+            return;
+        } else if (!$("#clave").val().trim()) {
+            aviso("advertencia", {
+                contenido: "La clave es obligatoria",
+            });
+            return;
+        }
+
+        const url = formData.id ? urlEditarUnidadMedida : urlCrearUnidadMedida;
+        const method = "POST";
+        BMAjax(
+            url, 
+            formData, 
+            method
+        ).done(function(response) {
+            if (response.exito) {
+                var offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('panelCrearEditar'));
+                offcanvas.hide();
+                tablaPte.ajax.reload();
+            }
+        });
+    });
+    
+    // Eliminar PTE
+    $(document).on("click", ".eliminar-unidad-medida", function () {
+        const unidad_id = $(this).data('id');
+        BMensaje({
+            titulo: "Confirmación",
+            subtitulo: "¿Estás seguro de eliminar esta unidad de medida?",
+            botones: [
+                {
+                    texto: "Sí, continuar",
+                    clase: "btn-primary",
+                    funcion: function() {
+                        const url = urlEliminarUnidadMedida;
+                        const method = "POST";
+                        BMAjax(
+                            url, 
+                            { id: unidad_id },
+                            method
+                        ).done(function(response) {
+                            if (response.exito) {
+                                tablaPte.ajax.reload();
+                            }
+                        });
+                    }
+                },
+                {
+                    texto: "Cancelar", 
+                    clase: "btn-light",
+                    funcion: function() { return }
+                }
+            ]
+        });
+    });
 });
-

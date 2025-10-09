@@ -28,10 +28,6 @@
                 <i class="fas fa-plus me-2"></i>
                 <span>Crear nuevo</span>
             </a>
-            <button class="btn btn-outline-secondary" id="btn-panel-filtros">
-                <i class="fas fa-filter me-2"></i>
-                Filtros
-            </button>
         </div>
     </div>
 </div>
@@ -95,6 +91,58 @@
         </form>
     </div>
 </div>
+<!-- Panel Crear/Editar Embarcación -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="panelCrearEditar">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title" id="panel-title">Crear Unidad de medida</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body">
+        <form id="formulario-unidad-medida">
+            {% csrf_token %}
+            <!-- Campo oculto para ID -->
+            <input id="id" name="id" type="hidden">
+            <div class="row">
+                <section class="col-12 mb-3">
+                    <label class="form-label">Descripción <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <input name="descripcion" class="form-control" id="descripcion" 
+                                type="text" placeholder="Ingrese la descripción de la ud. med" required>
+                    </div>
+                </section>
+                <section class="col-12 mb-3">
+                    <label class="form-label">Clave <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <input name="clave" class="form-control" id="clave" 
+                                type="text" placeholder="Ingrese la clave" required>
+                    </div>
+                </section>
+                <section class="col-12 mb-3">
+                    <label class="form-label">Comentario</label>
+                    <textarea name="comentario" class="form-control" id="comentario" 
+                                rows="3" placeholder="Comentarios adicionales"></textarea>
+                </section>
+            </div>
+
+            <section class="col-12 mb-3">
+                <p class="text-muted"><i class="text-danger">*</i> Campos obligatorios</p>
+            </section>
+
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-primary" id="btn-guardar">
+                            <i class="fas fa-save me-2"></i>Guardar
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="offcanvas">
+                            <i class="fas fa-times me-2"></i>Cancelar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -102,5 +150,9 @@
 
 <script>
     var urlDatatable = "{% url 'operaciones:datatable_unidad_medida' %}";
+    var urlCrearUnidadMedida = "{% url 'operaciones:crear_unidad_medida' %}";
+    var urlEditarUnidadMedida = "{% url 'operaciones:editar_unidad_medida' %}";
+    var urlEliminarUnidadMedida = "{% url 'operaciones:eliminar_unidad_medida' %}";
+    var urlObtenerUnidadMedida = "{% url 'operaciones:obtener_unidad_medida'%}";
 </script>
 {% endblock %}

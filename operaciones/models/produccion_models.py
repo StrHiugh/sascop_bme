@@ -60,7 +60,7 @@ class EstimacionHeader(models.Model):
 class EstimacionDetalle(models.Model):
     id_estimacion_header = models.ForeignKey(EstimacionHeader, on_delete=models.CASCADE, related_name='detalles')
     id_produccion = models.ForeignKey(Produccion, on_delete=models.CASCADE)
-    volumen_ajustado = models.DecimalField(max_digits=15, decimal_places=2)
+    volumen_actual = models.DecimalField(max_digits=15, decimal_places=2)
     volumen_estimado = models.DecimalField(max_digits=15, decimal_places=2,default=0)
     id_estatus_cobro = models.ForeignKey(Estatus, on_delete=models.CASCADE, limit_choices_to={'nivel_afectacion': 3})
     comentario_ajuste = models.TextField(blank=True)

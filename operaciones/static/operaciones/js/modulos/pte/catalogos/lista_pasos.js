@@ -20,13 +20,12 @@ $(document).ready(function () {
             type: "GET",
             data: function (extra) {
                 extra.filtro = $("#filtro-buscar").val();
-                console.log("filtro:", extra.filtro);
                 extra.estado = $("#slc-estado").val();
             }
         },
         columns: [
             {
-                "data": "id",
+                "data": "orden",
                 "title": "ID"
             },
             {
@@ -35,7 +34,10 @@ $(document).ready(function () {
             },
             {
                 "data": "importancia",
-                "title": "Importancia"
+                "title": "Importancia",
+                render: function (data, type, row) {
+                    return data ? `${data}%` : '';
+                }
             },
             {
                 "data": "activo",
@@ -57,7 +59,7 @@ $(document).ready(function () {
                         <a class="table-icon editar-paso" title="Editar paso" data-id="${fila.id}">
                             <i class="fas fa-edit"></i>
                         </a>
-                        <a class="table-icon eliminar_pte" title="Eliminar" data-id="${fila.id}">
+                        <a class="table-icon eliminar_paso" title="Eliminar" data-id="${fila.id}">
                             <i class="fas fa-trash"></i>
                         </a>
                     `;
@@ -96,20 +98,126 @@ $(document).ready(function () {
         tablaPte.draw();
     });
 
-    // Eliminar PTE
-    $(document).on("click", ".eliminar_pte", function () {
-        const pteId = $(this).data('id');
-        if (confirm('¿Estás seguro de que deseas eliminar este PTE?')) {
-            console.log('Eliminando PTE:', pteId);
-
+    // Abrir panel para crear nueva embarcación
+    $(".btn-primary").on("click", function() {
+        if ($(this).find('span').text().trim() === 'Crear nuevo') {
+            abrirPanelCrear();
         }
     });
 
-    // Editar PTE
-    $(document).on("click", ".editar_pte", function () {
-        const pteId = $(this).data('id');
-        window.location.href = `${urlEditar}/${pteId}`;
-    });
+    // Función para abrir panel de creación
+    function abrirPanelCrear() {
+        // Limpiar formulario
+        $("#formulario-paso")[0].reset();
+        $("#id").val("");
+        $("#panel-title").text("Crear paso");
+        
+        // Mostrar panel
+        var offcanvas = new bootstrap.Offcanvas(document.getElementById('panelCrearEditar'));
+        offcanvas.show();
+    }
 
+    $(document).on("click", ".editar-paso", function () {
+        const id = $(this).data('id');
+        abrirPanelEditar(id);
+    });
+    
+    // Función para abrir panel de edición
+    function abrirPanelEditar(id) {
+        BMAjax(
+            urlObtenerPaso, {id:id}, "GET")
+            .done(function(data) {
+                $("#id").val(data.id);
+                $("#descripcion").val(data.descripcion);
+                $("#orden").val(data.orden);
+                $("#importancia").val(data.importancia);
+                $("#comentario").val(data.comentario);
+                $("#panel-title").text("Editar paso");
+                
+                // Mostrar panel
+                var offcanvas = new bootstrap.Offcanvas(document.getElementById('panelCrearEditar'));
+                offcanvas.show();
+            })
+            .fail(function() {
+                aviso("error", {
+                    contenido: "Error al cargar los datos del paso",
+                });
+            });
+    }
+
+    // Guardar embarcación
+    $("#btn-guardar").on("click", function() {
+        const formData = {
+            id: $("#id").val(),
+            descripcion: $("#descripcion").val(),
+            orden: $("#orden").val(),
+            importancia: $("#importancia").val(),
+            comentario: $("#comentario").val()
+        };
+        // Validación básica
+        if (!formData.descripcion.trim()) {
+            aviso("advertencia", {
+                contenido: "La descripción es obligatoria",
+            });
+            return;
+        } else if (!formData.orden) {
+            aviso("advertencia", {
+                contenido: "El orden es obligatorio",
+            });
+            return;
+        } else if (!formData.importancia) {
+            aviso("advertencia", {
+                contenido: "La importancia es obligatoria",
+            });
+            return;
+        } 
+
+        const url = formData.id ? urlEditarPaso : urlCrearPaso;
+        const method = "POST";
+        BMAjax(
+            url, 
+            formData, 
+            method
+        ).done(function(response) {
+            if (response.exito) {
+                var offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('panelCrearEditar'));
+                offcanvas.hide();
+                tablaPte.ajax.reload();
+            }
+        });
+    });
+    
+    $(document).on("click", ".eliminar_paso", function () {
+        const id = $(this).data('id');
+        BMensaje({
+            titulo: "Confirmación",
+            subtitulo: "¿Estás seguro de eliminar este paso de PTE y su afectación?",
+            botones: [
+                {
+                    texto: "Sí, continuar",
+                    clase: "btn-primary",
+                    funcion: function() {
+                        const url = urlEliminarPaso;
+                        const method = "POST";
+                        BMAjax(
+                            url, 
+                            { id: id },
+                            method
+                        ).done(function(response) {
+                            if (response.exito) {
+                                tablaPte.ajax.reload();
+                            }
+                        });
+
+                    }
+                },
+                {
+                    texto: "Cancelar", 
+                    clase: "btn-light",
+                    funcion: function() { return }
+                }
+            ]
+        });
+    });
 });
 

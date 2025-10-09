@@ -209,7 +209,6 @@ $(document).ready(function () {
     $(document).on("click", ".eliminar_pte", function () {
         const pteId = $(this).data('id');
         if (confirm('¿Estás seguro de que deseas eliminar este PTE?')) {
-            console.log('Eliminando PTE:', pteId);
 
         }
     });

@@ -1,7 +1,9 @@
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 from django.db.models import Q, Case, When, Value, CharField, OrderBy
+from django.views.decorators.http import require_http_methods
 from ..models import *
 
 
@@ -16,7 +18,7 @@ def datatable_tipos(request):
     length = int(request.GET.get('length', 10))
     search_value = request.GET.get('filtro', '')
     
-    tipos = Tipo.objects.annotate(
+    tipos = Tipo.objects.filter(activo=1).annotate(
         estado_texto=Case(
             When(activo=True, then=Value('Activo')),
             When(activo=False, then=Value('Inactivo')),
@@ -26,8 +28,8 @@ def datatable_tipos(request):
         nivel_texto=Case(
             When(nivel_afectacion=1, then=Value('PTE')),
             When(nivel_afectacion=2, then=Value('OT')),
-            When(nivel_afectacion=3, then=Value('PARTIDA')),
-            When(nivel_afectacion=4, then=Value('PRODUCCION')),
+            When(nivel_afectacion=3, then=Value('Partida')),
+            When(nivel_afectacion=4, then=Value('Produccion')),
             default=Value('No definido'),
             output_field=CharField()
         )
@@ -59,7 +61,121 @@ def datatable_tipos(request):
         'recordsFiltered': total_records,
         'data': data
     })
-    
+
+@require_http_methods(["POST"])
+def crear_tipos(request):
+    try:
+        descripcion = request.POST.get('descripcion')
+        afectacion = request.POST.get('afectacion')
+        comentario = request.POST.get('comentario', '')
+        activo = True
+        tipo = Tipo.objects.create(
+            descripcion=descripcion,
+            nivel_afectacion=afectacion,
+            comentario=comentario,
+            activo=activo
+        )
+        return JsonResponse({
+            'exito': True,
+            'tipo_aviso': 'exito',
+            'detalles': 'Tipo creado correctamente',
+            'id': tipo.id
+        })
+    except Exception as e:
+        return JsonResponse({
+            'exito': False,
+            'tipo_aviso': 'error',
+            'detalles': f'Error al crear tipo: {str(e)}'
+        })
+        
+@require_http_methods(["POST"])
+def eliminar_tipos(request):
+    try:
+        # Obtener el ID de la embarcación
+        id = request.POST.get('id')
+        
+        if not id:
+            return JsonResponse({
+                'tipo_aviso': 'error',
+                'detalles': 'ID de tipo no proporcionado',
+                'exito': False
+            })
+
+        # Eliminación lógica
+        tipo = Tipo.objects.get(id=id)
+        tipo.activo = False
+        tipo.save()
+
+        return JsonResponse({
+            'tipo_aviso': 'exito',
+            'detalles': 'Tipo desactivado correctamente',
+            'exito': True
+        })
+
+    except Tipo.DoesNotExist:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': 'Tipo no encontrado',
+            'exito': False
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': f'Error al desactivar el tipo: {str(e)}',
+            'exito': False
+        })
+
+@require_http_methods(["GET"])
+def obtener_tipos(request):
+    try:
+        id = request.GET.get('id')
+        tipo = Tipo.objects.get(id=id)
+        return JsonResponse({
+            'id': tipo.id,
+            'descripcion': tipo.descripcion,
+            'afectacion': tipo.nivel_afectacion,
+            'comentario': tipo.comentario,
+            'activo': tipo.activo
+        })
+    except Estatus.DoesNotExist:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': 'Tipo no encontrado'
+        }, status=404)
+
+@require_http_methods(["POST"])
+def editar_tipos(request):
+    try:
+        id = request.POST.get('id')
+        descripcion = request.POST.get('descripcion')
+        afectacion = request.POST.get('afectacion')
+        comentario = request.POST.get('comentario', '')
+        
+        tipo = Tipo.objects.get(id=id)
+        tipo.descripcion = descripcion
+        tipo.nivel_afectacion = afectacion
+        tipo.comentario = comentario
+        tipo.save()
+        
+        return JsonResponse({
+            'tipo_aviso': 'exito',
+            'detalles': 'Tipo actualizada correctamente',
+            'exito': True
+        })
+    except Tipo.DoesNotExist:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': 'Tipo no encontrada',
+            'exito': False
+        })
+    except Exception as e:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': f'Error al actualizar el tipo: {str(e)}',
+            'exito': False
+        })
+
 @login_required(login_url='/accounts/login/')
 def lista_embarcaciones(request):
     """Lista de todas los embarcaciones"""
@@ -71,7 +187,7 @@ def datatable_embarcaciones(request):
     length = int(request.GET.get('length', 10))
     search_value = request.GET.get('filtro', '')
     
-    tipos = Embarcacion.objects.annotate(
+    embarcaciones = Embarcacion.objects.filter(activo=1).annotate(
         estado_texto=Case(
             When(activo=True, then=Value('Activo')),
             When(activo=False, then=Value('Inactivo')),
@@ -81,21 +197,21 @@ def datatable_embarcaciones(request):
     )
     
     if search_value:
-        tipos = tipos.filter(
+        embarcaciones = embarcaciones.filter(
             Q(descripcion__icontains=search_value) |
             Q(activo__icontains=search_value)
         )
     
-    total_records = tipos.count()
-    tipos = tipos[start:start + length]
+    total_records = embarcaciones.count()
+    embarcaciones = embarcaciones[start:start + length]
     
     data = []
-    for tipo in tipos:
+    for embarcacion in embarcaciones:
         data.append({
-            'id': tipo.id,
-            'descripcion': tipo.descripcion,
-            'activo': tipo.estado_texto, 
-            'activo_bool': tipo.activo, 
+            'id': embarcacion.id,
+            'descripcion': embarcacion.descripcion,
+            'activo': embarcacion.estado_texto, 
+            'activo_bool': embarcacion.activo, 
         })
     
     return JsonResponse({
@@ -104,7 +220,118 @@ def datatable_embarcaciones(request):
         'recordsFiltered': total_records,
         'data': data
     })
-    
+
+@require_http_methods(["POST"])
+def crear_embarcacion(request):
+    try:
+        descripcion = request.POST.get('descripcion')
+        comentario = request.POST.get('comentario', '')
+        activo = True
+        
+        embarcacion = Embarcacion.objects.create(
+            descripcion=descripcion,
+            comentario=comentario,
+            activo=activo
+        )
+        
+        return JsonResponse({
+            'exito': True,
+            'tipo_aviso': 'exito',
+            'detalles': 'Embarcación creada correctamente',
+            'id': embarcacion.id
+        })
+    except Exception as e:
+        return JsonResponse({
+            'exito': False,
+            'tipo_aviso': 'error',
+            'detalles': f'Error al crear embarcación: {str(e)}'
+        })
+        
+@require_http_methods(["POST"])
+def eliminar_embarcacion(request):
+    try:
+        # Obtener el ID de la embarcación
+        embarcacion_id = request.POST.get('embarcacion_id')
+        
+        if not embarcacion_id:
+            return JsonResponse({
+                'tipo_aviso': 'error',
+                'detalles': 'ID de embarcación no proporcionado',
+                'exito': False
+            })
+
+        # Eliminación lógica
+        embarcacion = Embarcacion.objects.get(id=embarcacion_id)
+        embarcacion.activo = False
+        embarcacion.save()
+
+        return JsonResponse({
+            'tipo_aviso': 'exito',
+            'detalles': 'Embarcación desactivada correctamente',
+            'exito': True
+        })
+
+    except Embarcacion.DoesNotExist:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': 'Embarcación no encontrada',
+            'exito': False
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': f'Error al desactivar embarcación: {str(e)}',
+            'exito': False
+        })
+
+@require_http_methods(["GET"])
+def obtener_embarcacion(request):
+    try:
+        embarcacion_id = request.GET.get('id')
+        embarcacion = Embarcacion.objects.get(id=embarcacion_id)
+        return JsonResponse({
+            'id': embarcacion.id,
+            'descripcion': embarcacion.descripcion,
+            'comentario': embarcacion.comentario,
+            'activo': embarcacion.activo
+        })
+    except Embarcacion.DoesNotExist:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': 'Embarcación no encontrada'
+        }, status=404)
+
+@require_http_methods(["POST"])
+def editar_embarcacion(request):
+    try:
+        embarcacion_id = request.POST.get('id')
+        descripcion = request.POST.get('descripcion')
+        comentario = request.POST.get('comentario', '')
+        
+        embarcacion = Embarcacion.objects.get(id=embarcacion_id)
+        embarcacion.descripcion = descripcion
+        embarcacion.comentario = comentario
+        embarcacion.save()
+        
+        return JsonResponse({
+            'tipo_aviso': 'exito',
+            'detalles': 'Embarcación actualizada correctamente',
+            'exito': True
+        })
+    except Embarcacion.DoesNotExist:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': 'Embarcación no encontrada',
+            'exito': False
+        })
+    except Exception as e:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': f'Error al actualizar embarcación: {str(e)}',
+            'exito': False
+        })
+
 @login_required(login_url='/accounts/login/')
 def lista_cobro(request):
     """Lista de todas los estados de cobro"""
@@ -116,13 +343,21 @@ def datatable_cobro(request):
     length = int(request.GET.get('length', 10))
     search_value = request.GET.get('filtro', '')
     
-    tipos = Estatus.objects.annotate(
+    tipos = Estatus.objects.filter(activo=1).annotate(
         estado_texto=Case(
             When(activo=True, then=Value('Activo')),
             When(activo=False, then=Value('Inactivo')),
             default=Value('Desconocido'),
             output_field=CharField()
         ),
+        afectacion_texto=Case(
+            When(nivel_afectacion=1, then=Value('PTE')),
+            When(nivel_afectacion=2, then=Value('OT')),
+            When(nivel_afectacion=3, then=Value('Cobro')),
+            When(nivel_afectacion=4, then=Value('Pasos PTE')),
+            default=Value('No definido'),
+            output_field=CharField()
+        )
     )
     
     if search_value:
@@ -141,6 +376,8 @@ def datatable_cobro(request):
             'descripcion': tipo.descripcion,
             'activo': tipo.estado_texto, 
             'activo_bool': tipo.activo, 
+            'nivel_afectacion': tipo.nivel_afectacion,
+            'afectacion_texto': tipo.afectacion_texto,
         })
     
     return JsonResponse({
@@ -149,12 +386,125 @@ def datatable_cobro(request):
         'recordsFiltered': total_records,
         'data': data
     })
-    
+
+@require_http_methods(["POST"])
+def crear_estatus(request):
+    try:
+        descripcion = request.POST.get('descripcion')
+        afectacion = request.POST.get('afectacion')
+        comentario = request.POST.get('comentario', '')
+        activo = True
+        estatus = Estatus.objects.create(
+            descripcion=descripcion,
+            nivel_afectacion=afectacion,
+            comentario=comentario,
+            activo=activo
+        )
+        return JsonResponse({
+            'exito': True,
+            'tipo_aviso': 'exito',
+            'detalles': 'Estatus creado correctamente',
+            'id': estatus.id
+        })
+    except Exception as e:
+        return JsonResponse({
+            'exito': False,
+            'tipo_aviso': 'error',
+            'detalles': f'Error al crear estatus: {str(e)}'
+        })
+        
+@require_http_methods(["POST"])
+def eliminar_estatus(request):
+    try:
+        # Obtener el ID de la embarcación
+        id = request.POST.get('id')
+        
+        if not id:
+            return JsonResponse({
+                'tipo_aviso': 'error',
+                'detalles': 'ID de estatus no proporcionado',
+                'exito': False
+            })
+
+        # Eliminación lógica
+        estatus = Estatus.objects.get(id=id)
+        estatus.activo = False
+        estatus.save()
+
+        return JsonResponse({
+            'tipo_aviso': 'exito',
+            'detalles': 'Estatus desactivado correctamente',
+            'exito': True
+        })
+
+    except Estatus.DoesNotExist:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': 'Estatus no encontrado',
+            'exito': False
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': f'Error al desactivar estatus: {str(e)}',
+            'exito': False
+        })
+
+@require_http_methods(["GET"])
+def obtener_estatus(request):
+    try:
+        id = request.GET.get('id')
+        estatus = Estatus.objects.get(id=id)
+        return JsonResponse({
+            'id': estatus.id,
+            'descripcion': estatus.descripcion,
+            'afectacion': estatus.nivel_afectacion,
+            'comentario': estatus.comentario,
+            'activo': estatus.activo
+        })
+    except Estatus.DoesNotExist:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': 'Estatus no encontrado'
+        }, status=404)
+
+@require_http_methods(["POST"])
+def editar_estatus(request):
+    try:
+        id = request.POST.get('id')
+        descripcion = request.POST.get('descripcion')
+        afectacion = request.POST.get('afectacion')
+        comentario = request.POST.get('comentario', '')
+        
+        estatus = Estatus.objects.get(id=id)
+        estatus.descripcion = descripcion
+        estatus.nivel_afectacion = afectacion
+        estatus.comentario = comentario
+        estatus.save()
+        
+        return JsonResponse({
+            'tipo_aviso': 'exito',
+            'detalles': 'Estatus actualizada correctamente',
+            'exito': True
+        })
+    except Embarcacion.DoesNotExist:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': 'Estatus no encontrada',
+            'exito': False
+        })
+    except Exception as e:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': f'Error al actualizar el estatus: {str(e)}',
+            'exito': False
+        })
+
 @login_required(login_url='/accounts/login/')
 def lista_unidad_medida(request):
     """Lista de todas los estados de cobro"""
     return render(request, 'operaciones/catalogos/unidad_medida/lista_unidad_medida.html')
-
 
 def datatable_unidad_medida(request):
     draw = int(request.GET.get('draw', 1))
@@ -162,7 +512,7 @@ def datatable_unidad_medida(request):
     length = int(request.GET.get('length', 10))
     search_value = request.GET.get('filtro', '')
     
-    tipos = UnidadMedida.objects.annotate(
+    tipos = UnidadMedida.objects.filter(activo=1).annotate(
         estado_texto=Case(
             When(activo=True, then=Value('Activo')),
             When(activo=False, then=Value('Inactivo')),
@@ -187,6 +537,7 @@ def datatable_unidad_medida(request):
             'descripcion': tipo.descripcion,
             'activo': tipo.estado_texto, 
             'activo_bool': tipo.activo, 
+            'clave': tipo.clave,
         })
     
     return JsonResponse({
@@ -195,7 +546,122 @@ def datatable_unidad_medida(request):
         'recordsFiltered': total_records,
         'data': data
     })
-    
+
+@require_http_methods(["POST"])
+def crear_unidad_medida(request):
+    try:
+        descripcion = request.POST.get('descripcion')
+        clave = request.POST.get('clave')
+        comentario = request.POST.get('comentario', '')
+        activo = True
+        
+        unidad_medida = UnidadMedida.objects.create(
+            descripcion=descripcion,
+            clave=clave,
+            comentario=comentario,
+            activo=activo
+        )
+        
+        return JsonResponse({
+            'exito': True,
+            'tipo_aviso': 'exito',
+            'detalles': 'Unidad de medida creada correctamente',
+            'id': unidad_medida.id
+        })
+    except Exception as e:
+        return JsonResponse({
+            'exito': False,
+            'tipo_aviso': 'error',
+            'detalles': f'Error al crear unidad de medida: {str(e)}'
+        })
+        
+@require_http_methods(["POST"])
+def eliminar_unidad_medida(request):
+    try:
+        # Obtener el ID de la embarcación
+        unidad_id = request.POST.get('id')
+        
+        if not unidad_id:
+            return JsonResponse({
+                'tipo_aviso': 'error',
+                'detalles': 'ID de Unidad medida no proporcionado',
+                'exito': False
+            })
+
+        # Eliminación lógica
+        unidad_medida = UnidadMedida.objects.get(id=unidad_id)
+        unidad_medida.activo = False
+        unidad_medida.save()
+
+        return JsonResponse({
+            'tipo_aviso': 'exito',
+            'detalles': 'Unidad de medida desactivada correctamente',
+            'exito': True
+        })
+
+    except UnidadMedida.DoesNotExist:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': 'Unidad de medida no encontrada',
+            'exito': False
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': f'Error al desactivar Unidad de medida: {str(e)}',
+            'exito': False
+        })
+
+@require_http_methods(["GET"])
+def obtener_unidad_medida(request):
+    try:
+        unidad_id = request.GET.get('id')
+        unidad_medida = UnidadMedida.objects.get(id=unidad_id)
+        return JsonResponse({
+            'id': unidad_medida.id,
+            'descripcion': unidad_medida.descripcion,
+            'clave': unidad_medida.clave,
+            'comentario': unidad_medida.comentario,
+            'activo': unidad_medida.activo
+        })
+    except UnidadMedida.DoesNotExist:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': 'Unidad de medida no encontrada'
+        }, status=404)
+
+@require_http_methods(["POST"])
+def editar_unidad_medida(request):
+    try:
+        unidad_id = request.POST.get('id')
+        descripcion = request.POST.get('descripcion')
+        clave = request.POST.get('clave')
+        comentario = request.POST.get('comentario', '')
+        
+        unidad_medida = UnidadMedida.objects.get(id=unidad_id)
+        unidad_medida.descripcion = descripcion
+        unidad_medida.clave = clave
+        unidad_medida.comentario = comentario
+        unidad_medida.save()
+        
+        return JsonResponse({
+            'tipo_aviso': 'exito',
+            'detalles': 'Unidad de medida actualizada correctamente',
+            'exito': True
+        })
+    except UnidadMedida.DoesNotExist:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': 'Unidad de medida no encontrada',
+            'exito': False
+        })
+    except Exception as e:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': f'Error al actualizar Unidad de medida: {str(e)}',
+            'exito': False
+        })
 
 @login_required(login_url='/accounts/login/')
 def lista_sitios(request):
@@ -208,7 +674,7 @@ def datatable_sitios(request):
     length = int(request.GET.get('length', 10))
     search_value = request.GET.get('filtro', '')
     
-    tipos = Sitio.objects.annotate(
+    tipos = Sitio.objects.filter(activo=1).annotate(
         estado_texto=Case(
             When(activo=True, then=Value('Activo')),
             When(activo=False, then=Value('Inactivo')),
@@ -216,8 +682,8 @@ def datatable_sitios(request):
             output_field=CharField()
         ),
         nivel_texto=Case(
-            When(nivel_afectacion=1, then=Value('PARTIDA')),
-            When(nivel_afectacion=2, then=Value('TRABAJO')),
+            When(nivel_afectacion=1, then=Value('Partida')),
+            When(nivel_afectacion=2, then=Value('Zona de trabajo')),
             default=Value('No definido'),
             output_field=CharField()
         )
@@ -249,6 +715,119 @@ def datatable_sitios(request):
         'data': data
     })
     
+@require_http_methods(["POST"])
+def crear_sitio(request):
+    try:
+        descripcion = request.POST.get('descripcion')
+        afectacion = request.POST.get('afectacion')
+        comentario = request.POST.get('comentario', '')
+        activo = True
+        sitio = Sitio.objects.create(
+            descripcion=descripcion,
+            nivel_afectacion=afectacion,
+            comentario=comentario,
+            activo=activo
+        )
+        return JsonResponse({
+            'exito': True,
+            'tipo_aviso': 'exito',
+            'detalles': 'Sitio creado correctamente',
+            'id': sitio.id
+        })
+    except Exception as e:
+        return JsonResponse({
+            'exito': False,
+            'tipo_aviso': 'error',
+            'detalles': f'Error al crear sitio: {str(e)}'
+        })
+        
+@require_http_methods(["POST"])
+def eliminar_sitio(request):
+    try:
+        # Obtener el ID de la embarcación
+        id = request.POST.get('id')
+        
+        if not id:
+            return JsonResponse({
+                'tipo_aviso': 'error',
+                'detalles': 'ID de sitio no proporcionado',
+                'exito': False
+            })
+
+        # Eliminación lógica
+        sitio = Sitio.objects.get(id=id)
+        sitio.activo = False
+        sitio.save()
+
+        return JsonResponse({
+            'tipo_aviso': 'exito',
+            'detalles': 'Sitio desactivado correctamente',
+            'exito': True
+        })
+
+    except Sitio.DoesNotExist:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': 'Sitio no encontrado',
+            'exito': False
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': f'Error al desactivar sitio: {str(e)}',
+            'exito': False
+        })
+
+@require_http_methods(["GET"])
+def obtener_sitio(request):
+    try:
+        id = request.GET.get('id')
+        sitio = Sitio.objects.get(id=id)
+        return JsonResponse({
+            'id': sitio.id,
+            'descripcion': sitio.descripcion,
+            'afectacion': sitio.nivel_afectacion,
+            'comentario': sitio.comentario,
+            'activo': sitio.activo
+        })
+    except Sitio.DoesNotExist:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': 'Sitio no encontrado'
+        }, status=404)
+
+@require_http_methods(["POST"])
+def editar_sitio(request):
+    try:
+        id = request.POST.get('id')
+        descripcion = request.POST.get('descripcion')
+        afectacion = request.POST.get('afectacion')
+        comentario = request.POST.get('comentario', '')
+        
+        sitio = Sitio.objects.get(id=id)
+        sitio.descripcion = descripcion
+        sitio.nivel_afectacion = afectacion
+        sitio.comentario = comentario
+        sitio.save()
+        
+        return JsonResponse({
+            'tipo_aviso': 'exito',
+            'detalles': 'Sitio actualizada correctamente',
+            'exito': True
+        })
+    except Embarcacion.DoesNotExist:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': 'Sitio no encontrada',
+            'exito': False
+        })
+    except Exception as e:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': f'Error al actualizar el sitio: {str(e)}',
+            'exito': False
+        })
 
 @login_required(login_url='/accounts/login/')
 def lista_pasos(request):
@@ -261,19 +840,13 @@ def datatable_pasos(request):
     length = int(request.GET.get('length', 10))
     search_value = request.GET.get('filtro', '')
     
-    tipos = Paso.objects.annotate(
+    tipos = Paso.objects.filter(activo=1).annotate(
         estado_texto=Case(
             When(activo=True, then=Value('Activo')),
             When(activo=False, then=Value('Inactivo')),
             default=Value('Desconocido'),
             output_field=CharField()
         ),
-        # nivel_texto=Case(
-        #     When(nivel_afectacion=1, then=Value('PARTIDA')),
-        #     When(nivel_afectacion=2, then=Value('TRABAJO')),
-        #     default=Value('No definido'),
-        #     output_field=CharField()
-        # )
     )
     
     if search_value:
@@ -293,6 +866,7 @@ def datatable_pasos(request):
             'activo': tipo.estado_texto, 
             'importancia': tipo.importancia,
             'activo_bool': tipo.activo,
+            'orden':tipo.orden
         })
     
     return JsonResponse({
@@ -301,4 +875,122 @@ def datatable_pasos(request):
         'recordsFiltered': total_records,
         'data': data
     })
-    
+
+@require_http_methods(["POST"])
+def crear_paso(request):
+    try:
+        descripcion = request.POST.get('descripcion')
+        orden = request.POST.get('orden')
+        activo = True
+        importancia = request.POST.get('importancia')
+        comentario = request.POST.get('comentario', '')
+        paso = Paso.objects.create(
+            descripcion=descripcion,
+            orden=orden,
+            activo=activo,
+            importancia=importancia,
+            comentario=comentario,
+        )
+        return JsonResponse({
+            'exito': True,
+            'tipo_aviso': 'exito',
+            'detalles': 'Paso creado correctamente',
+            'id': paso.id
+        })
+    except Exception as e:
+        return JsonResponse({
+            'exito': False,
+            'tipo_aviso': 'error',
+            'detalles': f'Error al crear paso: {str(e)}'
+        })
+        
+@require_http_methods(["POST"])
+def eliminar_paso(request):
+    try:
+        # Obtener el ID de la embarcación
+        id = request.POST.get('id')
+        
+        if not id:
+            return JsonResponse({
+                'tipo_aviso': 'error',
+                'detalles': 'ID de paso no proporcionado',
+                'exito': False
+            })
+
+        # Eliminación lógica
+        paso = Paso.objects.get(id=id)
+        paso.activo = False
+        paso.save()
+
+        return JsonResponse({
+            'tipo_aviso': 'exito',
+            'detalles': 'Paso desactivado correctamente',
+            'exito': True
+        })
+
+    except Paso.DoesNotExist:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': 'Paso no encontrado',
+            'exito': False
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': f'Error al desactivar paso: {str(e)}',
+            'exito': False
+        })
+
+@require_http_methods(["GET"])
+def obtener_paso(request):
+    try:
+        id = request.GET.get('id')
+        paso = Paso.objects.get(id=id)
+        return JsonResponse({
+            'id': paso.id,
+            'descripcion': paso.descripcion,
+            'orden': paso.orden,
+            'comentario': paso.comentario,
+            'activo': paso.activo,
+            'importancia':paso.importancia
+        })
+    except Paso.DoesNotExist:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': 'Paso no encontrado'
+        }, status=404)
+
+@require_http_methods(["POST"])
+def editar_paso(request):
+    try:
+        id = request.POST.get('id')
+        descripcion = request.POST.get('descripcion')
+        orden = request.POST.get('orden')
+        importancia = request.POST.get('importancia')
+        comentario = request.POST.get('comentario', '')
+        
+        paso = Paso.objects.get(id=id)
+        paso.descripcion = descripcion
+        paso.importancia = importancia
+        paso.orden = orden
+        paso.comentario = comentario
+        paso.save()
+        
+        return JsonResponse({
+            'tipo_aviso': 'exito',
+            'detalles': 'Paso actualizado correctamente',
+            'exito': True
+        })
+    except Paso.DoesNotExist:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': 'Paso no encontrado',
+            'exito': False
+        })
+    except Exception as e:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': f'Error al actualizar el paso: {str(e)}',
+            'exito': False
+        })
