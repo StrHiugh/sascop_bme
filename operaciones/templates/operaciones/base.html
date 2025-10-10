@@ -28,8 +28,17 @@
     <!-- Custom CSS -->
     {% load static %}
     <link href="{% static 'operaciones/css/layout.css' %}" rel="stylesheet">
+
+    <script>
+        // Variables globales para el estado de autenticación
+        const userAuthenticated = {{ user.is_authenticated|yesno:"true,false" }};
+        const loginUrl = "{% url 'logout' %}";
+    </script>
 </head>
 <body class="layout-sidebar">
+
+
+
     <!-- Layout Container -->
     <div class="layout-container">
         <!-- Sidebar -->
@@ -177,7 +186,7 @@
                                     <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>Mi Perfil</a></li>
                                     <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Configuración</a></li>
                                     <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item" href="{% url 'logout' %}"><i class="fas fa-sign-out-alt me-2"></i>Cerrar sesión</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'logout' %}" onclick="return limpiarTimerLogout()"><i class="fas fa-sign-out-alt me-2"></i>Cerrar sesión</a></li>
                                 </ul>
                             </div>
                         </div>

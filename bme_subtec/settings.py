@@ -37,6 +37,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'operaciones.middleware.SessionTimeoutMiddleware'
 ]
 
 ROOT_URLCONF = 'bme_subtec.urls'
@@ -112,3 +113,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 OPENPAY_MERCHANT_ID = os.getenv('OPENPAY_MERCHANT_ID', '')
 OPENPAY_PRIVATE_KEY = os.getenv('OPENPAY_PRIVATE_KEY', '')
 OPENPAY_PRODUCTION = os.getenv('OPENPAY_PRODUCTION', 'False') == 'True'
+
+# Configuración de sesiones
+SESSION_COOKIE_AGE = 7200  # 2 horas en segundos (3600 para 1 hora)
+SESSION_SAVE_EVERY_REQUEST = True  # Renovar sesión con cada request
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # La sesión persiste al cerrar navegador

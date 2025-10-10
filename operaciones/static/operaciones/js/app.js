@@ -8,7 +8,12 @@
 
 // JavaScript global para BME SUBTEC
 // Funcionalidad del Layout
+let inactivityTimer;
 $(document).ready(function() {
+    // Iniciar control de inactividad (solo si el usuario está logueado)
+    if (typeof userAuthenticated !== 'undefined' && userAuthenticated) {
+        startInactivityTimer();
+    }
     // Estado del sidebar
     let sidebarCollapsed = false;
     
@@ -146,9 +151,64 @@ $(document).ready(function() {
         aviso("exito", "¡Bienvenido! Sesión iniciada correctamente.");
         window.history.replaceState({}, document.title, window.location.pathname);
     }
+
+    // Verificar si viene de sesión expirada
+    if (urlParams.get('session_expired') === '1') {
+        aviso('advertencia', 'Tu sesión ha expirado por inactividad. Por favor, inicia sesión nuevamente.');
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
 });
 
-    // Manejo de menús desplegables
+function startInactivityTimer() {
+    resetInactivityTimer();
+    
+    // Eventos que resetearán el timer
+    const events = ['mousemove', 'keypress', 'click', 'scroll', 'touchstart'];
+    events.forEach(event => {
+        document.addEventListener(event, function() {
+            resetInactivityTimer();
+        });
+    });
+    
+    // También resetear con peticiones AJAX
+    $(document).ajaxComplete(resetInactivityTimer);
+}
+
+function resetInactivityTimer() {
+    clearTimeout(inactivityTimer);
+    // 2 horas = 7200000 ms, 1 hora = 3600000 ms
+    inactivityTimer = setTimeout(logoutPorInactividad, 7200000);
+}
+
+function logoutPorInactividad() {
+    // Solo ejecutar si estamos en una página protegida (no en login)
+    const isLoginPage = window.location.pathname.includes('login') || 
+                        window.location.pathname === '/accounts/login/';
+    
+    if (!isLoginPage) {
+        aviso('advertencia', 'Sesión expirada por inactividad. Serás redirigido al login.');
+        
+        setTimeout(function() {
+            window.location.href = loginUrl + "?session_expired=1";
+        }, 2000);
+    }
+}
+
+// Limpia timer al dar clic en logout
+window.limpiarTimerLogout = function() {
+    clearTimeout(inactivityTimer);
+    inactivityTimer = null;
+    
+    // Limpiar event listeners específicos del timer
+    const events = ['mousemove', 'keypress', 'click', 'scroll', 'touchstart'];
+    events.forEach(event => {
+        document.removeEventListener(event, resetInactivityTimer);
+    });
+    
+    return true;
+};
+
+// Manejo de menús desplegables
 document.addEventListener('DOMContentLoaded', function() {
     // Toggle submenus
     $('.nav-item.has-submenu .dropdown-toggle').on('click', function(e) {
