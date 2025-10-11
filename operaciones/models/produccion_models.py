@@ -11,7 +11,7 @@ class Producto(models.Model):
     id_unidad_medida = models.ForeignKey(UnidadMedida, on_delete=models.CASCADE)
     precio_unitario_mn = models.DecimalField(max_digits=15, decimal_places=2)
     precio_unitario_usd = models.DecimalField(max_digits=15, decimal_places=2)
-    estatus = models.BooleanField(default=True)
+    activo = models.BooleanField(default=True)
     comentario = models.TextField(blank=True)
     class Meta:
         db_table = 'producto'

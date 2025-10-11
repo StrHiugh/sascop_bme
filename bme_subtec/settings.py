@@ -68,19 +68,6 @@ DATABASES = {
     }
 }
 
-# Para producción con Neon - descomentar y configurar variables de entorno
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': os.getenv('NEON_DATABASE', 'bme_subtec'),
-#         'USER': os.getenv('NEON_USER', 'user'),
-#         'PASSWORD': os.getenv('NEON_PASSWORD', 'password'),
-#         'HOST': os.getenv('NEON_HOST', 'localhost'),
-#         'PORT': os.getenv('NEON_PORT', '5432'),
-#         'OPTIONS': {'sslmode': 'require'},
-#     }
-# }
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',

@@ -22,6 +22,14 @@ urlpatterns = [
     # URLs para Producción
     path('produccion/', produccion.lista_produccion, name='lista_produccion'),
     
+    #URLs para PRODUCTOS
+    path('catalogos/producto/', catalogos.lista_producto, name='lista_producto'),
+    path('catalogos/producto/datatable_producto/', catalogos.datatable_producto, name='datatable_producto'),
+    path('catalogos/producto/crear/', catalogos.crear_producto, name='crear_producto'),
+    path('catalogos/producto/eliminar/', catalogos.eliminar_producto, name='eliminar_producto'),
+    path('catalogos/producto/obtener/', catalogos.obtener_producto, name='obtener_producto'),
+    path('catalogos/producto/editar/', catalogos.editar_producto, name='editar_producto'),
+    
     #URLs para TIPOS
     path('catalogos/tipos/', catalogos.lista_tipos, name='lista_tipos'),
     path('catalogos/tipos/datatable_tipos/', catalogos.datatable_tipos, name='datatable_tipos'),

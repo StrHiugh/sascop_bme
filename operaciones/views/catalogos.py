@@ -1,8 +1,9 @@
+from decimal import Decimal, InvalidOperation
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
-from django.db.models import Q, Case, When, Value, CharField, OrderBy
+from django.db.models import Q, Case, When, Value, CharField, OrderBy,F
 from django.views.decorators.http import require_http_methods
 from ..models import *
 
@@ -615,22 +616,39 @@ def eliminar_unidad_medida(request):
 
 @require_http_methods(["GET"])
 def obtener_unidad_medida(request):
+    """Obtener una unidad específica o todas las unidades de medida"""
     try:
         unidad_id = request.GET.get('id')
-        unidad_medida = UnidadMedida.objects.get(id=unidad_id)
-        return JsonResponse({
-            'id': unidad_medida.id,
-            'descripcion': unidad_medida.descripcion,
-            'clave': unidad_medida.clave,
-            'comentario': unidad_medida.comentario,
-            'activo': unidad_medida.activo
-        })
+        
+        if unidad_id:
+            unidad_medida = UnidadMedida.objects.get(id=unidad_id)
+            return JsonResponse({
+                'id': unidad_medida.id,
+                'descripcion': unidad_medida.descripcion,
+                'clave': unidad_medida.clave,
+                'comentario': unidad_medida.comentario,
+                'activo': unidad_medida.activo
+            })
+        else:
+            unidades = UnidadMedida.objects.filter(activo=True)
+            unidades_data = []
+            
+            for unidad in unidades:
+                unidades_data.append({
+                    'id': unidad.id,
+                    'descripcion': unidad.descripcion,
+                    'clave': unidad.clave,
+                    'comentario': unidad.comentario,
+                    'activo': unidad.activo
+                })
+            
+            return JsonResponse(unidades_data, safe=False)
+            
     except UnidadMedida.DoesNotExist:
         return JsonResponse({
             'tipo_aviso': 'error',
             'detalles': 'Unidad de medida no encontrada'
         }, status=404)
-
 @require_http_methods(["POST"])
 def editar_unidad_medida(request):
     try:
@@ -993,4 +1011,348 @@ def editar_paso(request):
             'tipo_aviso': 'error',
             'detalles': f'Error al actualizar el paso: {str(e)}',
             'exito': False
+        })
+
+@login_required(login_url='/accounts/login/')
+def lista_producto(request):
+    """Lista de todos los productos"""
+    return render(request, 'operaciones/catalogos/producto/lista_producto.html')
+
+def datatable_producto(request):
+    draw = int(request.GET.get('draw', 1))
+    start = int(request.GET.get('start', 0))
+    length = int(request.GET.get('length', 10))
+    search_value = request.GET.get('filtro', '')
+    
+    # Parámetros de ordenamiento de DataTables
+    order_column_index = request.GET.get('order[0][column]', '0')
+    order_direction = request.GET.get('order[0][dir]', 'asc')
+    
+    # Mapeo de columnas del DataTable a campos del modelo
+    column_mapping = {
+        '0': 'id',  # ID
+        '1': 'id_partida',  # ID Partida
+        '2': 'descripcion_concepto',  # Descripción
+        '3': 'id_tipo_partida__descripcion',  # Tipo Partida
+        '4': 'id_sitio__descripcion',  # Sitio
+        '5': 'id_unidad_medida__descripcion',  # Unidad Medida
+        '6': 'anexo',  # Anexo
+        '7': 'precio_unitario_mn',  # Precio MN
+        '8': 'precio_unitario_usd',  # Precio USD
+        '9': 'activo'  # Estatus
+    }
+    
+    order_field = column_mapping.get(order_column_index, 'id')
+    # Aplicar dirección de ordenamiento
+    if order_direction == 'desc':
+        order_field = f'-{order_field}'
+    productos = Producto.objects.filter(activo=1).select_related(
+        'id_sitio', 'id_tipo_partida', 'id_unidad_medida'
+    ).annotate(
+        estado_texto=Case(
+            When(activo=True, then=Value('Activo')),
+            When(activo=False, then=Value('Inactivo')),
+            default=Value('Desconocido'),
+            output_field=CharField()
+        ),
+        sitio_descripcion=F('id_sitio__descripcion'),
+        tipo_partida_descripcion=F('id_tipo_partida__descripcion'),
+        unidad_medida_descripcion=F('id_unidad_medida__descripcion')
+    )
+    if search_value:
+        productos = productos.filter(
+            Q(id_partida__icontains=search_value) |
+            Q(descripcion_concepto__icontains=search_value) |
+            Q(anexo__icontains=search_value) |
+            Q(sitio_descripcion__icontains=search_value) |
+            Q(tipo_partida_descripcion__icontains=search_value)
+        )
+        
+    # Contar total de registros después del filtro (para recordsFiltered)
+    total_records_filtered = productos.count()
+    
+    # Aplicar ordenamiento
+    productos = productos.order_by(order_field)
+    
+    # Aplicar paginación
+    productos = productos[start:start + length]
+    
+    data = []
+    for producto in productos:
+        data.append({
+            'id': producto.id,
+            'tipo_partida': producto.tipo_partida_descripcion,
+            'sitio': producto.sitio_descripcion,
+            'unidad_medida': producto.unidad_medida_descripcion,
+            'anexo': producto.anexo,
+            'id_partida': producto.id_partida,
+            'descripcion': producto.descripcion_concepto,
+            'precio_unitario_mn': str(producto.precio_unitario_mn),
+            'precio_unitario_usd': str(producto.precio_unitario_usd),
+            'activo': producto.estado_texto, 
+            'activo_bool': producto.activo,
+            'comentario': producto.comentario,
+        })
+    
+    return JsonResponse({
+        'draw': draw,
+        'recordsTotal': Producto.objects.filter(activo=1).count(),  # Total sin filtros
+        'recordsFiltered': total_records_filtered,  # Total con filtros aplicados
+        'data': data
+    })
+
+@require_http_methods(["POST"])
+def crear_producto(request):
+    try:
+        # Obtener datos del formulario
+        id_partida = request.POST.get('id_partida')
+        descripcion_concepto = request.POST.get('descripcion')
+        anexo = request.POST.get('anexo', '')
+        sitio_id = request.POST.get('sitio')
+        tipo_partida_id = request.POST.get('tipo_partida')
+        unidad_medida_id = request.POST.get('unidad_medida')
+        precio_unitario_mn = request.POST.get('precio_unitario_mn', 0)
+        precio_unitario_usd = request.POST.get('precio_unitario_usd', 0)
+        comentario = request.POST.get('comentario', '')
+        
+        # Validaciones básicas
+        if not id_partida:
+            return JsonResponse({
+                'exito': False,
+                'tipo_aviso': 'error',
+                'detalles': 'El ID de partida es obligatorio'
+            })
+        
+        if not descripcion_concepto:
+            return JsonResponse({
+                'exito': False,
+                'tipo_aviso': 'error',
+                'detalles': 'La descripción es obligatoria'
+            })
+        
+        # Verificar si ya existe un producto con el mismo id_partida
+        if id_partida != 'NA':
+            if Producto.objects.filter(id_partida=id_partida, activo=True).exists():
+                return JsonResponse({
+                    'exito': False,
+                    'tipo_aviso': 'advertencia',
+                    'detalles': 'Ya existe un producto con este ID de partida'
+                })
+        
+        # Obtener las instancias de los modelos FK
+        try:
+            sitio = Sitio.objects.get(id=sitio_id)
+            tipo_partida = Tipo.objects.get(id=tipo_partida_id)
+            unidad_medida = UnidadMedida.objects.get(id=unidad_medida_id)
+        except (Sitio.DoesNotExist, Tipo.DoesNotExist, UnidadMedida.DoesNotExist) as e:
+            return JsonResponse({
+                'exito': False,
+                'tipo_aviso': 'advertencia',
+                'detalles': 'Uno de los campos de relación no existe'
+            })
+        
+        # Convertir precios a decimal
+        try:
+            precio_mn = Decimal(precio_unitario_mn) if precio_unitario_mn else Decimal('0')
+            precio_usd = Decimal(precio_unitario_usd) if precio_unitario_usd else Decimal('0')
+        except (InvalidOperation, ValueError):
+            return JsonResponse({
+                'exito': False,
+                'tipo_aviso': 'error',
+                'detalles': 'Los precios deben ser valores numéricos válidos'
+            })
+        
+        # Crear el producto
+        producto = Producto.objects.create(
+            id_partida=id_partida,
+            descripcion_concepto=descripcion_concepto,
+            anexo=anexo,
+            id_sitio=sitio,
+            id_tipo_partida=tipo_partida,
+            id_unidad_medida=unidad_medida,
+            precio_unitario_mn=precio_mn,
+            precio_unitario_usd=precio_usd,
+            comentario=comentario,
+            activo=True
+        )
+        
+        return JsonResponse({
+            'exito': True,
+            'tipo_aviso': 'exito',
+            'detalles': 'Producto creado correctamente',
+            'id': producto.id
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'exito': False,
+            'tipo_aviso': 'error',
+            'detalles': f'Error al crear producto: {str(e)}'
+        })
+        
+@require_http_methods(["POST"])
+def eliminar_producto(request):
+    try:
+        # Obtener el ID de la embarcación
+        id = request.POST.get('id')
+        
+        if not id:
+            return JsonResponse({
+                'tipo_aviso': 'error',
+                'detalles': 'ID de producto no proporcionado',
+                'exito': False
+            })
+
+        # Eliminación lógica
+        producto = Producto.objects.get(id=id)
+        producto.activo = False
+        producto.save()
+
+        return JsonResponse({
+            'tipo_aviso': 'exito',
+            'detalles': 'Producto desactivado correctamente',
+            'exito': True
+        })
+
+    except Producto.DoesNotExist:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': 'Producto no encontrado',
+            'exito': False
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': f'Error al desactivar el producto: {str(e)}',
+            'exito': False
+        })
+
+@require_http_methods(["GET"])
+def obtener_producto(request):
+    try:
+        id = request.GET.get('id')
+        producto = Producto.objects.get(id=id)
+        
+        return JsonResponse({
+            'id': producto.id,
+            'id_partida': producto.id_partida,
+            'descripcion_concepto': producto.descripcion_concepto,
+            'anexo': producto.anexo,
+            'sitio_id': producto.id_sitio_id,
+            'tipo_partida_id': producto.id_tipo_partida_id,
+            'unidad_medida_id': producto.id_unidad_medida_id,
+            'precio_unitario_mn': producto.precio_unitario_mn,
+            'precio_unitario_usd': producto.precio_unitario_usd,
+            'comentario': producto.comentario,
+            'activo': producto.activo
+        })
+    except Producto.DoesNotExist:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': 'Producto no encontrado'
+        }, status=404)
+        
+@require_http_methods(["POST"])
+def editar_producto(request):
+    try:
+        producto_id = request.POST.get('id')
+        id_partida = request.POST.get('id_partida')
+        descripcion_concepto = request.POST.get('descripcion')
+        anexo = request.POST.get('anexo', '')
+        sitio_id = request.POST.get('sitio')
+        tipo_partida_id = request.POST.get('tipo_partida')
+        unidad_medida_id = request.POST.get('unidad_medida')
+        precio_unitario_mn = request.POST.get('precio_unitario_mn', 0)
+        precio_unitario_usd = request.POST.get('precio_unitario_usd', 0)
+        comentario = request.POST.get('comentario', '')
+        
+        # Validaciones básicas
+        if not producto_id:
+            return JsonResponse({
+                'exito': False,
+                'tipo_aviso': 'error',
+                'detalles': 'ID de producto no proporcionado'
+            })
+        
+        if not id_partida:
+            return JsonResponse({
+                'exito': False,
+                'tipo_aviso': 'error',
+                'detalles': 'El ID de partida es obligatorio'
+            })
+        
+        if not descripcion_concepto:
+            return JsonResponse({
+                'exito': False,
+                'tipo_aviso': 'error',
+                'detalles': 'La descripción es obligatoria'
+            })
+        
+        # Obtener el producto existente
+        try:
+            producto = Producto.objects.get(id=producto_id)
+        except Producto.DoesNotExist:
+            return JsonResponse({
+                'exito': False,
+                'tipo_aviso': 'error',
+                'detalles': 'Producto no encontrado'
+            })
+        
+        # Verificar si ya existe otro producto con el mismo id_partida
+        if id_partida != 'NA':
+            if Producto.objects.filter(id_partida=id_partida, activo=True).exclude(id=producto_id).exists():
+                return JsonResponse({
+                    'exito': False,
+                    'tipo_aviso': 'error',
+                    'detalles': 'Ya existe otro producto con este ID de partida'
+                })
+            
+        # Obtener las instancias de los modelos FK
+        try:
+            sitio = Sitio.objects.get(id=sitio_id)
+            tipo_partida = Tipo.objects.get(id=tipo_partida_id)
+            unidad_medida = UnidadMedida.objects.get(id=unidad_medida_id)
+        except (Sitio.DoesNotExist, Tipo.DoesNotExist, UnidadMedida.DoesNotExist) as e:
+            return JsonResponse({
+                'exito': False,
+                'tipo_aviso': 'error',
+                'detalles': 'Uno de los campos de relación no existe'
+            })
+        
+        # Convertir precios a decimal
+        try:
+            precio_mn = Decimal(precio_unitario_mn) if precio_unitario_mn else Decimal('0')
+            precio_usd = Decimal(precio_unitario_usd) if precio_unitario_usd else Decimal('0')
+        except (InvalidOperation, ValueError):
+            return JsonResponse({
+                'exito': False,
+                'tipo_aviso': 'error',
+                'detalles': 'Los precios deben ser valores numéricos válidos'
+            })
+        
+        # Actualizar el producto
+        producto.id_partida = id_partida
+        producto.descripcion_concepto = descripcion_concepto
+        producto.anexo = anexo
+        producto.id_sitio = sitio
+        producto.id_tipo_partida = tipo_partida
+        producto.id_unidad_medida = unidad_medida
+        producto.precio_unitario_mn = precio_mn
+        producto.precio_unitario_usd = precio_usd
+        producto.comentario = comentario
+        producto.save()
+        
+        return JsonResponse({
+            'exito': True,
+            'tipo_aviso': 'exito',
+            'detalles': 'Producto actualizado correctamente',
+            'id': producto.id
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'exito': False,
+            'tipo_aviso': 'error',
+            'detalles': f'Error al actualizar producto: {str(e)}'
         })

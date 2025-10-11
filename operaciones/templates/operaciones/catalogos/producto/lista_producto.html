@@ -17,10 +17,10 @@
                             Catálogos
                         </a>
                     </li>
-                    <li class="breadcrumb-item active">Estatus </li>
+                    <li class="breadcrumb-item active">Estátus </li>
                 </ol>
             </nav>
-            <h1 class="h2 fw-bold mb-0">CATÁLOGO DE ESTATUS</h1>
+            <h1 class="h2 fw-bold mb-0">SABANA DE PRODUCTOS</h1>
         </div>
         <!-- Lado derecho: botones -->
         <div class="d-flex gap-2 mt-2 mt-md-0">
@@ -28,6 +28,10 @@
                 <i class="fas fa-plus me-2"></i>
                 <span>Crear nuevo</span>
             </a>
+            <button class="btn btn-outline-secondary" id="btn-panel-filtros">
+                <i class="fas fa-filter me-2"></i>
+                Filtros
+            </button>
         </div>
     </div>
 </div>
@@ -91,33 +95,75 @@
 <!-- Panel Crear/Editar Estatus -->
 <div class="offcanvas offcanvas-end" tabindex="-1" id="panelCrearEditar">
     <div class="offcanvas-header">
-        <h5 class="offcanvas-title" id="panel-title">Crear nuevo estatus</h5>
+        <h5 class="offcanvas-title" id="panel-title">Crear nuevo producto</h5>
         <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
     </div>
     <div class="offcanvas-body">
-        <form id="formulario-estatus">
+        <form id="formulario-producto">
             {% csrf_token %}
             <!-- Campo oculto para ID -->
             <input id="id" name="id" type="hidden">
             <div class="row">
                 <section class="col-12 mb-3">
-                    <label class="form-label">Descripción <span class="text-danger">*</span></label>
+                    <label class="form-label">ID Partida <span class="text-danger">*</span></label>
                     <div class="input-group">
-                        <input name="descripcion" class="form-control" id="descripcion" 
-                                type="text" placeholder="Ingrese la descripción del estatus" required>
+                        <input name="id_partida" class="form-control" id="id_partida" 
+                                type="text" placeholder="Ingrese la partida del producto" required>
                     </div>
                 </section>
                 <section class="col-12 mb-3">
-                    <label class="form-label">Afectación <span class="text-danger">*</span></label>
+                    <label class="form-label">Descripción <span class="text-danger">*</span></label>
                     <div class="input-group">
-                        <select name="afectacion" class="form-select" id="afectacion" required>
+                        <input name="descripcion" class="form-control" id="descripcion" 
+                                type="text" placeholder="Ingrese la descripción del producto" required>
+                    </div>
+                </section>
+                <section class="col-12 mb-3">
+                    <label class="form-label">Anexo <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <input name="anexo" class="form-control" id="anexo" 
+                                type="text" placeholder="Ingrese el anexo del producto" required>
+                    </div>
+                </section>
+                <section class="col-12 mb-3">
+                    <label class="form-label">Sitio <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <select name="sitio" class="form-select" id="sitio" required>
                             <option value="" selected disabled>Seleccione una opción</option>
-                            <option value="1">PTE</option>
-                            <option value="2">OT</option>
-                            <option value="3">Cobro</option>
-                            {% comment %} <option value="4">Pasos PTE</option> {% endcomment %}
-                            {% comment %} <option value="2">Estimacion</option> {% endcomment %}
+                            <option value="1">TIERRA</option>
+                            <option value="2">ABORDO</option>
                         </select>
+                    </div>
+                </section>
+                <section class="col-12 mb-3">
+                    <label class="form-label">Tipo partida <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <select name="tipo_partida" class="form-select" id="tipo_partida" required>
+                            <option value="" selected disabled>Seleccione una opción</option>
+                            <option value="6">ORDINARIO</option>
+                            <option value="7">EXTRAORDINARIO</option>
+                        </select>
+                    </div>
+                </section>
+                <section class="col-12 mb-3">
+                    <label class="form-label">Unidad de medida <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <select name="unidad_medida" class="form-select" id="unidad_medida" required>
+                        </select>
+                    </div>
+                </section>
+                <section class="col-12 mb-3">
+                    <label class="form-label">Precio Unitario MN <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <input name="precio_unitario_mn" class="form-control" id="precio_unitario_mn" 
+                                type="number" step="0.01" placeholder="0.00" required>
+                    </div>
+                </section>
+                <section class="col-12 mb-3">
+                    <label class="form-label">Precio Unitario USD</label>
+                    <div class="input-group">
+                        <input name="precio_unitario_usd" class="form-control" id="precio_unitario_usd" 
+                                type="number" step="0.01" placeholder="0.00">
                     </div>
                 </section>
                 <section class="col-12 mb-3">
@@ -149,13 +195,14 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{% static 'operaciones/js/modulos/pte/catalogos/lista_estatus.js'%}?v=1.0.0"></script>
+<script src="{% static 'operaciones/js/modulos/pte/catalogos/lista_producto.js'%}?v=1.0.0"></script>
 
 <script>
-    var urlDatatable = "{% url 'operaciones:datatable_cobro' %}";
-    var urlCrearEstatus = "{% url 'operaciones:crear_estatus' %}";
-    var urlEditarEstatus = "{% url 'operaciones:editar_estatus' %}";
-    var urlEliminarEstatus = "{% url 'operaciones:eliminar_estatus' %}";
-    var urlObtenerEstatus = "{% url 'operaciones:obtener_estatus' %}";
+    var urlDatatable = "{% url 'operaciones:datatable_producto' %}";
+    var urlObtenerUndMed = "{% url 'operaciones:obtener_unidad_medida' %}";
+    var urlObtenerProducto = "{% url 'operaciones:obtener_producto' %}";
+    var urlEliminarProducto = "{% url 'operaciones:eliminar_producto' %}";
+    var urlEditarProducto = "{% url 'operaciones:editar_producto' %}";
+    var urlCrearProducto = "{% url 'operaciones:crear_producto' %}";
 </script>
 {% endblock %}
