@@ -271,7 +271,6 @@ $(document).ready(function () {
                                 tablaPte.ajax.reload();
                             }
                         });
-
                     }
                 },
                 {

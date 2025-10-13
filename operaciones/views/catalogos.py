@@ -1356,3 +1356,159 @@ def editar_producto(request):
             'tipo_aviso': 'error',
             'detalles': f'Error al actualizar producto: {str(e)}'
         })
+
+@login_required(login_url='/accounts/login/')
+def lista_responsable(request):
+    """Lista de todas los embarcaciones"""
+    return render(request, 'operaciones/catalogos/responsable_proyecto/lista_responsable_proyecto.html')
+
+def datatable_responsable(request):
+    draw = int(request.GET.get('draw', 1))
+    start = int(request.GET.get('start', 0))
+    length = int(request.GET.get('length', 10))
+    search_value = request.GET.get('filtro', '')
+    
+    responsables = ResponsableProyecto.objects.filter(activo=1).annotate(
+        estado_texto=Case(
+            When(activo=True, then=Value('Activo')),
+            When(activo=False, then=Value('Inactivo')),
+            default=Value('Desconocido'),
+            output_field=CharField()
+        ),
+    )
+    
+    if search_value:
+        responsables = responsables.filter(
+            Q(descripcion__icontains=search_value) |
+            Q(activo__icontains=search_value)
+        )
+    
+    total_records = responsables.count()
+    responsables = responsables[start:start + length]
+    
+    data = []
+    for responsable in responsables:
+        data.append({
+            'id': responsable.id,
+            'descripcion': responsable.descripcion,
+            'activo': responsable.estado_texto, 
+            'activo_bool': responsable.activo, 
+        })
+    
+    return JsonResponse({
+        'draw': draw,
+        'recordsTotal': total_records,
+        'recordsFiltered': total_records,
+        'data': data
+    })
+
+@require_http_methods(["POST"])
+def crear_responsable(request):
+    try:
+        descripcion = request.POST.get('descripcion')
+        comentario = request.POST.get('comentario', '')
+        activo = True
+        
+        responsable = ResponsableProyecto.objects.create(
+            descripcion=descripcion,
+            comentario=comentario,
+            activo=activo
+        )
+        
+        return JsonResponse({
+            'exito': True,
+            'tipo_aviso': 'exito',
+            'detalles': 'Responsable de proyecto registrado correctamente',
+            'id': responsable.id
+        })
+    except Exception as e:
+        return JsonResponse({
+            'exito': False,
+            'tipo_aviso': 'error',
+            'detalles': f'Error al crear el responsable: {str(e)}'
+        })
+        
+@require_http_methods(["POST"])
+def eliminar_responsable(request):
+    try:
+        # Obtener el ID de la embarcación
+        responsable_id = request.POST.get('id')
+        
+        if not responsable_id:
+            return JsonResponse({
+                'tipo_aviso': 'error',
+                'detalles': 'ID de embarcación no proporcionado',
+                'exito': False
+            })
+
+        # Eliminación lógica
+        responsable = ResponsableProyecto.objects.get(id=responsable_id)
+        responsable.activo = False
+        responsable.save()
+
+        return JsonResponse({
+            'tipo_aviso': 'exito',
+            'detalles': 'Responsable desactivado correctamente',
+            'exito': True
+        })
+
+    except ResponsableProyecto.DoesNotExist:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': 'Responsable no encontrada',
+            'exito': False
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': f'Error al desactivar responsable: {str(e)}',
+            'exito': False
+        })
+
+@require_http_methods(["GET"])
+def obtener_responsable(request):
+    try:
+        responsable_id = request.GET.get('id')
+        responsable = ResponsableProyecto.objects.get(id=responsable_id)
+        return JsonResponse({
+            'id': responsable.id,
+            'descripcion': responsable.descripcion,
+            'comentario': responsable.comentario,
+            'activo': responsable.activo
+        })
+    except Embarcacion.DoesNotExist:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': 'Responsable no encontrado'
+        }, status=404)
+
+@require_http_methods(["POST"])
+def editar_responsable(request):
+    try:
+        responsable_id = request.POST.get('id')
+        descripcion = request.POST.get('descripcion')
+        comentario = request.POST.get('comentario', '')
+        
+        responsable = ResponsableProyecto.objects.get(id=responsable_id)
+        responsable.descripcion = descripcion
+        responsable.comentario = comentario
+        responsable.save()
+        
+        return JsonResponse({
+            'tipo_aviso': 'exito',
+            'detalles': 'Responsable actualizado correctamente',
+            'exito': True
+        })
+    except ResponsableProyecto.DoesNotExist:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': 'Responsable no encontrada',
+            'exito': False
+        })
+    except Exception as e:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': f'Error al actualizar responsable: {str(e)}',
+            'exito': False
+        })

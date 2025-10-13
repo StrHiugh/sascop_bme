@@ -89,31 +89,36 @@ $(document).ready(function() {
         }
     }
     
-    // Activar elemento del menú actual - VERSIÓN ESPECÍFICA
+    // Activar elemento del menú actual
     function activarMenuActual() {
         const currentUrl = window.location.pathname;
         
         // Remover active de todos
         $('.nav-link').removeClass('active');
+        $('.nav-item.has-submenu').removeClass('active');
         
-        // Mapeo específico de URLs
-        const urlMappings = {
-            '/operaciones/': 'a[href="/operaciones/"]', // Inicio
-            '/operaciones/pte/': 'a[href="/operaciones/pte/"]', // PTE's
-            '/operaciones/ote/': 'a[href="/operaciones/ote/"]', // OTE's
-            '/operaciones/produccion/': 'a[href="/operaciones/produccion/"]' // Producción
-        };
+        // Buscar enlaces que coincidan exactamente
+        let activeLink = $(`.nav-link[href="${currentUrl}"]`);
         
-        // Buscar coincidencia exacta primero
-        if (urlMappings[currentUrl]) {
-            $(urlMappings[currentUrl]).addClass('active');
-        } else {
-            // Si no hay coincidencia exacta, buscar por patrones
-            for (const [url, selector] of Object.entries(urlMappings)) {
-                if (currentUrl.startsWith(url) && url !== '/operaciones/') {
-                    $(selector).addClass('active');
-                    break;
+        // Si no hay coincidencia exacta, buscar por patrones
+        if (!activeLink.length) {
+            $('.nav-link').each(function() {
+                const href = $(this).attr('href');
+                if (href && currentUrl.startsWith(href) && href !== '/operaciones/') {
+                    activeLink = $(this);
+                    return false; // break the loop
                 }
+            });
+        }
+        
+        // Activar el enlace encontrado
+        if (activeLink.length) {
+            activeLink.addClass('active');
+            
+            // Si está en un submenu, activar el menú padre
+            const submenuItem = activeLink.closest('.submenu .nav-item');
+            if (submenuItem.length) {
+                submenuItem.closest('.nav-item.has-submenu').addClass('active');
             }
         }
     }

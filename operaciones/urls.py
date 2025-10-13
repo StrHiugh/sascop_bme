@@ -78,6 +78,14 @@ urlpatterns = [
     path('catalogos/pasos/obtener/', catalogos.obtener_paso, name='obtener_paso'),
     path('catalogos/pasos/editar/', catalogos.editar_paso, name='editar_paso'),
     
+    #URLs para Responsables
+    path('catalogos/responsable/', catalogos.lista_responsable, name='lista_responsable'),
+    path('catalogos/datatable_responsable/', catalogos.datatable_responsable, name='datatable_responsable'),
+    path('catalogos/responsable/crear/', catalogos.crear_responsable, name='crear_responsable'),
+    path('catalogos/responsable/eliminar/', catalogos.eliminar_responsable, name='eliminar_responsable'),
+    path('catalogos/responsable/obtener/', catalogos.obtener_responsable, name='obtener_responsable'),
+    path('catalogos/responsable/editar/', catalogos.editar_responsable, name='editar_responsable'),
+    
     # APIs
     path('api/estadisticas/', api.api_estadisticas, name='api_estadisticas'),
     path('api/ptes/', api.api_ptes, name='api_ptes'),
