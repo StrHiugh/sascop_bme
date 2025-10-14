@@ -844,9 +844,8 @@ table .table-icon i.disabled:hover {
 
 /* Estilos para los detalles del PTE */
 .detalle-pte-container {
-    padding: 1rem;
     background-color: #f8f9fa;
-    border-left: 4px solid #25215d;
+    border-left: 4px solid #38aed4;
 }
 
 .detalle-pte-content {
@@ -857,7 +856,7 @@ table .table-icon i.disabled:hover {
 }
 
 .detalle-pte-content h6 {
-    color: #25215d;
+    color: #1a1a1a;
     font-weight: 600;
 }
 
@@ -973,13 +972,11 @@ tr.shown {
     .contenedor-mensaje-alerta .mensaje .subtitulo {
     margin-bottom: 20px;
     margin-left: 100px;
-
     }
 
     .contenedor-mensaje-alerta .mensaje .botones {
     float: right;
     margin-right: 100px;
-
     }
     .contenedor-mensaje-alerta .mensaje .botones button {
     margin-left: 5px;
@@ -1001,16 +998,19 @@ tr.shown {
     .contenedor-mensaje-alerta .mensaje .botones {
         float: none;
         text-align: center;
-
     }
 }
 
 .form-select {
     background-color: #f9fafb; /* color fondo suave */
     border: 1px solid #ced4da; /* borde discreto */
-    padding: 0.6rem 1rem;
+    padding: 0.4rem 1rem;
     font-size: 0.95rem;
     color: #333;
     transition: all 0.2s ease-in-out;
     box-shadow: none;
+}
+
+.dataTables_length{
+    width: 80px;
 }

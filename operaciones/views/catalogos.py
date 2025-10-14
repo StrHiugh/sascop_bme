@@ -1017,12 +1017,17 @@ def editar_paso(request):
 def lista_producto(request):
     """Lista de todos los productos"""
     return render(request, 'operaciones/catalogos/producto/lista_producto.html')
-
 def datatable_producto(request):
     draw = int(request.GET.get('draw', 1))
     start = int(request.GET.get('start', 0))
     length = int(request.GET.get('length', 10))
     search_value = request.GET.get('filtro', '')
+    
+    # Nuevos parámetros de filtro
+    tipo_partida = request.GET.get('tipo_partida', '')
+    sitio = request.GET.get('sitio', '')
+    unidad_medida = request.GET.get('unidad_medida', '')
+    estado = request.GET.get('estado', '')
     
     # Parámetros de ordenamiento de DataTables
     order_column_index = request.GET.get('order[0][column]', '0')
@@ -1046,6 +1051,7 @@ def datatable_producto(request):
     # Aplicar dirección de ordenamiento
     if order_direction == 'desc':
         order_field = f'-{order_field}'
+    
     productos = Producto.objects.filter(activo=1).select_related(
         'id_sitio', 'id_tipo_partida', 'id_unidad_medida'
     ).annotate(
@@ -1059,6 +1065,8 @@ def datatable_producto(request):
         tipo_partida_descripcion=F('id_tipo_partida__descripcion'),
         unidad_medida_descripcion=F('id_unidad_medida__descripcion')
     )
+    
+    # Aplicar filtros
     if search_value:
         productos = productos.filter(
             Q(id_partida__icontains=search_value) |
@@ -1067,6 +1075,25 @@ def datatable_producto(request):
             Q(sitio_descripcion__icontains=search_value) |
             Q(tipo_partida_descripcion__icontains=search_value)
         )
+    
+    # Filtro por tipo partida
+    if tipo_partida:
+        productos = productos.filter(id_tipo_partida_id=tipo_partida)
+    
+    # Filtro por sitio
+    if sitio:
+        productos = productos.filter(id_sitio_id=sitio)
+    
+    # Filtro por unidad de medida
+    if unidad_medida:
+        productos = productos.filter(id_unidad_medida_id=unidad_medida)
+    
+    # Filtro por estado
+    if estado:
+        if estado == 'activo':
+            productos = productos.filter(activo=True)
+        elif estado == 'inactivo':
+            productos = productos.filter(activo=False)
         
     # Contar total de registros después del filtro (para recordsFiltered)
     total_records_filtered = productos.count()
@@ -1100,7 +1127,7 @@ def datatable_producto(request):
         'recordsFiltered': total_records_filtered,  # Total con filtros aplicados
         'data': data
     })
-
+    
 @require_http_methods(["POST"])
 def crear_producto(request):
     try:

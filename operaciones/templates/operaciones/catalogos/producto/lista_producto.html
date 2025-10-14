@@ -57,6 +57,7 @@
         </div>
     </div>
 </div>
+
 <!-- Panel de Filtros con Offcanvas de Bootstrap 5 -->
 <div class="offcanvas offcanvas-end" tabindex="-1" id="panelFiltros">
     <div class="offcanvas-header">
@@ -66,19 +67,25 @@
     <div class="offcanvas-body">
         <form id="form-filtros">
             <div class="mb-3">
-                <label class="form-label">Estado</label>
-                <select class="form-select" id="filtro-estado">
-                    <option value="">Todos los estados</option>
-                    <option value="disponible">Disponible</option>
-                    <option value="no-disponible">No disponible</option>
+                <label class="form-label">Tipo Partida</label>
+                <select class="form-select" id="filtro-tipo-partida">
+                    <option value="">Todos los tipos</option>
+                    <option value="6">ORDINARIO</option>
+                    <option value="7">EXTRAORDINARIO</option>
                 </select>
             </div>
             <div class="mb-3">
-                <label class="form-label">Tipo</label>
-                <select class="form-select" id="filtro-tipo">
-                    <option value="">Todos los tipos</option>
-                    <option value="computadora">Computadora</option>
-                    <option value="servidor">Servidor</option>
+                <label class="form-label">Sitio</label>
+                <select class="form-select" id="filtro-sitio">
+                    <option value="">Todos los sitios</option>
+                    <option value="1">TIERRA</option>
+                    <option value="2">ABORDO</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Unidad de Medida</label>
+                <select class="form-select" id="filtro-unidad-medida">
+                    <option value="">Todas las unidades</option>
                 </select>
             </div>
             <div class="d-grid gap-2">
@@ -92,6 +99,7 @@
         </form>
     </div>
 </div>
+
 <!-- Panel Crear/Editar Estatus -->
 <div class="offcanvas offcanvas-end" tabindex="-1" id="panelCrearEditar">
     <div class="offcanvas-header">

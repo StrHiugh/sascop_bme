@@ -136,20 +136,21 @@ def datatable_pte_detalle(request):
     
     data = []
     for detalle in detalles:
+        print( detalle.fecha_entrega)
         data.append({
             'id': detalle.id,
             'orden': detalle.id_paso.orden if detalle.id_paso.orden else '',
             'desc_paso': detalle.id_paso.descripcion,
             'estatus_pte': detalle.estatus_paso_id,
             'estatus_pte_texto': detalle.estatus_pte_texto,
-            'fecha_entrega': detalle.fecha_entrega.isoformat() if detalle.fecha_entrega else '',
+            'fecha_entrega': detalle.fecha_entrega,
             'comentario': detalle.comentario or ''
         })
     
     return JsonResponse({
-        'draw': draw,  # Nuevo
-        'recordsTotal': total_records,  # Cambiado
-        'recordsFiltered': total_records,  # Cambiado
+        'draw': draw,
+        'recordsTotal': total_records, 
+        'recordsFiltered': total_records, 
         'data': data
     })
 @login_required(login_url='/accounts/login/')
@@ -285,6 +286,7 @@ def cambiar_estatus_paso(request):
             
         if int(nuevo_estatus) == 3 and estatus_anterior != 3:
             detalle.fecha_entrega = timezone.now()
+            print (timezone.now(), detalle.fecha_entrega)
         # Si se cambia de COMPLETADO a otro estatus, limpiar la fecha de completado
         elif estatus_anterior == 3 and int(nuevo_estatus) != 3:
             detalle.fecha_entrega = None
@@ -450,8 +452,8 @@ def eliminar_pte(request):
 
 @require_http_methods(["POST"])
 @login_required
-def crear_ote_desde_pte(request):
-    """Crear OTE automáticamente desde PTE completada"""
+def crear_ot_desde_pte(request):
+    """Crear OT automáticamente desde PTE completada"""
     try:
         pte_id = request.POST.get('pte_id')
         oficio_ot = request.POST.get('folio')
@@ -488,7 +490,7 @@ def crear_ote_desde_pte(request):
                 'detalles': 'Ya existe una OT creada para esta PTE'
             })
         
-        # Verificar si el oficio ya existe
+        # Verificar si el folio ya existe
         if OTE.objects.filter(orden_trabajo=oficio_ot).exists():
             return JsonResponse({
                 'exito': False,
@@ -521,7 +523,7 @@ def crear_ote_desde_pte(request):
             return JsonResponse({
                 'exito': False,
                 'tipo_aviso': 'error',
-                'detalles': 'No se encontró un estatus válido para OTE'
+                'detalles': 'No se encontró un estatus válido para OT'
             })
         
         # Calcular fechas programadas (puedes ajustar esta lógica)
@@ -534,15 +536,15 @@ def crear_ote_desde_pte(request):
             id_pte_header=pte,
             orden_trabajo=oficio_ot,
             descripcion_trabajo=pte.descripcion_trabajo,
-            id_responsable_proyecto=pte.id_responsable_proyecto,  # Mismo responsable que la PTE
-            responsable_cliente="POR DEFINIR",  # Puedes pedir este dato o dejarlo por defecto
+            id_responsable_proyecto=pte.id_responsable_proyecto,
+            responsable_cliente="POR DEFINIR", 
             oficio_ot='PENDIENTE',
             id_embarcacion=embarcacion_default,
             id_estatus_ot=estatus_ote_default,
             fecha_inicio_programada=fecha_actual,
             fecha_termino_programada=fecha_termino,
-            estatus=1,  # Programada
-            comentario=f"OTE creada automáticamente desde PTE: {pte.oficio_pte}"
+            estatus=1,
+            comentario=""
         )
         
         return JsonResponse({

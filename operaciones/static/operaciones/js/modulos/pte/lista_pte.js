@@ -179,41 +179,35 @@ $(document).ready(function () {
                     type: "GET",
                     data: function(d) {
                         d.pte_header_id = pteId;
-                        // DataTables envía automáticamente:
-                        // d.start = inicio
-                        // d.length = cantidad (10)
                     }
                 },
                 columns: [
                     {
                         "data": "orden",
                         "title": "Paso",
-                        "orderable": true,
+                        "orderable": false,
                         "className": "text-center"
                     },
                     {
                         "data": "desc_paso", 
                         "title": "Descripción",
-                        "orderable": true
+                        "orderable": false
                     },
                     {
                         "data": "fecha_entrega",
                         "title": "Fecha Entrega",
-                        "orderable": true,
+                        "orderable": false,
                         "className": "text-center",
-                        "render": function(data) {
-                            return data ? new Date(data).toLocaleDateString('es-ES') : '-';
-                        }
                     },
                     {
                         "data": "comentario",
                         "title": "Comentario",
-                        "orderable": true
+                        "orderable": false
                     },
                     {
                         "data": "estatus_pte_texto",
                         "title": "Estatus",
-                        "orderable": true,
+                        "orderable": false,
                         "className": "text-center",
                         "render": function(data, type, row) {
                             const estatusClasses = {
@@ -240,19 +234,6 @@ $(document).ready(function () {
                             `;
                         }
                     },
-                    // {
-                    //     "data": null,
-                    //     "title": "Acciones",
-                    //     "class": "text-center",
-                    //     "orderable": false,
-                    //     "render": function(data, type, row) {
-                    //         return `
-                    //             <a class="table-icon editar-paso" title="Editar paso" data-id="${row.id}">
-                    //                 <i class="fas fa-edit"></i>
-                    //             </a>
-                    //         `;
-                    //     }
-                    // }
                 ]
             });
             
@@ -540,7 +521,7 @@ $(document).ready(function () {
                             return;
                         }
                         
-                        const url = urlCrearOTE;
+                        const url = urlCrearOT;
                         const method = "POST";
                         
                         BMAjax(

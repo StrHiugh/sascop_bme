@@ -20,7 +20,10 @@ $(document).ready(function () {
             type: "GET",
             data: function (extra) {
                 extra.filtro = $("#filtro-buscar").val();
-                extra.estado = $("#slc-estado").val();
+                extra.tipo_partida = $("#filtro-tipo-partida").val();
+                extra.sitio = $("#filtro-sitio").val();
+                extra.unidad_medida = $("#filtro-unidad-medida").val();
+                extra.estado = $("#filtro-estado").val();
             }
         },
         columns: [
@@ -107,6 +110,7 @@ $(document).ready(function () {
         }
     });
     cargarUnidadesMedida();
+    cargarUnidadesMedidaFiltro();
     
     // Búsqueda por Enter
     $("#filtro-buscar").keypress(function (event) {
@@ -120,21 +124,21 @@ $(document).ready(function () {
 
     // Panel de filtros
     $("#btn-panel-filtros").on("click", function () {
-        fn_show_panel("#panel-filtro");
+        const offcanvas = new bootstrap.Offcanvas(document.getElementById('panelFiltros'));
+        offcanvas.show();
     });
-
     // Aplicar filtros
-    $("#filtrar").on("click", function () {
+    $("#aplicar-filtros").on("click", function () {
         tablaPte.draw();
-        fn_show_panel();
+        const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('panelFiltros'));
+        offcanvas.hide();
     });
 
     // Limpiar filtros
-    $("#limpiar").on("click", function () {
-        $("#slc-estado").val("");
+    $("#limpiar-filtros").on("click", function () {
+        $("#form-filtros")[0].reset();
         tablaPte.draw();
     });
-
 
     // Abrir panel para crear nueva embarcación
     $(".btn-primary").on("click", function() {
@@ -159,6 +163,26 @@ $(document).ready(function () {
             },
             error: function(xhr, status, error) {
                 aviso('error', 'Error al cargar las unidades de medida');
+            }
+        });
+    }
+
+    function cargarUnidadesMedidaFiltro() {
+        $.ajax({
+            url: urlObtenerUndMed,
+            type: 'GET',
+            dataType: 'json',
+            success: function(data) {
+                const select = $('#filtro-unidad-medida');
+                select.empty();
+                select.append('<option value="">Todas las unidades</option>');
+                
+                data.forEach(function(unidad) {
+                    select.append(`<option value="${unidad.id}">${unidad.descripcion}</option>`);
+                });                
+            },
+            error: function(xhr, status, error) {
+                console.error('Error al cargar unidades de medida para filtro:', error);
             }
         });
     }

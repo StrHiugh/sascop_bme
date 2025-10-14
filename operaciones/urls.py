@@ -22,9 +22,10 @@ urlpatterns = [
     path('pte/obtener_datos/', pte.obtener_datos_pte, name='obtener_datos_pte'),
     path('pte/editar/', pte.editar_pte, name='editar_pte'),
     path('pte/eliminar/', pte.eliminar_pte, name='eliminar_pte'),
+    path('ot/crear-desde-pte/', pte.crear_ot_desde_pte, name='crear_ot_desde_pte'),
     
     # URLs para OTE
-    path('ote/', ote.lista_ote, name='lista_ote'),
+    path('ot/', ote.lista_ote, name='lista_ote'),
     
     # URLs para Producción
     path('produccion/', produccion.lista_produccion, name='lista_produccion'),
