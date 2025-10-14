@@ -168,7 +168,7 @@ $(document).ready(function () {
         //Limpiar formulario
         $("#formulario-producto")[0].reset();
         $("#id").val("");
-        $("#panel-title").text("Crear estatus");
+        $("#panel-title").text("Crear concepto");
         cargarUnidadesMedida();
         //Mostrar panel
         var offcanvas = new bootstrap.Offcanvas(document.getElementById('panelCrearEditar'));
@@ -195,7 +195,7 @@ $(document).ready(function () {
                 $("#tipo_partida").val(data.tipo_partida_id);
                 $("#precio_unitario_mn").val(data.precio_unitario_mn);
                 $("#precio_unitario_usd").val(data.precio_unitario_usd);
-                $("#panel-title").text("Editar producto");
+                $("#panel-title").text("Editar concepto");
                     
                //Mostrar panel
                 var offcanvas = new bootstrap.Offcanvas(document.getElementById('panelCrearEditar'));

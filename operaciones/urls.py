@@ -13,8 +13,15 @@ urlpatterns = [
     # URLs para PTEs
     path('pte/', pte.lista_pte, name='lista_pte'),
     path('pte/<int:pte_id>/', pte.detalle_pte, name='detalle_pte'),
-    path('ptes/datatable/', pte.datatable_ptes, name='datatable_ptes'),
-    path('ptes/detalle/datatable/', pte.datatable_pte_detalle, name='datatable_pte_detalle'),
+    path('pte/datatable/', pte.datatable_ptes, name='datatable_ptes'),
+    path('pte/detalle/datatable/', pte.datatable_pte_detalle, name='datatable_pte_detalle'),
+    path('pte/obtener_pasos/', pte.obtener_pasos_pte, name='obtener_pasos_pte'),
+    path('pte/obtener_responsables/', pte.obtener_responsables_proyecto, name='obtener_responsables_proyecto'),
+    path('pte/crear/', pte.crear_pte, name='crear_pte'),
+    path('pte/cambiar_estatus_paso/', pte.cambiar_estatus_paso, name='cambiar_estatus_paso'),
+    path('pte/obtener_datos/', pte.obtener_datos_pte, name='obtener_datos_pte'),
+    path('pte/editar/', pte.editar_pte, name='editar_pte'),
+    path('pte/eliminar/', pte.eliminar_pte, name='eliminar_pte'),
     
     # URLs para OTE
     path('ote/', ote.lista_ote, name='lista_ote'),

@@ -23,7 +23,7 @@ class PTEHeader(models.Model):
     ]
     
     id_tipo = models.ForeignKey(Tipo, on_delete=models.CASCADE, limit_choices_to={'nivel_afectacion': 1})
-    oficio_pte = models.CharField(max_length=100, unique=True)
+    oficio_pte = models.CharField(max_length=100)
     oficio_solicitud = models.CharField(max_length=100)
     descripcion_trabajo = models.TextField()
     fecha_solicitud = models.DateField()
@@ -31,7 +31,6 @@ class PTEHeader(models.Model):
     id_orden_trabajo = models.CharField(max_length=100)
     id_responsable_proyecto = models.ForeignKey(ResponsableProyecto, on_delete=models.CASCADE)
     total_homologado = models.DecimalField(max_digits=15, decimal_places=2, default=0)
-    id_estatus_pte = models.ForeignKey(Estatus, on_delete=models.CASCADE, limit_choices_to={'nivel_afectacion': 1})
     estatus = models.IntegerField(choices=ESTATUS_CHOICES, default=1)
     comentario = models.TextField(blank=True)
 

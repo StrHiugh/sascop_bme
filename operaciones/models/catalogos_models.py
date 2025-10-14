@@ -9,7 +9,7 @@ class Tipo(models.Model):
     ]
     
     descripcion = models.CharField(max_length=200)
-    nivel_afectacion = models.IntegerField(max_length=1, choices=TIPO_CHOICES, default=0)
+    nivel_afectacion = models.IntegerField(choices=TIPO_CHOICES, default=0)
     comentario = models.TextField(blank=True)
     activo = models.BooleanField(default=True)
 
@@ -26,7 +26,7 @@ class Sitio(models.Model):
     ]
     
     descripcion = models.CharField(max_length=200)
-    nivel_afectacion = models.IntegerField(max_length=1, choices=TIPO_SITIO_CHOICES, default=0)
+    nivel_afectacion = models.IntegerField(choices=TIPO_SITIO_CHOICES, default=0)
     comentario = models.TextField(blank=True)
     activo = models.BooleanField(default=True)
 
@@ -45,7 +45,7 @@ class Estatus(models.Model):
         
     ]
     descripcion = models.CharField(max_length=100)
-    nivel_afectacion = models.IntegerField(max_length=1, choices=TIPO_AFECTACION, default=0)
+    nivel_afectacion = models.IntegerField(choices=TIPO_AFECTACION, default=0)
     comentario = models.TextField(blank=True)
     activo = models.BooleanField(default=True)
 

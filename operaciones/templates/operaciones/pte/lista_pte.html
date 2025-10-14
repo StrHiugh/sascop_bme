@@ -19,14 +19,14 @@
         </div>
         <!-- Lado derecho: botones -->
         <div class="d-flex gap-2 mt-2 mt-md-0">
-            <a href="#" class="btn btn-primary">
+            <a href="#" class="btn btn-primary crear-pte">
                 <i class="fas fa-plus me-2"></i>
                 <span>Crear nuevo</span>
             </a>
-            <button class="btn btn-outline-secondary" id="btn-panel-filtros">
+            {% comment %} <button class="btn btn-outline-secondary" id="btn-panel-filtros">
                 <i class="fas fa-filter me-2"></i>
                 Filtros
-            </button>
+            </button> {% endcomment %}
         </div>
     </div>
 </div>
@@ -90,6 +90,94 @@
         </form>
     </div>
 </div>
+
+<!-- Modal para crear PTE -->
+<div class="modal fade" id="modalCrearPTE" tabindex="-1" aria-labelledby="modalCrearPTELabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalCrearPTELabel">Crear Nuevo PTE</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formCrearPTE">
+                    {% csrf_token %}
+                    <div class="row">
+                        <!-- Descripción del trabajo (ocupa todo el ancho) -->
+                        <input type="hidden" id="pte_id" name="id">
+                        <div class="col-md-12">
+                            <div class="mb-3">
+                                <label for="descripcion_trabajo" class="form-label">
+                                    Descripción del Trabajo <span class="text-danger">*</span>
+                                </label>
+                                <textarea class="form-control" id="descripcion_trabajo" name="descripcion_trabajo" rows="2" required></textarea>
+                            </div>
+                        </div>
+                        <!-- Fila dividida en 6 y 6 -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="oficio_pte" class="form-label">Folio PTE</label>
+                                <input type="text" class="form-control" id="oficio_pte" name="oficio_pte" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="responsable_proyecto" class="form-label">Responsable del Proyecto <span class="text-danger">*</span></label>
+                                <select class="form-select" id="responsable_proyecto" name="responsable_proyecto" required>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="id_tipo" class="form-label">Tipo <span class="text-danger">*</span></label>
+                                <select class="form-select" id="id_tipo" name="id_tipo" required>
+                                    <option value="" selected disabled>Seleccione un tipo</option>
+                                    <option value="1">PTE</option>
+                                    <option value="2">LICITACION</option>
+                                    <option value="3">COSTEO CLASE V</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="oficio_ot" class="form-label">Oficio OT</label>
+                                <input type="text" class="form-control" id="oficio_ot" name="oficio_ot" placeholder="SIN ASIGNACION" disabled>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="oficio_pte" class="form-label">Oficio Solicitud</label>
+                                <input type="text" class="form-control" id="oficio_solicitud" name="oficio_solicitud" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="fecha_solicitud" class="form-label">Fecha de Solicitud</label>
+                                <input type="date" class="form-control" id="fecha_solicitud" name="fecha_solicitud">
+                            </div>
+                            <div class="mb-3">
+                                <label for="plazo_dias" class="form-label">Plazo en Días</label>
+                                <input type="number" class="form-control" id="plazo_dias" name="plazo_dias" min="0">
+                            </div>
+                            <div class="mb-3">
+                                <label for="total_homologado" class="form-label">Total homologado</label>
+                                <div class="input-group mt-1">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control" id="total_homologado" name="total_homologado" min="0" value="0">
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Comentario General (ocupa todo el ancho) -->
+                        <div class="col-md-12">
+                            <div class="mb-3">
+                                <label for="comentario_general" class="form-label">Comentario</label>
+                                <textarea class="form-control" id="comentario_general" name="comentario_general" rows="2"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="btnGuardarPTE">
+                    <i class="fas fa-save me-2"></i>Guardar PTE
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -98,6 +186,13 @@
 <script>
     var urlDatatable = "{% url 'operaciones:datatable_ptes' %}";
     var urlDatatableDetalle = "{% url 'operaciones:datatable_pte_detalle' %}";
+    var urlObtenerPasos = "{% url 'operaciones:obtener_pasos_pte' %}";
+    var urlCrearPTE = "{% url 'operaciones:crear_pte' %}";
+    var urlObtenerResponsables = "{% url 'operaciones:obtener_responsables_proyecto' %}";
+    var urlCambiarEstatusPaso = "{% url 'operaciones:cambiar_estatus_paso' %}";
+    var urlObtenerDatos = "{% url 'operaciones:obtener_datos_pte' %}";
+    var urlEditarPTE = "{% url 'operaciones:editar_pte' %}";
+    var urlEliminarPTE = "{% url 'operaciones:eliminar_pte' %}";
     {% comment %} var urlEditar = "{% url 'operaciones:editar_pte' 0 %}".replace('/0', ''); {% endcomment %}
     
 </script>

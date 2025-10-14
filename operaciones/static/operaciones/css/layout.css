@@ -795,6 +795,53 @@ table .table-icon i.disabled:hover {
     color: white !important;
 }
 
+
+/* Botones normales */
+.dataTables_paginate .paginate_button.page-item .page-link {
+    color: #4ec0e7 !important;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    margin: 0 2px;
+    transition: all 0.2s ease-in-out;
+}
+
+/* Hover sobre botones normales */
+.dataTables_paginate .paginate_button.page-item .page-link:hover {
+    background-color: #e9f7fb !important;
+    border-color: #4ec0e7 !important;
+    color: #007ea8 !important;
+}
+
+/* Página activa */
+.dataTables_paginate .paginate_button.page-item.active .page-link {
+    background-color: #4ec0e7 !important;
+    border-color: #4ec0e7 !important;
+    color: #fff !important;
+    font-weight: bold;
+}
+
+/* Hover sobre la página activa */
+.dataTables_paginate .paginate_button.page-item.active .page-link:hover {
+    background-color: #38aed4 !important;
+    border-color: #38aed4 !important;
+    color: #fff !important;
+}
+
+/* Flechas anterior y siguiente */
+.dataTables_paginate .paginate_button.page-item.previous .page-link,
+.dataTables_paginate .paginate_button.page-item.next .page-link {
+    font-weight: bold;
+    background-color: #f8f9fa !important;
+}
+
+/* Flechas deshabilitadas */
+.dataTables_paginate .paginate_button.page-item.previous.disabled .page-link,
+.dataTables_paginate .paginate_button.page-item.next.disabled .page-link {
+    color: #ccc !important;
+    cursor: not-allowed !important;
+    background-color: #f1f1f1 !important;
+}
+
 /* Estilos para los detalles del PTE */
 .detalle-pte-container {
     padding: 1rem;
