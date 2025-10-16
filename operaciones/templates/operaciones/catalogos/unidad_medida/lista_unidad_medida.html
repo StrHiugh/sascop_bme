@@ -1,10 +1,9 @@
 {% extends 'operaciones/base.html' %}
 {% load static %}
-
-{% block content %}
+{% block titulos %}
 <div class="header-modulo">
-    <div class="d-flex justify-content-between align-items-center flex-wrap">
-        <div>
+    <div class="header-modulo-container">
+        <div class="header-title-section">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-2">
                     <li class="breadcrumb-item">
@@ -31,6 +30,8 @@
         </div>
     </div>
 </div>
+{%endblock%}
+{% block content %}
 
 
 <div class="bm-content">

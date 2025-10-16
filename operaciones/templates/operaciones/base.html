@@ -37,8 +37,6 @@
 </head>
 <body class="layout-sidebar">
 
-
-
     <!-- Layout Container -->
     <div class="layout-container">
         <!-- Sidebar -->
@@ -46,9 +44,7 @@
             <!-- Header dentro del sidebar -->
             <div id="bm-header">
                 <div class="header-content">
-                    <button class="sidebar-toggle" id="btn-toggle-sidebar">
-                        <i class="material-icons">menu</i>
-                    </button>
+
                     <div class="header-brand desktop-only">
                         <span>SASCOP</span>
                     </div>
@@ -164,6 +160,9 @@
             <div class="top-header-bar">
                 <div class="top-header-content">
                     <div class="top-header-left">
+                        <button class="sidebar-toggle" id="btn-toggle-sidebar">
+                            <i class="material-icons">menu</i>
+                        </button>
                         <!-- Espacio para información adicional si se necesita despues -->
                     </div>
                     <div class="top-header-center">
@@ -192,10 +191,12 @@
                         </div>
                     </div>
                 </div>
+                {% block titulos %}
+                {% endblock %}
             </div>
             <!-- Main Content -->
             <main id="content" class="main-content">
-                <div class="container-fluid py-4">
+                <div class="container-fluid py-4 pt-5">
                     {% block content %}
                     {% endblock %}
                 </div>
