@@ -83,6 +83,95 @@
     object-fit: contain;
 }
 
+.empresa-logo {
+    width: 100px;
+    height: 90px;
+    display: block;
+    margin: 0;
+    padding-top: 5px;
+}
+
+/* Top Header Bar Completo */
+.top-header-bar {
+    background: #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Parte superior del top bar (original) */
+.top-header-content {
+    padding: 10px 30px;
+    border-bottom: 1px solid #e9ecef;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 60px;
+}
+
+/* Sección de Empresas (pegada debajo) */
+#cont-filtros-empresas {
+    background: #fff;
+    padding: 15px 30px;
+    border-bottom: 1px solid #dce0e5;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    margin-top: -5px;
+}
+
+.cont-flex {
+    display: flex;
+    width: 100%;
+}
+
+.flex-center {
+    align-items: center;
+}
+
+.flex-wrap {
+    flex-wrap: wrap;
+}
+
+.flex-space-between {
+    justify-content: space-between;
+}
+
+/* Asegurar que el contenido principal se ajuste */
+.main-content-area {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+.main-content {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.empresa-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.profile-image_header {
+    display: inline-block;
+    text-align: center;
+    background: #ffffff;
+    padding: 1rem;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    margin: 1rem auto 1rem auto;
+}
+
+.sidebar-logo_header {
+    width: 100px;
+    height: 10px;
+    display: block;
+    margin: 0 auto;
+    padding-top: 5px;
+    object-fit: cover;
+}
+
 .main-nav {
     padding: 1rem 0;
     flex: 1;
@@ -141,7 +230,7 @@
     height: 56px;
     z-index: 1020;
 }
-
+    
 .top-header-content {
     display: flex;
     align-items: center;
@@ -1014,3 +1103,100 @@ tr.shown {
 .dataTables_length{
     width: 80px;
 }
+
+/* Versión alternativa con clases más específicas */
+.cont-foto-perfil {
+    width: 100%;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 15px;
+}
+
+.foto-perfil {
+    width: 80px;
+    height: 80px;
+    border-radius: 20%;
+    background: white;
+    object-fit: contain;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.info-perfil {
+    width: 100%;
+}
+
+.info-perfil-nombre {
+    font-size: 14px;
+    font-weight: 500;
+    color: #ffffff;
+    opacity: 0.8;
+    margin: 0;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.info-perfil-email {
+    font-size: 11px;
+    color: #ffffff;
+    opacity: 0.5;
+    margin: 0;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Media Queries para la versión alternativa */
+@media screen and (min-width: 1401px) {
+    .foto-perfil {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .info-perfil-nombre {
+        font-size: 16px;
+    }
+    
+    .info-perfil-email {
+        font-size: 12px;
+    }
+}
+
+.sidebar-collapsed .foto-perfil {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 0;
+}
+
+@media screen and (max-width: 767px) {
+    .cont-foto-perfil {
+        flex-direction: row;
+        text-align: left;
+        gap: 12px;
+    }
+    
+    .foto-perfil {
+        width: 40px;
+        height: 50px;
+    }
+    
+    .info-perfil {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .info-perfil-nombre {
+        font-size: 12px;
+    }
+    
+    .info-perfil-email {
+        font-size: 9px;
+    }
+}
+

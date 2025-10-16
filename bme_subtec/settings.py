@@ -28,6 +28,13 @@ INSTALLED_APPS = [
     'operaciones',
 ]
 
+# Agregar las nuevas apps
+INSTALLED_APPS += [
+    'core',
+    'costa_fuera', 
+    'reportes',
+]
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',

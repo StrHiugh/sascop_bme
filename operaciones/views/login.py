@@ -9,7 +9,7 @@ from django.contrib.auth.views import LogoutView
 def custom_login(request):
     """Vista para login"""
     if request.user.is_authenticated:
-        return redirect('operaciones:index')
+        return redirect('core:dashboard')
     
     # Verificar si la sesión expiró
     session_expired = request.GET.get('session_expired')
@@ -30,7 +30,7 @@ def custom_login(request):
             login(request, user)
             # Establecer última actividad
             request.session['last_activity'] = timezone.now().timestamp()
-            response = redirect('operaciones:index')
+            response = redirect('core:dashboard')
             response['Location'] += '?login_exitoso=1'
             return response
         else:

@@ -1,0 +1,294 @@
+{% extends 'core/base_modular.html' %}
+{% load static %}
+
+{% block title %}SASCOP - Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Encabezado Simplificado -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="text-left">
+                <h1 class="h3 mb-1">Empresas</h1>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección Empresas Disponibles -->
+    <div class="row justify-content-left">
+        <div class="col-md-4 col-lg-3">
+            <!-- Empresa BME SUBTEC -->
+            <div class="dw-cont-item">
+                <div class="dw-item dw-item-empresa">
+                    <div class="dw-body-item cursor-pointer selector-empresa" data-empresa-id="1" data-bs-toggle="modal" data-bs-target="#panelEmpresa">
+                        <div class="text-left">
+                            <div class="empresa-logo mb-1">
+                                <img src="{% static 'operaciones/images/logo_bmesubtec.png' %}" alt="BME SUBTEC"/>
+                            </div>
+                            <p class="texto-12px text-muted">
+                                Especialistas en operaciónes.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Panel Lateral Derecho -->
+    <div class="modal fade modal-right" id="panelEmpresa" tabindex="-1" aria-labelledby="panelEmpresaLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+            <div class="modal-content h-100">
+                <div class="modal-header">
+                    <div class="modal-header-content">
+                        <img src="{% static 'operaciones/images/logo_bmesubtec.png' %}" alt="BME SUBTEC" class="modal-logo">
+                        <div class="modal-title-content">
+                            <h5 class="modal-title">BME SUBTEC</h5>
+                            <p class="modal-subtitle"> Especialistas en operación, mantenimiento y construcción de instalaciones marinas.</p>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <h6 class="section-title">Módulos Disponibles</h6>
+                    
+                    <div class="modulos-grid">
+                        <!-- Módulo Operaciones -->
+                        <div class="modulo-item cursor-pointer" data-url="{% url 'operaciones:index' %}">
+                            <div class="modulo-icon">
+                                <i class="fas fa-cogs"></i>
+                            </div>
+                            <div class="modulo-info">
+                                <h6 class="modulo-name">Operaciones</h6>
+                                <p class="modulo-desc">Gestión de PTEs, OTs y producción</p>
+                            </div>
+                            <div class="modulo-arrow">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </div>
+                        
+                        <!-- Módulo Costa Fuera -->
+                        <div class="modulo-item cursor-pointer" data-url="#">
+                            <div class="modulo-icon">
+                                <i class="fas fa-ship"></i>
+                            </div>
+                            <div class="modulo-info">
+                                <h6 class="modulo-name">Costa Fuera</h6>
+                                <p class="modulo-desc">Reportes de operaciones marítimas</p>
+                            </div>
+                            <div class="modulo-arrow">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </div>
+                        
+                        <!-- Módulo Reportes -->
+                        <div class="modulo-item cursor-pointer" data-url="#">
+                            <div class="modulo-icon">
+                                <i class="fas fa-chart-bar"></i>
+                            </div>
+                            <div class="modulo-info">
+                                <h6 class="modulo-name">Reportes</h6>
+                                <p class="modulo-desc">Reportes ejecutivos y análisis</p>
+                            </div>
+                            <div class="modulo-arrow">
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    $('[data-toggle="tooltip"]').tooltip();
+    $(document).on("click", ".modulo-item", function() {
+        iniciarLoader()
+        const url = $(this).data("url");
+        if (url && url !== "#") {
+            setTimeout(function() {
+                finalizarLoader();
+                $(".showbox").removeClass("hide");
+                window.location.href = url;
+            }, 1000);
+        } else {
+            $('#panelEmpresa').modal('hide');
+            finalizarLoader();
+        }
+    });
+
+    //Configurar evento para abrir modal con datos específicos
+    $(document).on("click", ".selector-empresa", function() {
+        const empresaId = $(this).data('empresa-id');
+        //pendiente para cargar datos dinamicos en un futuro con datos de las emprsas
+    });
+});
+</script>
+
+<style>
+.dw-cont-item {
+    margin-top: 20px;
+}
+
+.dw-item {
+    border: 1px solid #cececeff;
+    height: 100%;
+}
+
+.selector-empresa{
+    background-color: #ffffffff;
+}
+
+.container-fluid{
+    background-color: #f5f5f5ff;
+    height: 100%;
+}
+
+.dw-body-item {
+    padding: 10px;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.text-left {
+    text-align: left;
+}
+
+/* Estilos para el modal lateral derecho */
+.modal-right .modal-dialog {
+    position: fixed;
+    top: 0;
+    right: 0;
+    margin: 0;
+    width: 450px;
+    max-width: 100vw;
+    height: 100vh;
+    transform: translateX(100%);
+    transition: transform 0.3s ease-out;
+}
+
+.modal-right.show .modal-dialog {
+    transform: translateX(0);
+}
+
+.modal-right .modal-content {
+    border-radius: 0;
+    border: none;
+    height: 100vh;
+}
+
+.modal-right .modal-header {
+    background: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    padding: 20px;
+}
+
+.modal-header-content {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.modal-logo {
+    width: 50px;
+    height: 50px;
+    object-fit: contain;
+}
+
+.modal-title-content h5 {
+    margin: 0;
+    font-weight: 600;
+}
+
+.modal-subtitle {
+    margin: 0;
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.modal-right .modal-body {
+    padding: 20px;
+}
+
+.section-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Estilos para los items de módulos */
+.modulos-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.modulo-item {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.modulo-item:hover {
+    background: #f8f9fa;
+    border-color: #434c5b;
+}
+
+.modulo-icon {
+    width: 40px;
+    height: 40px;
+    background: #434c5b;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+    color: white;
+    font-size: 16px;
+}
+
+.modulo-info {
+    flex: 1;
+}
+
+.modulo-name {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #212529;
+}
+
+.modulo-desc {
+    margin: 0;
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.modulo-arrow {
+    color: #6c757d;
+    font-size: 12px;
+}
+
+/* Asegurar que el modal se muestre correctamente */
+.modal {
+    backdrop-filter: blur(2px);
+}
+
+.modal-backdrop {
+    background-color: rgba(0, 0, 0, 0.3);
+}
+</style>
+{% endblock %}
