@@ -23,6 +23,12 @@ $(document).ready(function() {
         window.history.replaceState(null, null, window.location.href);
     }
 
+    $('.login-form input').on('keypress', function(e) {
+        if (e.which === 13) { // 13 es el código de la tecla Enter
+            $('.login-form').submit();
+            return false; 
+        }
+    });
 
     // Toggle entre login y recuperar contraseña
     $('.forgot-password-link').click(function(e) {
