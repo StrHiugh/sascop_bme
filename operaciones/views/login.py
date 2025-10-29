@@ -1,5 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login
+from django.contrib.auth.models import User
+from django.db.models import Q
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.contrib import messages
 from django.utils import timezone
@@ -7,7 +9,7 @@ from django.contrib.auth.views import LogoutView
 
 @ensure_csrf_cookie 
 def custom_login(request):
-    """Vista para login"""
+    """Vista para login que acepta username o email"""
     if request.user.is_authenticated:
         return redirect('core:dashboard')
     
@@ -22,9 +24,26 @@ def custom_login(request):
                 'error_message': 'La sesión ha expirado por inactividad. Por favor, ingresa tus datos nuevamente.'
             })
             
-        username = request.POST.get('username')
+        username_or_email = request.POST.get('username')
         password = request.POST.get('password')
-        user = authenticate(request, username=username, password=password)
+        
+        # PRIMERO intentar autenticar normalmente (con username)
+        user = authenticate(request, username=username_or_email, password=password)
+        
+        # SI FALLA, buscar por email
+        if user is None:
+            try:
+                # Buscar usuario por email
+                user_by_email = User.objects.get(email__iexact=username_or_email)
+                # Intentar autenticar con el username real del usuario
+                user = authenticate(request, username=user_by_email.username, password=password)
+            except User.DoesNotExist:
+                user = None
+            except User.MultipleObjectsReturned:
+                # Si hay múltiples usuarios con el mismo email, tomar el primero
+                user_by_email = User.objects.filter(email__iexact=username_or_email).first()
+                if user_by_email:
+                    user = authenticate(request, username=user_by_email.username, password=password)
         
         if user is not None:
             login(request, user)
@@ -36,7 +55,7 @@ def custom_login(request):
         else:
             return render(request, 'operaciones/login.html', {
                 'login_error': True,
-                'error_message': 'Usuario o contraseña incorrectos.'
+                'error_message': 'Usuario/email o contraseña incorrectos.'
             })
     
     # Contexto para template

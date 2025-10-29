@@ -57,10 +57,10 @@
                 <img class="foto-perfil" src="{% static 'operaciones/images/avatar.png' %}" alt="Imagen">
                 <div class="info-perfil">
                     <p class="info-perfil-nombre" title="Jose Armando Perera Antonio">
-                        {{ user.username }}
+                        {{ user.first_name  }}
                     </p>
-                    <p class="info-perfil-email" title="str.hiugh@gmail.com">
-                        {{ user.email }}
+                    <p class="info-perfil-email" title="email">
+                        {{ user.email  }}
                     </p>
                 </div>
             </div>
@@ -92,9 +92,7 @@
         </aside>
         <!-- Main Content Area -->
         <div class="main-content-area">
-            <!-- Top Header Bar Completo -->
             <div class="top-header-bar">
-                <!-- Parte superior del top bar (original) -->
                 <div class="top-header-content">
                     <div class="top-header-left">
                         <!-- Espacio para información adicional si se necesita después -->
@@ -108,7 +106,7 @@
                             <div class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle text-dark" href="#" role="button" data-bs-toggle="dropdown">
                                     <img class="user-avatar" src="{% static 'operaciones/images/user.svg' %}" alt="Usuario"/>
-                                    <span class="user-name desktop-only" style="font-size:15px; font-weight: 600">{{ user.username }}</span>
+                                    <span class="user-name desktop-only" style="font-size:15px; font-weight: 600"></span>
                                 </a>
                                 <ul class="dropdown-menu dropdown-menu-end">
                                     <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>Mi Perfil</a></li>
@@ -121,7 +119,7 @@
                     </div>
                 </div>
                 
-                <!-- Sección de Empresas (pegada debajo) -->
+                <!-- Sección de Empresas) -->
                 <div id="cont-filtros-empresas">
                     <div class="cont-flex flex-center flex-wrap flex-space-between">
                         {% comment %} <div class="empresa-logo mb-1 mx-auto" style="display: flex; justify-content: left; align-items: left;"> {% endcomment %}

@@ -182,7 +182,6 @@ $(document).ready(function () {
                 });                
             },
             error: function(xhr, status, error) {
-                console.error('Error al cargar unidades de medida para filtro:', error);
             }
         });
     }

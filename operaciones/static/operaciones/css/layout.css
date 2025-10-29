@@ -1268,3 +1268,94 @@ tr.shown {
     }
 }
 
+/* Estilo para filas con estatus "Por definir" o -1 */
+table.dataTable tbody tr.fila-por-definir {
+    background-color: #f9ffe3 !important;
+}
+
+table.dataTable tbody tr.fila-por-definir td {
+    background-color: inherit !important;
+}
+
+table.dataTable tbody tr.fila-por-definir:hover {
+    background-color: #f9ffe3 !important;
+}
+
+table.dataTable tbody tr.fila-por-definir:hover td {
+    background-color: inherit !important;
+}
+
+.nota i {
+    display: initial;
+}
+
+.nota p {
+    display: initial;
+    font-size: 12px;
+}
+
+.nota i.text-16px {
+    vertical-align: -1px;
+}
+
+.nota i.text-18px {
+    vertical-align: -2px;
+}
+
+.nota i.text-20px {
+    vertical-align: -3px;
+}
+
+.nota i.text-24px {
+    vertical-align: -4px;
+}
+
+.nota .icono-celda-editable {
+    width: 28px;
+    height: 18px;
+    background: rgba(66,133,244,.2);
+    border: 1px solid rgba(66,133,244,.4);
+    margin-right: 4px;
+    margin-left: 0px;
+    box-sizing: border-box;
+    padding: 1px 15px;
+}
+
+.icono-celda-editable {
+    width: 28px;
+    height: 18px;
+    background: rgba(66,133,244,.2);
+    border: 1px solid rgba(66,133,244,.4);
+    margin-right: 4px;
+    margin-left: 4px;
+    box-sizing: border-box;
+    padding: 1px 15px;
+}
+
+/* Estilos básicos para Select2 */
+.select2-container {
+    width: 100% !important;
+}
+
+.select2-selection {
+    border: 1px solid #ced4da !important;
+    border-radius: 0.375rem !important;
+    min-height: 38px !important;
+}
+
+.select2-selection--single {
+    height: 38px !important;
+}
+
+.select2-selection__arrow {
+    height: 36px !important;
+}
+
+.select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
+    background-color: #38aed4;
+    color: white;
+}
+
+.table-sm{
+    width: 100% !important;
+}

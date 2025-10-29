@@ -23,9 +23,16 @@ urlpatterns = [
     path('pte/editar/', pte.editar_pte, name='editar_pte'),
     path('pte/eliminar/', pte.eliminar_pte, name='eliminar_pte'),
     path('ot/crear-desde-pte/', pte.crear_ot_desde_pte, name='crear_ot_desde_pte'),
+    path('pte/datatable-subpasos/', pte.datatable_subpasos, name='datatable_subpasos'),
     
     # URLs para OTE
-    path('ot/', ote.lista_ote, name='lista_ote'),
+    path('ot/', ote.lista_ote, name='lista_ot'),
+    path('ot/datatable/', ote.datatable_ot, name='datatable_ot'),
+    path('ot/obtener_datos/', ote.obtener_datos_ot, name='obtener_datos_ot'),
+    path('ot/obtener_ot_iniciales/', ote.obtener_ots_principales, name='obtener_ots_principales'),
+    path('ot/eliminar/', ote.eliminar_ot, name='eliminar_ot'),
+    path('ot/editar/', ote.editar_ot, name='editar_ot'),
+    path('ot/cambiar_estatus_ot/', ote.cambiar_estatus_ot, name='cambiar_estatus_ot'),
     
     # URLs para Producción
     path('produccion/', produccion.lista_produccion, name='lista_produccion'),

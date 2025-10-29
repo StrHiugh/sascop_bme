@@ -20,6 +20,8 @@ class OTE(models.Model):
     fecha_inicio_programada = models.DateField()
     fecha_termino_programada = models.DateField()
     estatus = models.IntegerField(default=1)
+    num_reprogramacion = models.IntegerField(null=True, blank=True)
+    ot_principal = models.IntegerField(null=True, blank=True)
     comentario = models.TextField(blank=True) 
 
     class Meta:
@@ -27,7 +29,7 @@ class OTE(models.Model):
 
     def __str__(self):
         return self.orden_trabajo
-    
+
 
 class PartidaProyectada(models.Model):
     """
@@ -35,7 +37,8 @@ class PartidaProyectada(models.Model):
     """
     id_ot = models.ForeignKey(OTE, on_delete=models.CASCADE, related_name='partidas_proyectadas')
     id_partida = models.CharField(max_length=100, verbose_name="ID Partida") 
-    volumen_proyectado = models.DecimalField(max_digits=15, decimal_places=2, verbose_name="Volumen Proyectado")
+    volumen_proyectado = models.DecimalField(max_digits=15, decimal_places=3, verbose_name="Volumen Proyectado")
+    volumen_real = models.DecimalField(max_digits=15, decimal_places=3, verbose_name="Volumen Real")
     fecha_desde = models.DateField(verbose_name="Fecha Inicio Proyección")
     fecha_hasta = models.DateField(verbose_name="Fecha Fin Proyección")
 

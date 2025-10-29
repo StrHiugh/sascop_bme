@@ -91,7 +91,7 @@ $(document).ready(function() {
         // Mostrar spinner
         const button = $(this);
         const originalText = button.html();
-        button.prop('disabled', true).html(`
+        button.plrop('disabled', true).html(`
             <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
             Enviando...
         `);

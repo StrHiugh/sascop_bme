@@ -3,9 +3,10 @@ from .catalogos_models import Estatus, ResponsableProyecto, Tipo, Sitio
 
 class Paso(models.Model):
     descripcion = models.CharField(max_length=200)
-    orden = models.FloatField(default=0)
+    orden = models.CharField(blank=True, null=True, max_length=10)
     activo = models.BooleanField(default=True)
     importancia = models.FloatField(default=0)
+    tipo = models.IntegerField(blank=True, null=True, default=1)
     comentario = models.TextField(blank=True)
     class Meta:
         db_table = 'paso'

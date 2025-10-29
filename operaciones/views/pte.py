@@ -13,7 +13,7 @@ from ..models import PTEHeader, PTEDetalle, OTE, Produccion, Paso
 def index(request):
     """Página principal del sistema"""
     # Estadísticas básicas para el dashboard
-    total_ptes = PTEHeader.objects.count()
+    total_ptes = PTEHeader.objects.filter(estatus=1).count()
     total_otes = OTE.objects.count()
     total_produccion = Produccion.objects.count()
     
@@ -27,8 +27,7 @@ def index(request):
 @login_required(login_url='/accounts/login/')
 def lista_pte(request):
     """Lista de todos los PTE"""
-    ptes = PTEHeader.objects.all().order_by('-fecha_solicitud')
-    return render(request, 'operaciones/pte/lista_pte.html', {'ptes': ptes})
+    return render(request, 'operaciones/pte/lista_pte.html')
 
 @login_required(login_url='/accounts/login/')
 def detalle_pte(request, pte_id):
@@ -78,7 +77,7 @@ def datatable_ptes(request):
     for pte in ptes:
         detalles = PTEDetalle.objects.filter(id_pte_header_id=pte.id)
         total_pasos = detalles.count()
-        pasos_completados = detalles.filter(estatus_paso=3).count()  # 3 = COMPLETADO
+        pasos_completados = detalles.filter(estatus_paso__in=[3,14]).count()  # 3 = COMPLETADO 14 =
         
         progreso = 0
         if total_pasos > 0:
@@ -116,17 +115,34 @@ def datatable_pte_detalle(request):
     draw = int(request.GET.get('draw', 1))
     
     detalles = PTEDetalle.objects.filter(
-        id_pte_header_id=pte_header_id
+        id_pte_header_id=pte_header_id, id_paso__tipo=1  # Solo pasos principales
     ).select_related('id_paso').annotate(
         estatus_pte_texto=Case(
             When(estatus_paso=1, then=Value('PENDIENTE')),
             When(estatus_paso=2, then=Value('PROCESO')),
             When(estatus_paso=3, then=Value('COMPLETADO')),
             When(estatus_paso=4, then=Value('CANCELADO')),
+            When(estatus_paso=14, then=Value('NO APLICA')),
             default=Value('DESCONOCIDO'),
             output_field=CharField()
         )
-    )
+    ).order_by('id')
+    
+    for detalle in detalles:
+        if detalle.id_paso_id==4:
+            subpasos = PTEDetalle.objects.filter(
+                id_pte_header_id=pte_header_id,
+                id_paso__tipo=2  # Solo subpasos
+            )
+            total_subpasos = subpasos.count()
+            subpasos_completados = subpasos.filter(estatus_paso__in=[3,14]).count()
+            
+            if total_subpasos > 0:
+                detalle.progreso_subpasos = (subpasos_completados / total_subpasos) * 100
+            else:
+                detalle.progreso_subpasos = 0
+        else:
+            detalle.progreso_subpasos = None
     
     # Total de registros (sin paginar)
     total_records = detalles.count()
@@ -135,16 +151,20 @@ def datatable_pte_detalle(request):
     detalles = detalles[start:start + length]
     
     data = []
-    for detalle in detalles:
-        print( detalle.fecha_entrega)
+    for detalle in detalles:        
         data.append({
             'id': detalle.id,
-            'orden': detalle.id_paso.orden if detalle.id_paso.orden else '',
+            'orden': detalle.id_paso.orden,
             'desc_paso': detalle.id_paso.descripcion,
+            'tipo_paso': detalle.id_paso.tipo,
             'estatus_pte': detalle.estatus_paso_id,
             'estatus_pte_texto': detalle.estatus_pte_texto,
             'fecha_entrega': detalle.fecha_entrega,
-            'comentario': detalle.comentario or ''
+            'comentario': detalle.comentario or '',
+            'es_subpaso': detalle.id_paso.tipo == 2,  # Flag para identificar subpasos
+            'progreso_subpasos': getattr(detalle, 'progreso_subpasos', None),  # Progreso solo para paso 4
+            'total_subpasos': getattr(detalle, 'total_subpasos', 0),
+            'subpasos_completados': getattr(detalle, 'subpasos_completados', 0)
         })
     
     return JsonResponse({
@@ -153,6 +173,43 @@ def datatable_pte_detalle(request):
         'recordsFiltered': total_records, 
         'data': data
     })
+    
+def datatable_subpasos(request):
+    """Datatable para subpasos del paso 4 (Volumetría)"""
+    pte_header_id = request.GET.get('pte_header_id')
+    
+    # Obtener solo los subpasos (tipo=2) para este PTE
+    subpasos = PTEDetalle.objects.filter(
+        id_pte_header_id=pte_header_id,
+        id_paso__tipo=2  # Solo subpasos
+    ).select_related('id_paso').annotate(
+        estatus_pte_texto=Case(
+            When(estatus_paso=1, then=Value('PENDIENTE')),
+            When(estatus_paso=2, then=Value('PROCESO')),
+            When(estatus_paso=3, then=Value('COMPLETADO')),
+            When(estatus_paso=4, then=Value('CANCELADO')),
+            When(estatus_paso=14, then=Value('NO APLICA')),
+            default=Value('DESCONOCIDO'),
+            output_field=CharField()
+        )
+    ).order_by('id')
+    
+    data = []
+    for subpaso in subpasos:
+        data.append({
+            'id': subpaso.id,
+            'orden': subpaso.id_paso.orden,
+            'desc_paso': subpaso.id_paso.descripcion,
+            'estatus_pte_texto': subpaso.estatus_pte_texto,
+            'fecha_entrega': subpaso.fecha_entrega,
+            'comentario': subpaso.comentario or ''
+        })
+    
+    return JsonResponse({
+        'data': data
+    })
+    
+    
 @login_required(login_url='/accounts/login/')
 def obtener_pasos_pte(request):
     """Obtener todos los pasos para PTE"""
@@ -268,6 +325,7 @@ def cambiar_estatus_paso(request):
         paso_id = request.POST.get('paso_id')
         nuevo_estatus = request.POST.get('nuevo_estatus')
         comentario = request.POST.get('comentario','')
+        fecha_entrega = request.POST.get('fecha_entrega','')
         if not paso_id or not nuevo_estatus:
             return JsonResponse({
                 'exito': False,
@@ -285,8 +343,11 @@ def cambiar_estatus_paso(request):
             detalle.comentario = comentario
             
         if int(nuevo_estatus) == 3 and estatus_anterior != 3:
-            detalle.fecha_entrega = timezone.now()
-            print (timezone.now(), detalle.fecha_entrega)
+            if fecha_entrega:
+                detalle.fecha_entrega = fecha_entrega
+            else:
+                detalle.fecha_entrega = timezone.now()
+                
         # Si se cambia de COMPLETADO a otro estatus, limpiar la fecha de completado
         elif estatus_anterior == 3 and int(nuevo_estatus) != 3:
             detalle.fecha_entrega = None
@@ -543,14 +604,14 @@ def crear_ot_desde_pte(request):
             id_estatus_ot=estatus_ote_default,
             fecha_inicio_programada=fecha_actual,
             fecha_termino_programada=fecha_termino,
-            estatus=1,
+            estatus=-1,
             comentario=""
         )
         
         return JsonResponse({
             'exito': True,
             'tipo_aviso': 'exito',
-            'detalles': f'OTE creada correctamente: {ote.orden_trabajo}',
+            'detalles': f'OT creada correctamente: {ote.orden_trabajo}',
             'ote_id': ote.id
         })
         
@@ -564,5 +625,5 @@ def crear_ot_desde_pte(request):
         return JsonResponse({
             'exito': False,
             'tipo_aviso': 'error',
-            'detalles': f'Error al crear OTE: {str(e)}'
+            'detalles': f'Error al crear OT: {str(e)}'
         })
