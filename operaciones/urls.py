@@ -24,6 +24,9 @@ urlpatterns = [
     path('pte/eliminar/', pte.eliminar_pte, name='eliminar_pte'),
     path('ot/crear-desde-pte/', pte.crear_ot_desde_pte, name='crear_ot_desde_pte'),
     path('pte/datatable-subpasos/', pte.datatable_subpasos, name='datatable_subpasos'),
+    path('pte/obtener-progreso-paso4/', pte.obtener_progreso_paso4, name='obtener_progreso_paso4'),
+    path('pte/obtener-progreso-general-pte/', pte.obtener_progreso_general_pte, name='obtener_progreso_general_pte'),
+    path('pte/actualizar-fecha/', pte.actualizar_fecha, name='actualizar_fecha'),
     
     # URLs para OTE
     path('ot/', ote.lista_ote, name='lista_ot'),

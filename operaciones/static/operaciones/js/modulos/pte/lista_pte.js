@@ -40,7 +40,8 @@ $(document).ready(function () {
             },
             {
                 "data": "id",
-                "title": "ID"
+                "title": "ID",
+                "visible": false
             },
             {
                 "data": "descripcion_tipo",
@@ -207,7 +208,7 @@ $(document).ready(function () {
                     {
                         "data": "desc_paso", 
                         "title": "Descripción",
-                        "width": "40%",
+                        "width": "30%",
                         "orderable": false,
                         "render": function(data, type, row) {
                             if (row.orden == "4.0") {
@@ -223,10 +224,52 @@ $(document).ready(function () {
                         }
                     },
                     {
-                        "data": "fecha_entrega",
-                        "title": "Fecha Entrega",
+                        "data": "fecha_inicio",
+                        "title": "Fecha inicio",
                         "orderable": false,
                         "className": "text-center",
+                        "width": "10%",
+                        "render": function(data, type, row) {
+                            return `
+                                <div class="fecha-selector-container">
+                                    <input type="date" 
+                                        class="form-control form-control-m fecha-input" 
+                                        value="${data || ''}"
+                                        tipo="1"
+                                        data-paso-id="${row.id}"
+                                        ${[3, 14].includes(row.estatus_pte) ? 'disabled' : ''}
+                                        style="width: 130px; font-size: 12px;">
+                                </div>
+                            `;
+                        }
+                    },
+                    {
+                        "data": "fecha_termino",
+                        "title": "Fecha termino",
+                        "orderable": false,
+                        "className": "text-center",
+                        "width": "10%",
+                        "render": function(data, type, row) {
+                            return `
+                                <div class="fecha-selector-container">
+                                    <input type="date" 
+                                        class="form-control form-control-m fecha-input" 
+                                        value="${data || ''}"
+                                        tipo="2"
+                                        data-paso-id="${row.id}"
+                                        ${[3, 14].includes(row.estatus_pte) ? 'disabled' : ''}
+                                        style="width: 130px; font-size: 12px;">
+                                </div>
+                            `;
+                        }
+                    },
+                    {
+                        "data": "fecha_entrega",
+                        "title": "Fecha entrega",
+                        "orderable": false,
+                        "className": "text-center",
+                        "width": "9%",
+
                     },
                     {
                         "data": "comentario",
@@ -248,7 +291,7 @@ $(document).ready(function () {
                                 'CANCELADO': 'bg-danger',
                                 'NO APLICA': 'bg-secondary'
                             };
-                            
+
                             // Si es el paso 4 y tiene progreso de subpasos, mostrar barra de progreso
                             if (row.orden == "4.0") {
                                 let color = 'bg-success';
@@ -307,6 +350,7 @@ $(document).ready(function () {
                 const textoEstatus = $(this).text().trim();
                 const mostrarFechaEntrega = (nuevoEstatus == '3');
                 const dropdownButton = $(this).closest('.dropdown').find('.dropdown-toggle');
+
                 let contenidoMensaje = `
                     <div class="mb-3">
                         <p>¿Estás seguro de cambiar el estatus a <strong>${textoEstatus}</strong>?</p>
@@ -368,11 +412,11 @@ $(document).ready(function () {
                                 ).done(function(response) {
                                     if (response.exito) {
                                         actualizarEstatusEnTiempoReal(dropdownButton, textoEstatus, nuevoEstatus);
-                                        // setTimeout(() => {
-                                        //     tablaPte.ajax.reload(null, false); // false = mantener paginación
-                                        // }, 500);
-                                        // tablaDetallePTE.ajax.reload();
-                                        // tablaPte.ajax.reload();
+                                        actualizarProgresoPaso4(pteId, tablaDetallePTE);
+                                        actualizarProgresoGeneralPTE(pteId);
+                                        if (response.paso_actualizado_4) {
+                                            aviso("info", "Volumetria de materiales completada.");
+                                        }
                                     }
                                 });
                             }
@@ -385,6 +429,39 @@ $(document).ready(function () {
                     ]
                 });
             });
+
+            // Evento para cambiar fecha de inicio 
+            $(`#tabla-detalle-pte_${pteId}`).on('change', '.fecha-input', function() {
+                const pasoId = $(this).data('paso-id');
+                const tipo = $(this).attr('tipo');
+                const nuevaFecha = $(this).val();
+                
+                if (!nuevaFecha) {
+                    return;
+                }
+                
+                BMAjax(
+                    urlActualizarFecha, 
+                    { 
+                        id_paso: pasoId,
+                        tipo: tipo,
+                        fecha: nuevaFecha,
+                        csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val()
+                    },
+                    "POST"
+                ).done(function(response) {
+                    if (response.exito) {
+                        actualizarProgresoGeneralPTE(pteId);
+                    } else {
+                        aviso("error", response.detalles || "Error al guardar la fecha");
+                        $(this).val(dataOriginal);
+                    }
+                }).fail(function() {
+                    aviso("error", "Error al guardar la fecha");
+                    $(this).val(dataOriginal);
+                });
+            });
+
 
             // Evento para expandir subpasos del paso 4
             $(`#tabla-detalle-pte_${pteId}`).on("click", ".detalle-subpaso", function () {
@@ -445,13 +522,54 @@ $(document).ready(function () {
                                 "data": "orden",
                                 "title": "Sub-paso",
                                 "orderable": false,
-                                "className": "text-center"
+                                "className": "text-center",
+                                "width": "15%",
                             },
                             {
                                 "data": "desc_paso", 
                                 "title": "Descripción",
                                 "width": "40%",
                                 "orderable": false
+                            },
+                            {
+                                "data": "fecha_inicio",
+                                "title": "Fecha inicio",
+                                "orderable": false,
+                                "className": "text-center",
+                                "width": "10%",
+                                "render": function(data, type, row) {
+                                    return `
+                                        <div class="fecha-selector-container">
+                                            <input type="date" 
+                                                class="form-control form-control-m fecha-input" 
+                                                value="${data || ''}"
+                                                tipo="1"
+                                                data-paso-id="${row.id}"
+                                                ${[3, 14].includes(row.estatus_pte) ? 'disabled' : ''}
+                                                style="width: 130px; font-size: 12px;">
+                                        </div>
+                                    `;
+                                }
+                            },
+                            {
+                                "data": "fecha_termino",
+                                "title": "Fecha termino",
+                                "orderable": false,
+                                "className": "text-center",
+                                "width": "10%",
+                                "render": function(data, type, row) {
+                                    return `
+                                        <div class="fecha-selector-container">
+                                            <input type="date" 
+                                                class="form-control form-control-m fecha-input" 
+                                                value="${data || ''}"
+                                                tipo="2"
+                                                data-paso-id="${row.id}"
+                                                ${[3, 14].includes(row.estatus_pte) ? 'disabled' : ''}
+                                                style="width: 130px; font-size: 12px;">
+                                        </div>
+                                    `;
+                                }
                             },
                             {
                                 "data": "fecha_entrega",
@@ -817,7 +935,7 @@ function actualizarEstatusEnTiempoReal(dropdownButton, nuevoTexto, nuevoEstatus,
     let fechaEntregaCell = null;
     let comentarioCell = null;
     
-    // Buscar por texto del header (más confiable)
+    // Buscar por texto del header
     headers.each(function(index) {
         const headerText = $(this).text().trim().toLowerCase();
         if (headerText.includes('fecha')) {
@@ -848,7 +966,26 @@ function actualizarEstatusEnTiempoReal(dropdownButton, nuevoTexto, nuevoEstatus,
     if (nuevoEstatus == '3' && fechaEntregaCell) {
         const fechaInput = $(`#${fechaInputId}`);
         if (fechaInput.length && fechaInput.val()) {
-            fechaEntregaCell.text(fechaInput.val());
+            // Convertir de YYYY-MM-DD a DD/MM/YYYY
+            const fecha = fechaInput.val();
+            const parts = fecha.split('-');
+            if (parts.length === 3) {
+                const fechaFormateada = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                fechaEntregaCell.text(fechaFormateada);
+            } else {
+                fechaEntregoCell.text(fecha); // Si no tiene el formato esperado
+            }
+        }
+    }
+
+    const inputsFecha = tr.find('.fecha-input');
+    if (inputsFecha.length) {
+        if ([3, 14].includes(nuevoEstatus)) {
+            // Si el nuevo estatus es COMPLETADO o NO APLICA, deshabilitar los inputs
+            inputsFecha.prop('disabled', true);
+        } else {
+            // Si cambia a otro estatus, habilitar los inputs
+            inputsFecha.prop('disabled', false);
         }
     }
     
@@ -857,4 +994,60 @@ function actualizarEstatusEnTiempoReal(dropdownButton, nuevoTexto, nuevoEstatus,
     if (comentario && comentarioCell) {
         comentarioCell.text(comentario);
     }
+}
+
+// Función para actualizar progreso del paso 4
+function actualizarProgresoPaso4(pteId, tablaDetallePTE) {
+    // Hacer una llamada AJAX para obtener el progreso actualizado
+    BMAjax(
+        urlObtenerProgresoPaso4,
+        { pte_header_id: pteId },
+        "GET"
+    ).done(function(response) {
+        if (response.exito) {
+            // Buscar y actualizar la fila del paso 4
+            tablaDetallePTE.rows().every(function() {
+                const data = this.data();
+                if (data.orden == 4) {
+                    // Actualizar los datos de la fila
+                    data.progreso_subpasos = response.progreso;
+                    data.subpasos_completados = response.subpasos_completados;
+                    data.total_subpasos = response.total_subpasos;
+                    
+                    // Redibujar la fila
+                    this.invalidate();
+                    // tablaDetallePTE.draw(false); // false = mantener paginación
+                    return false; // Salir del loop
+                }
+            });
+        }
+    });
+}
+
+// Función para actualizar progreso general de la PTE
+function actualizarProgresoGeneralPTE(pteId) {
+    BMAjax(
+        urlObtenerProgresoGeneralPTE,
+        { pte_id: pteId },
+        "GET"
+    ).done(function(response) {
+        if (response.exito) {
+            // Buscar la fila de la PTE en la tabla principal y actualizar
+            tablaPte.rows().every(function() {
+                const rowData = this.data();
+                if (rowData.id == pteId) {
+                    // Actualizar los datos en la fila
+                    rowData.progreso = response.progreso;
+                    rowData.pasos_completados = response.pasos_completados;
+                    rowData.total_pasos = response.total_pasos;
+                    
+                    // Actualizar la fila en la tabla
+                    this.data(rowData).invalidate();
+                    return false; // Salir del loop
+                }
+            });
+        }
+    }).fail(function() {
+        console.error('Error al actualizar progreso general de la PTE');
+    });
 }

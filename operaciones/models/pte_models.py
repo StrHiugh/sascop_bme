@@ -46,6 +46,8 @@ class PTEDetalle(models.Model):
     estatus_paso = models.ForeignKey(Estatus, on_delete=models.CASCADE, limit_choices_to={'nivel_afectacion': 4})
     id_paso = models.ForeignKey(Paso, on_delete=models.CASCADE)
     fecha_entrega = models.DateField(null=True, blank=True)
+    fecha_inicio = models.DateField(null=True, blank=True)
+    fecha_termino = models.DateField(null=True, blank=True)
     comentario = models.TextField(blank=True)
 
     class Meta:

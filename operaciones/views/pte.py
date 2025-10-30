@@ -159,7 +159,9 @@ def datatable_pte_detalle(request):
             'tipo_paso': detalle.id_paso.tipo,
             'estatus_pte': detalle.estatus_paso_id,
             'estatus_pte_texto': detalle.estatus_pte_texto,
-            'fecha_entrega': detalle.fecha_entrega,
+            'fecha_entrega': detalle.fecha_entrega.strftime('%d/%m/%Y') if detalle.fecha_entrega else None,
+            'fecha_inicio': detalle.fecha_inicio,
+            'fecha_termino': detalle.fecha_termino,
             'comentario': detalle.comentario or '',
             'es_subpaso': detalle.id_paso.tipo == 2,  # Flag para identificar subpasos
             'progreso_subpasos': getattr(detalle, 'progreso_subpasos', None),  # Progreso solo para paso 4
@@ -201,7 +203,10 @@ def datatable_subpasos(request):
             'orden': subpaso.id_paso.orden,
             'desc_paso': subpaso.id_paso.descripcion,
             'estatus_pte_texto': subpaso.estatus_pte_texto,
+            'estatus_pte': subpaso.estatus_paso_id,
             'fecha_entrega': subpaso.fecha_entrega,
+            'fecha_inicio': subpaso.fecha_inicio,
+            'fecha_termino': subpaso.fecha_termino,
             'comentario': subpaso.comentario or ''
         })
     
@@ -209,7 +214,139 @@ def datatable_subpasos(request):
         'data': data
     })
     
-    
+@require_http_methods(["GET"])
+@login_required
+def obtener_progreso_general_pte(request):
+    """Obtener progreso general actualizado de una PTE"""
+    try:
+        pte_id = request.GET.get('pte_id')
+        
+        if not pte_id:
+            return JsonResponse({
+                'exito': False,
+                'detalles': 'ID de PTE no proporcionado'
+            })
+        
+        # Obtener todos los pasos de la PTE
+        detalles = PTEDetalle.objects.filter(id_pte_header_id=pte_id)
+        total_pasos = detalles.count()
+        pasos_completados = detalles.filter(estatus_paso__in=[3, 14]).count()  # 3=COMPLETADO, 14=NO APLICA
+        
+        progreso = 0
+        if total_pasos > 0:
+            progreso = (pasos_completados / total_pasos) * 100
+        
+        return JsonResponse({
+            'exito': True,
+            'progreso': round(progreso),
+            'pasos_completados': pasos_completados,
+            'total_pasos': total_pasos
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'exito': False,
+            'detalles': f'Error al obtener progreso general: {str(e)}'
+        })
+
+@require_http_methods(["GET"])
+@login_required
+def obtener_progreso_paso4(request):
+    """Obtener progreso actualizado del paso 4 (Volumetría)"""
+    try:
+        pte_header_id = request.GET.get('pte_header_id')
+        
+        if not pte_header_id:
+            return JsonResponse({
+                'exito': False,
+                'detalles': 'ID de PTE no proporcionado'
+            })
+        
+        # Obtener subpasos (tipo=2) de este PTE
+        subpasos = PTEDetalle.objects.filter(
+            id_pte_header_id=pte_header_id,
+            id_paso__tipo=2  # Solo subpasos
+        )
+        
+        total_subpasos = subpasos.count()
+        subpasos_completados = subpasos.filter(estatus_paso__in=[3, 14]).count()  # 3=COMPLETADO, 14=NO APLICA
+        
+        progreso = 0
+        if total_subpasos > 0:
+            progreso = (subpasos_completados / total_subpasos) * 100
+        
+        # Obtener descripción del paso 4
+        paso4 = PTEDetalle.objects.filter(
+            id_pte_header_id=pte_header_id,
+            id_paso__orden=4  # Paso 4 = Volumetría
+        ).select_related('id_paso').first()
+        
+        descripcion = paso4.id_paso.descripcion if paso4 else "Volumetría de Materiales"
+        
+        return JsonResponse({
+            'exito': True,
+            'progreso': round(progreso),
+            'subpasos_completados': subpasos_completados,
+            'total_subpasos': total_subpasos,
+            'descripcion_paso': descripcion
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'exito': False,
+            'detalles': f'Error al obtener progreso: {str(e)}'
+        })
+
+@require_http_methods(["POST"])
+@login_required
+def actualizar_fecha(request):
+    """Actualizar fecha de inicio de un paso"""
+    try:
+        id_paso = request.POST.get('id_paso')
+        fecha = request.POST.get('fecha')
+        tipo = request.POST.get('tipo')
+        if not id_paso:
+            return JsonResponse({
+                'exito': False,
+                'detalles': 'ID del paso no proporcionado'
+            })
+        
+        paso_detalle = PTEDetalle.objects.get(id=id_paso)
+        
+        # Validar y guardar la fecha
+        if tipo == '1':
+            if fecha:
+                paso_detalle.fecha_inicio = fecha
+            else:
+                paso_detalle.fecha_inicio = None
+                
+        elif tipo == '2':
+            if fecha:
+                paso_detalle.fecha_termino = fecha
+            else:
+                paso_detalle.fecha_termino = None
+                
+        paso_detalle.save()
+        
+        return JsonResponse({
+            'exito': True,
+            'tipo_aviso': 'exito',
+            'detalles': 'Fecha actualizada correctamente',
+            'fecha_actualizada': fecha
+        })
+        
+    except PTEDetalle.DoesNotExist:
+        return JsonResponse({
+            'exito': False,
+            'detalles': 'Paso no encontrado'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'exito': False,
+            'detalles': f'Error al actualizar fecha: {str(e)}'
+        })
+
+
 @login_required(login_url='/accounts/login/')
 def obtener_pasos_pte(request):
     """Obtener todos los pasos para PTE"""
@@ -326,6 +463,7 @@ def cambiar_estatus_paso(request):
         nuevo_estatus = request.POST.get('nuevo_estatus')
         comentario = request.POST.get('comentario','')
         fecha_entrega = request.POST.get('fecha_entrega','')
+        
         if not paso_id or not nuevo_estatus:
             return JsonResponse({
                 'exito': False,
@@ -335,10 +473,13 @@ def cambiar_estatus_paso(request):
         
         # Obtener el detalle del paso
         detalle = PTEDetalle.objects.get(id=paso_id)
+        pte_header_id = detalle.id_pte_header_id
+        
+        # Guardar el estatus anterior para verificar cambios
         estatus_anterior = detalle.estatus_paso_id
+        
         # Actualizar el estatus
         detalle.estatus_paso_id = int(nuevo_estatus)
-        
         if comentario:
             detalle.comentario = comentario
             
@@ -346,12 +487,15 @@ def cambiar_estatus_paso(request):
             if fecha_entrega:
                 detalle.fecha_entrega = fecha_entrega
             else:
-                detalle.fecha_entrega = timezone.now()
-                
+                detalle.fecha_entrega = timezone.now()        
         # Si se cambia de COMPLETADO a otro estatus, limpiar la fecha de completado
         elif estatus_anterior == 3 and int(nuevo_estatus) != 3:
             detalle.fecha_entrega = None
+            
         detalle.save()
+        
+        # VERIFICAR SI ES UN SUBPASO DEL PASO 4 Y ACTUALIZAR AUTOMÁTICAMENTE
+        paso_actualizado_4 = verificar_y_actualizar_paso_4(pte_header_id)
         
         # Recalcular progreso del PTE
         detalles_pte = PTEDetalle.objects.filter(id_pte_header_id=detalle.id_pte_header_id)
@@ -368,7 +512,8 @@ def cambiar_estatus_paso(request):
             'detalles': 'Estatus actualizado correctamente',
             'progreso': round(progreso),
             'pasos_completados': pasos_completados,
-            'total_pasos': total_pasos
+            'total_pasos': total_pasos,
+            'paso_actualizado_4': paso_actualizado_4
         })
         
     except PTEDetalle.DoesNotExist:
@@ -383,6 +528,47 @@ def cambiar_estatus_paso(request):
             'tipo_aviso': 'error',
             'detalles': f'Error al cambiar estatus: {str(e)}'
         })
+        
+def verificar_y_actualizar_paso_4(pte_header_id):
+    """Verificar si todos los subpasos del paso 4 están completados y actualizarlo automáticamente"""
+    try:
+        # Obtener el paso 4 de esta PTE
+        paso_4 = PTEDetalle.objects.filter(
+            id_pte_header_id=pte_header_id,
+            id_paso_id=4  # Paso 4 = Volumetría
+        ).first()
+        
+        if not paso_4:
+            return False
+        
+        # Obtener todos los subpasos (tipo=2) de esta PTE
+        subpasos = PTEDetalle.objects.filter(
+            id_pte_header_id=pte_header_id,
+            id_paso__tipo=2  # Solo subpasos
+        )
+        
+        total_subpasos = subpasos.count()
+        
+        if total_subpasos == 0:
+            return False
+        
+        # Contar subpasos completados (3=COMPLETADO, 14=NO APLICA)
+        subpasos_completados = subpasos.filter(estatus_paso__in=[3, 14]).count()
+        
+        # Si todos los subpasos están completados, actualizar el paso 4 a COMPLETADO
+        if subpasos_completados == total_subpasos and paso_4.estatus_paso_id != 3:
+            paso_4.estatus_paso_id = 3  # COMPLETADO
+            paso_4.comentario = "Todos los entregables finalizados"
+            paso_4.fecha_entrega = timezone.now().date()
+            paso_4.save()
+            return True
+        
+        return False
+        
+    except Exception as e:
+        print(f"Error al verificar paso 4: {str(e)}")
+        return False
+        
         
 @require_http_methods(["GET"])
 @login_required(login_url='/accounts/login/')
