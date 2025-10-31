@@ -51,13 +51,48 @@ $(document).ready(function () {
                 "data": "oficio_pte",
                 "title": "Folio PTE"
             },
-            {
-                "data": "oficio_solicitud",
-                "title": "Oficio solicitud"
-            },
+            // {
+            //     "data": "oficio_solicitud",
+            //     "title": "Oficio solicitud"
+            // },
             {
                 "data": "descripcion_trabajo",
                 "title": "Descripción de trabajo"
+            },
+            {
+                "data": "fecha_entrega",
+                "title": "Fecha entrega"
+            },
+            {
+                "data": "estatus_texto",
+                "title": "Estatus",
+                "orderable": false,
+                "className": "text-center",
+                "width": "10%",
+                "render": function(data, type, row) {
+                    const estatusClasses = {
+                        'PENDIENTE': 'bg-warning',
+                        'PROCESO': 'bg-primary', 
+                        'ENTREGADA': 'bg-success',
+                        'CANCELADA': 'bg-danger',
+                        'DESCONOCIDO': 'bg-secondary'
+                    };
+                    
+                    return `
+                        <div class="dropdown">
+                            <button class="btn btn-sm ${estatusClasses[data] || 'bg-secondary'} dropdown-toggle text-white w-100" 
+                                    type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                ${data}
+                            </button>
+                            <ul class="dropdown-menu w-100">
+                                <li><a class="dropdown-item cambiar-estatus-pte" data-estatus="1">PENDIENTE</a></li>
+                                <li><a class="dropdown-item cambiar-estatus-pte" data-estatus="2">PROCESO</a></li>
+                                <li><a class="dropdown-item cambiar-estatus-pte" data-estatus="3">ENTREGADA</a></li>
+                                <li><a class="dropdown-item cambiar-estatus-pte" data-estatus="4">CANCELADA</a></li>
+                            </ul>
+                        </div>
+                    `;
+                }
             },
             {
                 "data": "progreso",
@@ -120,6 +155,96 @@ $(document).ready(function () {
         drawCallback: function (settings) {
             $("[data-toggle='tooltip']").tooltip();
         }
+    });
+
+    // Evento para cambiar estatus de la pte
+    $(`#tabla`).on('click', '.cambiar-estatus-pte', function() {
+        const tr = $(this).closest('tr');
+        const row = tablaPte.row(tr);
+        const rowData = row.data();
+        const pteId = rowData.id;
+        const nuevoEstatus = $(this).data('estatus');
+        const textoEstatus = $(this).text().trim();
+        const mostrarFechaEntrega = (nuevoEstatus == '3');
+        const dropdownButton = $(this).closest('.dropdown').find('.dropdown-toggle');
+
+        let contenidoMensaje = `
+            <div class="mb-3">
+                <p>¿Estás seguro de cambiar el estatus de la PTE a <strong>${textoEstatus}</strong>?</p>
+                <div class="row">
+        `;
+
+        // Agregar campo de fecha solo si el estatus es 3
+        if (mostrarFechaEntrega) {
+            contenidoMensaje += `
+                <div class="mb-3 col-3">
+                    <label for="fechaEntregaPte" class="form-label">Fecha de entrega:</label>
+                    <input type="date" class="form-control" id="fechaEntregaPte" value="${new Date().toISOString().split('T')[0]}" required>
+                </div>
+            `;
+        }
+        
+        contenidoMensaje += `
+                <div class="mb-3 col-4">
+                    <label for="comentarioCambioPTE" class="form-label">Comentario:</label>
+                    <textarea class="form-control" id="comentarioCambioPTE" rows="1" placeholder="Agregar un comentario sobre este cambio..."></textarea>
+                </div>
+            </div>
+        </div>
+        `;
+
+
+        BMensaje({
+            titulo: "Confirmación",
+            subtitulo: contenidoMensaje,
+            botones: [
+                {
+                    texto: "Sí, continuar",
+                    clase: "btn-primary",
+                    funcion: function() {
+                        const comentario = $('#comentarioCambioPTE').val().trim();
+                        const url = urlCambiarEstatusPTE;
+                        const method = "POST";
+                        if (mostrarFechaEntrega) {
+                            const fechaEntrega = $('#fechaEntregaPte').val();
+                            if (!fechaEntrega) {
+                                aviso("advertencia", "La fecha de entrega es obligatoria para el estatus TERMINADA");
+                                return;
+                            }
+                        }
+                        const datos = {
+                            pte_id: pteId,
+                            nuevo_estatus: nuevoEstatus,
+                            comentario: comentario, 
+                            csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val()
+                        };
+                        // Agregar fecha de entrega solo si existe
+                        if (mostrarFechaEntrega) {
+                            datos.fecha_entrega = $('#fechaEntregaPte').val();
+                        }
+                        BMAjax(
+                            url, 
+                            datos,
+                            method
+                        ).done(function(response) {
+                            if (response.exito) {
+                                // Actualizar el botón en tiempo real
+                                actualizarEstatusPTEEnTiempoReal(dropdownButton, textoEstatus, nuevoEstatus);
+                            } else {
+                                aviso("error", response.detalles || "Error al cambiar el estatus");
+                            }
+                        }).fail(function() {
+                            aviso("error", "Error al cambiar el estatus");
+                        });
+                    }
+                },
+                {
+                    texto: "Cancelar", 
+                    clase: "btn-light",
+                    funcion: function() { return }
+                }
+            ]
+        });
     });
 
     // Evento para expandir detalles del PTE
@@ -269,7 +394,22 @@ $(document).ready(function () {
                         "orderable": false,
                         "className": "text-center",
                         "width": "9%",
-
+                        "render": function(data, type, row) {
+                            // Si es paso 4, estatus 3 y no tiene fecha de entrega, mostrar input de fecha
+                            if (row.orden == 4 && row.estatus_pte == 3 && (!data)) {
+                                return `
+                                    <input type="date" 
+                                        class="form-control form-control-m fecha-input" 
+                                        data-paso-id="${row.id}"
+                                        tipo="3"
+                                        style="width: 130px; font-size: 12px;"
+                                        value="${data || ''}">
+                                `;
+                            } else {
+                                // Mostrar fecha normal o vacío
+                                return data || '';
+                            }
+                        }
                     },
                     {
                         "data": "comentario",
@@ -430,11 +570,12 @@ $(document).ready(function () {
                 });
             });
 
-            // Evento para cambiar fecha de inicio 
+            // Evento para cambiar fecha de inicio, término y entrega
             $(`#tabla-detalle-pte_${pteId}`).on('change', '.fecha-input', function() {
                 const pasoId = $(this).data('paso-id');
                 const tipo = $(this).attr('tipo');
                 const nuevaFecha = $(this).val();
+                const fechaCell = $(this).closest('td');
                 
                 if (!nuevaFecha) {
                     return;
@@ -451,17 +592,20 @@ $(document).ready(function () {
                     "POST"
                 ).done(function(response) {
                     if (response.exito) {
+                        // Si es tipo 3 (fecha de entrega), reemplazar input por texto formateado
+                        if (tipo == '3') {
+                            const parts = nuevaFecha.split('-');
+                            const fechaFormateada = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                            fechaCell.text(fechaFormateada);
+                        }
                         actualizarProgresoGeneralPTE(pteId);
                     } else {
                         aviso("error", response.detalles || "Error al guardar la fecha");
-                        $(this).val(dataOriginal);
                     }
                 }).fail(function() {
                     aviso("error", "Error al guardar la fecha");
-                    $(this).val(dataOriginal);
                 });
             });
-
 
             // Evento para expandir subpasos del paso 4
             $(`#tabla-detalle-pte_${pteId}`).on("click", ".detalle-subpaso", function () {
@@ -686,6 +830,8 @@ $(document).ready(function () {
                 $("#total_homologado").val(pte.total_homologado);
                 $("#oficio_ot").val(pte.id_orden_trabajo);
                 $("#comentario_general").val(pte.comentario);
+                $("#fecha_entrega").val(pte.fecha_entrega);
+                $("#id_prioridad").val(pte.id_prioridad);
                 cargarResponsablesProyecto().done(function() {
                     $("#responsable_proyecto").val(pte.id_responsable_proyecto);
                     $("#btnGuardarPTE").prop('disabled', false).html('Actualizar');
@@ -911,7 +1057,7 @@ function fnHTMLTablaSubpasos(pteId) {
     `;
 }
 
-// Función para actualizar estatus en tiempo real sin recargar
+// Función para actualizar estatus
 function actualizarEstatusEnTiempoReal(dropdownButton, nuevoTexto, nuevoEstatus, fechaInputId = 'fechaEntrega', comentarioInputId = 'comentarioCambio') {
     const estatusClasses = {
         'PENDIENTE': 'bg-warning',
@@ -973,9 +1119,25 @@ function actualizarEstatusEnTiempoReal(dropdownButton, nuevoTexto, nuevoEstatus,
                 const fechaFormateada = `${parts[2]}/${parts[1]}/${parts[0]}`;
                 fechaEntregaCell.text(fechaFormateada);
             } else {
-                fechaEntregoCell.text(fecha); // Si no tiene el formato esperado
+                fechaEntregaCell.text(fecha);
+            }
+        } else {
+            // Si no hay fecha en el input pero es paso 4, mostrar input de fecha
+            const rowData = table.DataTable().row(tr).data();
+            if (rowData && rowData.orden == 4) {
+                fechaEntregaCell.html(`
+                    <input type="date" 
+                        class="form-control form-control-sm fecha-input" 
+                        data-paso-id="${rowData.id}"
+                        tipo="3"
+                        style="width: 130px; font-size: 12px;"
+                        value="">
+                `);
             }
         }
+    } else if (fechaEntregaCell) {
+        // Si no es estatus 3, limpiar la fecha
+        fechaEntregaCell.text('');
     }
 
     const inputsFecha = tr.find('.fecha-input');
@@ -995,10 +1157,8 @@ function actualizarEstatusEnTiempoReal(dropdownButton, nuevoTexto, nuevoEstatus,
         comentarioCell.text(comentario);
     }
 }
-
 // Función para actualizar progreso del paso 4
 function actualizarProgresoPaso4(pteId, tablaDetallePTE) {
-    // Hacer una llamada AJAX para obtener el progreso actualizado
     BMAjax(
         urlObtenerProgresoPaso4,
         { pte_header_id: pteId },
@@ -1048,6 +1208,45 @@ function actualizarProgresoGeneralPTE(pteId) {
             });
         }
     }).fail(function() {
-        console.error('Error al actualizar progreso general de la PTE');
+        return false;
     });
+}
+
+// Función para actualizar estatus de PTE 
+function actualizarEstatusPTEEnTiempoReal(dropdownButton, nuevoTexto, nuevoEstatus) {
+    const estatusClasses = {
+        'PENDIENTE': 'bg-warning',
+        'PROCESO': 'bg-primary', 
+        'ENTREGADA': 'bg-success',
+        'CANCELADA': 'bg-danger',
+        'DESCONOCIDO': 'bg-secondary'
+    };
+    
+    // Actualizar el botón
+    dropdownButton.removeClass('bg-warning bg-primary bg-success bg-danger bg-secondary')
+                    .addClass(estatusClasses[nuevoTexto] || 'bg-secondary')
+                    .text(nuevoTexto);
+
+    // Buscar columna de fecha de entrega dinámicamente
+    const tr = dropdownButton.closest('tr');
+    const tds = tr.find('td');
+    const table = tr.closest('table');
+    const headers = table.find('th');
+    let fechaEntregaCell = tds.eq(4);;
+    if (nuevoEstatus == '3' && fechaEntregaCell) {
+        const fechaInput = $(`#fechaEntregaPte`);
+        if (fechaInput.length && fechaInput.val()) {
+            // Convertir de YYYY-MM-DD a DD/MM/YYYY
+            const fecha = fechaInput.val();
+            const parts = fecha.split('-');
+            if (parts.length === 3) {
+                const fechaFormateada = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                fechaEntregaCell.text(fechaFormateada);
+            } else {
+                fechaEntregaCell.text(fecha);
+            }
+        }
+    } else {
+            fechaEntregaCell.text('');
+        }
 }

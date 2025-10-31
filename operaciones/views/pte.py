@@ -13,7 +13,7 @@ from ..models import PTEHeader, PTEDetalle, OTE, Produccion, Paso
 def index(request):
     """Página principal del sistema"""
     # Estadísticas básicas para el dashboard
-    total_ptes = PTEHeader.objects.filter(estatus=1).count()
+    total_ptes = PTEHeader.objects.filter(estatus__in=[1,2,3,4]).count()
     total_otes = OTE.objects.count()
     total_produccion = Produccion.objects.count()
     
@@ -51,7 +51,17 @@ def datatable_ptes(request):
     # Filtro adicional del input de búsqueda
     filtro_buscar = request.GET.get('filtro', '')
     
-    ptes = PTEHeader.objects.filter(estatus__gt=0).select_related('id_tipo')    
+    ptes = PTEHeader.objects.filter(estatus__gt=0).select_related('id_tipo').annotate(
+        estatus_texto=Case(
+            When(estatus=1, then=Value('PENDIENTE')),
+            When(estatus=2, then=Value('PROCESO')),
+            When(estatus=3, then=Value('ENTREGADA')),
+            When(estatus=4, then=Value('CANCELADA')),
+            default=Value('DESCONOCIDO'),
+            output_field=CharField()
+        )
+    ).order_by('id')    
+    
     if search_value:
         ptes = ptes.filter(
             Q(descripcion_trabajo__icontains=search_value) |
@@ -88,9 +98,12 @@ def datatable_ptes(request):
             'id_tipo_id': pte.id_tipo_id,
             'descripcion_tipo':pte.id_tipo.descripcion,
             'oficio_pte': pte.oficio_pte,
+            'estatus': pte.estatus,
+            'estatus_texto': pte.estatus_texto,
             'oficio_solicitud':pte.oficio_solicitud,
             'descripcion_trabajo': pte.descripcion_trabajo,
             'fecha_solicitud': pte.fecha_solicitud.isoformat() if pte.fecha_solicitud else None,
+            'fecha_entrega': pte.fecha_entrega.strftime('%d/%m/%Y') if pte.fecha_entrega else None,
             'responsable_proyecto': pte.id_responsable_proyecto_id if pte.id_responsable_proyecto_id else '',
             'plazo_dias': pte.plazo_dias or 0,
             'progreso': round(progreso),  # Porcentaje de progreso
@@ -214,6 +227,60 @@ def datatable_subpasos(request):
         'data': data
     })
     
+@require_http_methods(["POST"])
+@login_required
+def cambiar_estatus_pte(request):
+    """Cambiar estatus de una PTE"""
+    try:
+        pte_id = request.POST.get('pte_id')
+        nuevo_estatus = request.POST.get('nuevo_estatus')
+        comentario = request.POST.get('comentario', '')
+        fecha_entrega = request.POST.get('fecha_entrega', None)
+        
+        if not pte_id or not nuevo_estatus:
+            return JsonResponse({
+                'exito': False,
+                'detalles': 'Datos incompletos'
+            })
+        
+        # Obtener la PTE
+        pte = PTEHeader.objects.get(id=pte_id)
+        # Guardar el estatus anterior para verificar cambios
+        estatus_anterior = pte.estatus
+        # Actualizar el estatus
+        pte.estatus = nuevo_estatus
+        if comentario:
+            pte.comentario = comentario
+        
+            
+        if int(nuevo_estatus) == 3 and estatus_anterior != 3:
+            if fecha_entrega:
+                pte.fecha_entrega = fecha_entrega
+            else:
+                pte.fecha_entrega = timezone.now()        
+        # Si se cambia de COMPLETADO a otro estatus, limpiar la fecha de completado
+        elif estatus_anterior == 3 and int(nuevo_estatus) != 3:
+            pte.fecha_entrega = None
+        
+        pte.save()
+        
+        return JsonResponse({
+            'exito': True,
+            'tipo_aviso': 'exito',
+            'detalles': 'Estatus de la PTE actualizado correctamente'
+        })
+        
+    except PTEHeader.DoesNotExist:
+        return JsonResponse({
+            'exito': False,
+            'detalles': 'PTE no encontrada'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'exito': False,
+            'detalles': f'Error al cambiar estatus: {str(e)}'
+        })
+
 @require_http_methods(["GET"])
 @login_required
 def obtener_progreso_general_pte(request):
@@ -325,7 +392,11 @@ def actualizar_fecha(request):
                 paso_detalle.fecha_termino = fecha
             else:
                 paso_detalle.fecha_termino = None
-                
+        elif tipo == '3':
+            if fecha:
+                paso_detalle.fecha_entrega = fecha
+            else:
+                paso_detalle.fecha_entrega = None
         paso_detalle.save()
         
         return JsonResponse({
@@ -345,7 +416,6 @@ def actualizar_fecha(request):
             'exito': False,
             'detalles': f'Error al actualizar fecha: {str(e)}'
         })
-
 
 @login_required(login_url='/accounts/login/')
 def obtener_pasos_pte(request):
@@ -375,9 +445,11 @@ def crear_pte(request):
         # Datos del header
         oficio_pte = get_val('oficio_pte', 'SIN FOLIO')
         oficio_solicitud = get_val('oficio_solicitud', 'PENDIENTE')
-        descripcion_trabajo = get_val('descripcion_trabajo')
+        descripcion_trabajo = get_val('descripcion_trabajo','POR DEFINIR')
         responsable_proyecto = get_val('responsable_proyecto')
         fecha_solicitud = get_val('fecha_solicitud')
+        fecha_entrega = get_val('fecha_entrega', None)
+        prioridad = get_val('id_prioridad')
         plazo_dias = get_val('plazo_dias', 0, int)
         id_tipo_id = get_val('id_tipo', None, int)
         total_homologado = get_val('total_homologado', 0.00, float)
@@ -406,6 +478,13 @@ def crear_pte(request):
                 'detalles': 'El plazo en días debe ser mayor a 0'
             })
         
+        if not prioridad:
+            return JsonResponse({
+                'exito': False,
+                'tipo_aviso': 'error',
+                'detalles': 'La prioridad es obligatoria'
+            })
+        
         # Crear el header del PTE
         pte_header = PTEHeader.objects.create(
             oficio_pte=oficio_pte,
@@ -413,6 +492,8 @@ def crear_pte(request):
             descripcion_trabajo=descripcion_trabajo,
             id_responsable_proyecto_id=responsable_proyecto,
             fecha_solicitud=fecha_solicitud,
+            prioridad = prioridad,
+            fecha_entrega=fecha_entrega,
             plazo_dias=plazo_dias,
             total_homologado=total_homologado,
             id_tipo_id=id_tipo_id,
@@ -422,7 +503,7 @@ def crear_pte(request):
         )
         
         # Obtener todos los pasos activos y crear detalles
-        pasos = Paso.objects.filter(activo=1).order_by('orden', 'id')
+        pasos = Paso.objects.filter(activo=1).order_by('id', 'orden')
         
         detalles_creados = []
         for paso in pasos:
@@ -558,10 +639,10 @@ def verificar_y_actualizar_paso_4(pte_header_id):
         # Si todos los subpasos están completados, actualizar el paso 4 a COMPLETADO
         if subpasos_completados == total_subpasos and paso_4.estatus_paso_id != 3:
             paso_4.estatus_paso_id = 3  # COMPLETADO
-            paso_4.comentario = "Todos los entregables finalizados"
-            paso_4.fecha_entrega = timezone.now().date()
+            paso_4.comentario = "Entregables finalizados"
+            paso_4.fecha_termino = timezone.now().date()
             paso_4.save()
-            return True
+            return True  
         
         return False
         
@@ -577,7 +658,6 @@ def obtener_datos_pte(request):
     try:
         pte_id = request.GET.get('id')
         pte = get_object_or_404(PTEHeader, id=pte_id)
-        
         datos_pte = {
             'id': pte.id,
             'oficio_pte': pte.oficio_pte,
@@ -585,14 +665,16 @@ def obtener_datos_pte(request):
             'descripcion_trabajo': pte.descripcion_trabajo,
             'fecha_solicitud': pte.fecha_solicitud.strftime('%Y-%m-%d') if pte.fecha_solicitud else '',
             'plazo_dias': pte.plazo_dias,
+            'id_prioridad': pte.prioridad,
             'id_tipo': pte.id_tipo_id,
+            'fecha_entrega': pte.fecha_entrega.strftime('%Y-%m-%d') if pte.fecha_entrega else '',
             'id_responsable_proyecto': pte.id_responsable_proyecto_id,
             'total_homologado': float(pte.total_homologado) if pte.total_homologado else 0,
             'id_orden_trabajo': pte.id_orden_trabajo,
             'comentario': pte.comentario,
             'estatus': pte.estatus
         }
-        
+        print (datos_pte)
         return JsonResponse({
             'exito': True,
             'datos': datos_pte
@@ -625,11 +707,16 @@ def editar_pte(request):
         pte.descripcion_trabajo = request.POST.get('descripcion_trabajo', pte.descripcion_trabajo)
         pte.id_responsable_proyecto_id = request.POST.get('responsable_proyecto', pte.id_responsable_proyecto_id)
         pte.id_tipo_id = request.POST.get('id_tipo', pte.id_tipo_id)
+        pte.prioridad = request.POST.get('id_prioridad', pte.prioridad)
         
         # Campos con validación
         fecha_solicitud = request.POST.get('fecha_solicitud')
         if fecha_solicitud:
             pte.fecha_solicitud = fecha_solicitud
+            
+        fecha_entrega = request.POST.get('fecha_entrega')
+        if fecha_entrega:
+            pte.fecha_entrega = fecha_entrega
         
         plazo_dias = request.POST.get('plazo_dias')
         if plazo_dias:

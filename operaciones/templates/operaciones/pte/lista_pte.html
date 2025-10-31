@@ -102,7 +102,7 @@
                         <div class="col-md-12">
                             <div class="mb-3">
                                 <label for="descripcion_trabajo" class="form-label">
-                                    Descripción del Trabajo <span class="text-danger">*</span>
+                                    Descripción del Trabajo
                                 </label>
                                 <textarea class="form-control" id="descripcion_trabajo" name="descripcion_trabajo" rows="2" required></textarea>
                             </div>
@@ -125,11 +125,25 @@
                                     <option value="1">PTE</option>
                                     <option value="2">LICITACION</option>
                                     <option value="3">COSTEO CLASE V</option>
+                                    <option value="10">COSTEO CLASE IV</option>
+                                    <option value="11">COSTEO CLASE III</option>
+                                    <option value="12">OBRA</option>
+                                    <option value="13">UDC</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="id_prioridad" class="form-label">Prioridad <span class="text-danger">*</span></label>
+                                <select class="form-select" id="id_prioridad" name="id_prioridad" required>
+                                    <option value="" selected disabled>Seleccione una opcion</option>
+                                    <option value="1">ALTA</option>
+                                    <option value="2">MEDIA</option>
+                                    <option value="3">BAJA</option>
+                                    <option value="4">TBD</option>
                                 </select>
                             </div>
                             <div class="mb-3">
                                 <label for="oficio_ot" class="form-label">Oficio OT</label>
-                                <input type="text" class="form-control" id="oficio_ot" name="oficio_ot" placeholder="SIN ASIGNACION" disabled>
+                                <input type="text" class="form-control" id="oficio_ot" name="oficio_ot" placeholder="SIN OT INICIADA" disabled>
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -140,6 +154,10 @@
                             <div class="mb-3">
                                 <label for="fecha_solicitud" class="form-label">Fecha de Solicitud</label>
                                 <input type="date" class="form-control" id="fecha_solicitud" name="fecha_solicitud">
+                            </div>
+                            <div class="mb-3">
+                                <label for="fecha_entrega" class="form-label">Fecha de Entrega</label>
+                                <input type="date" class="form-control" id="fecha_entrega" name="fecha_entrega">
                             </div>
                             <div class="mb-3">
                                 <label for="plazo_dias" class="form-label">Plazo en Días</label>
@@ -192,6 +210,7 @@
     var urlObtenerProgresoPaso4 = "{% url 'operaciones:obtener_progreso_paso4' %}";
     var urlObtenerProgresoGeneralPTE  = "{% url 'operaciones:obtener_progreso_general_pte' %}";
     var urlActualizarFecha  = "{% url 'operaciones:actualizar_fecha' %}";
+    var urlCambiarEstatusPTE  = "{% url 'operaciones:cambiar_estatus_pte' %}";
     {% comment %} var urlEditar = "{% url 'operaciones:editar_pte' 0 %}".replace('/0', ''); {% endcomment %}
     
 </script>
