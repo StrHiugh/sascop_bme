@@ -552,11 +552,55 @@ $(document).ready(function () {
                                 ).done(function(response) {
                                     if (response.exito) {
                                         actualizarEstatusEnTiempoReal(dropdownButton, textoEstatus, nuevoEstatus);
+                                        if (response.paso_actualizado_4) {
+                                            tablaDetallePTE.rows().every(function() {
+                                                const data = this.data();
+                                                if (data.orden == 4) {
+                                                    // Actualizar estatus a COMPLETADO
+                                                    data.estatus_pte = 3;
+                                                    data.estatus_pte_texto = 'COMPLETADO';
+                                                    
+                                                    // Actualizar botón visualmente
+                                                    const tr = this.node();
+                                                    const paso4DropdownButton = $(tr).find('.dropdown-toggle');
+
+                                                    // Actualizar inputs de fecha - NO solo deshabilitar, también actualizar valores
+                                                    const inputFechaInicio = $(tr).find('.fecha-input[tipo="1"]');
+                                                    const inputFechaTermino = $(tr).find('.fecha-input[tipo="2"]');
+                                                    
+                                                    // Deshabilitar los inputs
+                                                    inputFechaInicio.prop('disabled', true);
+                                                    inputFechaTermino.prop('disabled', true);
+                                                    
+                                                    if (!data.fecha_termino) {
+                                                        const fechaActual = new Date().toISOString().split('T')[0];
+                                                        inputFechaTermino.val(fechaActual);
+                                                        data.fecha_termino = fechaActual;
+                                                    }
+
+                                                    // Mostrar input para fecha de entrega si no tiene
+                                                    const fechaEntregaCell = $(tr).find('td').eq(5);
+                                                    if (!data.fecha_entrega || data.fecha_entrega.trim() === '') {
+                                                        fechaEntregaCell.html(`
+                                                            <input type="date" 
+                                                                class="form-control form-control-sm fecha-input" 
+                                                                data-paso-id="${data.id}"
+                                                                tipo="3"
+                                                                style="width: 130px; font-size: 12px;"
+                                                                value="">
+                                                        `);
+                                                    }
+                                                    
+                                                    this.invalidate();
+                                                    return false;
+                                                }
+                                            });
+                                            aviso("info", "Volumetría completada automáticamente");
+                                        }
+                                    
                                         actualizarProgresoPaso4(pteId, tablaDetallePTE);
                                         actualizarProgresoGeneralPTE(pteId);
-                                        if (response.paso_actualizado_4) {
-                                            aviso("info", "Volumetria de materiales completada.");
-                                        }
+                                        
                                     }
                                 });
                             }
@@ -1071,7 +1115,7 @@ function actualizarEstatusEnTiempoReal(dropdownButton, nuevoTexto, nuevoEstatus,
     dropdownButton.removeClass('bg-warning bg-primary bg-success bg-danger bg-secondary')
                     .addClass(estatusClasses[nuevoTexto] || 'bg-secondary')
                     .text(nuevoTexto);
-    
+
     // Buscar columnas dinámicamente
     const tr = dropdownButton.closest('tr');
     const table = tr.closest('table');
@@ -1176,7 +1220,7 @@ function actualizarProgresoPaso4(pteId, tablaDetallePTE) {
                     
                     // Redibujar la fila
                     this.invalidate();
-                    // tablaDetallePTE.draw(false); // false = mantener paginación
+                    actualizarProgresoGeneralPTE(pteId);
                     return false; // Salir del loop
                 }
             });

@@ -647,9 +647,7 @@ def verificar_y_actualizar_paso_4(pte_header_id):
         return False
         
     except Exception as e:
-        print(f"Error al verificar paso 4: {str(e)}")
         return False
-        
         
 @require_http_methods(["GET"])
 @login_required(login_url='/accounts/login/')
@@ -674,7 +672,6 @@ def obtener_datos_pte(request):
             'comentario': pte.comentario,
             'estatus': pte.estatus
         }
-        print (datos_pte)
         return JsonResponse({
             'exito': True,
             'datos': datos_pte
