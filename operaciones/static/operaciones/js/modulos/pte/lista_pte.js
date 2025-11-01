@@ -1135,30 +1135,12 @@ function actualizarEstatusEnTiempoReal(dropdownButton, nuevoTexto, nuevoEstatus,
             comentarioCell = tds.eq(index);
         }
     });
-    
-    // Si no se encontró por header, usar posición relativa como fallback
-    if (!fechaEntregaCell || !comentarioCell) {
-        const dropdownIndex = dropdownButton.closest('td').index();
-        const totalColumns = tds.length;
-        
-        // Para tablas de 6 columnas (principal)
-        if (totalColumns === 6) {
-            fechaEntregaCell = tds.eq(3);
-            comentarioCell = tds.eq(4);
-        } 
-        // Para tablas de 5 columnas (subpasos)
-        else if (totalColumns === 5) {
-            fechaEntregaCell = tds.eq(2);
-            comentarioCell = tds.eq(3);
-        }
-    }
-    
+
     // Actualizar fecha si es COMPLETADO
     if (nuevoEstatus == '3' && fechaEntregaCell) {
         const fechaInput = $(`#${fechaInputId}`);
         if (fechaInputId) {
             // Convertir de YYYY-MM-DD a DD/MM/YYYY
-            const fecha = fechaInput.val();
             const parts = fechaInputId.split('-');
             if (parts.length === 3) {
                 const fechaFormateada = `${parts[2]}/${parts[1]}/${parts[0]}`;
