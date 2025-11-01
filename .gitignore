@@ -10,3 +10,9 @@ __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
+global-bundle.pem
+*.pem
+*.key
+*.cert
+ssl/
+certificates/

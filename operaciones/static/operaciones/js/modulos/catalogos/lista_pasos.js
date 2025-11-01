@@ -3,6 +3,7 @@ $(document).ready(function () {
         processing: true,
         serverSide: true,
         responsive: true,
+        ordering: false,  
         order: [[1, "desc"]],
         lengthMenu: [10, 25, 50, 100],
         dom: '<"row"<"col-sm-12 col-md-6"l>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
@@ -24,6 +25,10 @@ $(document).ready(function () {
             }
         },
         columns: [
+            {
+                "data": "id",
+                "visible": false
+            },
             {
                 "data": "orden",
                 "title": "ID"

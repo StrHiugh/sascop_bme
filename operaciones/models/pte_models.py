@@ -7,7 +7,7 @@ class Paso(models.Model):
     activo = models.BooleanField(default=True)
     importancia = models.FloatField(default=0)
     tipo = models.IntegerField(blank=True, null=True, default=1)
-    comentario = models.TextField(blank=True)
+    comentario = models.TextField(blank=True, null=True)
     class Meta:
         db_table = 'paso'
         ordering = ['orden']

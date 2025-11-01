@@ -217,12 +217,11 @@ def datatable_subpasos(request):
             'desc_paso': subpaso.id_paso.descripcion,
             'estatus_pte_texto': subpaso.estatus_pte_texto,
             'estatus_pte': subpaso.estatus_paso_id,
-            'fecha_entrega': subpaso.fecha_entrega,
+            'fecha_entrega': subpaso.fecha_entrega.strftime('%d/%m/%Y') if subpaso.fecha_entrega else None,
             'fecha_inicio': subpaso.fecha_inicio,
             'fecha_termino': subpaso.fecha_termino,
             'comentario': subpaso.comentario or ''
-        })
-    
+        })    
     return JsonResponse({
         'data': data
     })

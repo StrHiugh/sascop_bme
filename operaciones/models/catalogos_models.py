@@ -10,7 +10,7 @@ class Tipo(models.Model):
     
     descripcion = models.CharField(max_length=200)
     nivel_afectacion = models.IntegerField(choices=TIPO_CHOICES, default=0)
-    comentario = models.TextField(blank=True)
+    comentario = models.TextField(blank=True, null=True)
     activo = models.BooleanField(default=True)
 
     class Meta:
@@ -27,7 +27,7 @@ class Sitio(models.Model):
     
     descripcion = models.CharField(max_length=200)
     nivel_afectacion = models.IntegerField(choices=TIPO_SITIO_CHOICES, default=0)
-    comentario = models.TextField(blank=True)
+    comentario = models.TextField(blank=True, null=True)
     activo = models.BooleanField(default=True)
 
     class Meta:
@@ -46,7 +46,7 @@ class Estatus(models.Model):
     ]
     descripcion = models.CharField(max_length=100)
     nivel_afectacion = models.IntegerField(choices=TIPO_AFECTACION, default=0)
-    comentario = models.TextField(blank=True)
+    comentario = models.TextField(blank=True, null=True)
     activo = models.BooleanField(default=True)
 
     class Meta:
@@ -58,7 +58,7 @@ class Estatus(models.Model):
 class Embarcacion(models.Model):
     descripcion = models.CharField(max_length=100)
     activo = models.BooleanField(default=True)
-    comentario = models.TextField(blank=True)
+    comentario = models.TextField(blank=True, null=True)
     class Meta:
         db_table = 'embarcacion'
 
@@ -69,7 +69,7 @@ class UnidadMedida(models.Model):
     descripcion = models.CharField(max_length=50)
     clave = models.CharField(max_length=10)
     activo = models.BooleanField(default=True)
-    comentario = models.TextField(blank=True)
+    comentario = models.TextField(blank=True, null=True)
     class Meta:
         db_table = 'unidad_medida'
 
@@ -79,7 +79,7 @@ class UnidadMedida(models.Model):
 class ResponsableProyecto(models.Model):
     descripcion = models.CharField(max_length=50)
     activo = models.BooleanField(default=True)
-    comentario = models.TextField(blank=True)
+    comentario = models.TextField(blank=True, null=True)
     class Meta:
         db_table = 'responsable_proyecto'
 

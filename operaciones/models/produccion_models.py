@@ -5,14 +5,14 @@ from .ote_models import OTE
 class Producto(models.Model):
     id_partida = models.CharField(max_length=100)
     descripcion_concepto = models.TextField()
-    anexo = models.CharField(max_length=100, blank=True)
+    anexo = models.CharField(max_length=100, blank=True, null=True)
     id_sitio = models.ForeignKey(Sitio, on_delete=models.CASCADE, limit_choices_to={'nivel_afectacion': 1})
     id_tipo_partida = models.ForeignKey(Tipo, on_delete=models.CASCADE, limit_choices_to={'nivel_afectacion': 3})
     id_unidad_medida = models.ForeignKey(UnidadMedida, on_delete=models.CASCADE)
     precio_unitario_mn = models.DecimalField(max_digits=15, decimal_places=2)
     precio_unitario_usd = models.DecimalField(max_digits=15, decimal_places=2)
     activo = models.BooleanField(default=True)
-    comentario = models.TextField(blank=True)
+    comentario = models.TextField(blank=True, null=True)
     class Meta:
         db_table = 'producto'
 

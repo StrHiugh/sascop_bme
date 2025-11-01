@@ -6,7 +6,7 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-bme-subtec-default-key-change-in-production')
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-bme-subtec-default-key-change-in-production')
 
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
@@ -69,13 +69,29 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'bme_subtec.wsgi.application'
 
-# Database configuration
+# # Database sqlite
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
+
+# Configuración de la base de datos RDS
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('RDS_DB_NAME', 'postgres'),
+        'USER': os.environ.get('RDS_USERNAME', 'postgres'),
+        'PASSWORD': os.environ.get('RDS_PASSWORD', ''),
+        'HOST': os.environ.get('RDS_HOSTNAME', 'localhost'),
+        'PORT': os.environ.get('RDS_PORT', '5432'),
+        'OPTIONS': {
+            'sslmode': 'require',
+        }
     }
 }
+
 
 AUTH_PASSWORD_VALIDATORS = [
     {

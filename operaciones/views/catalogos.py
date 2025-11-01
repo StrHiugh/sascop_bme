@@ -858,33 +858,33 @@ def datatable_pasos(request):
     length = int(request.GET.get('length', 10))
     search_value = request.GET.get('filtro', '')
     
-    tipos = Paso.objects.filter(activo=1).annotate(
+    pasos = Paso.objects.filter(activo=1).annotate(
         estado_texto=Case(
             When(activo=True, then=Value('Activo')),
             When(activo=False, then=Value('Inactivo')),
             default=Value('Desconocido'),
             output_field=CharField()
         ),
-    )
+    ).order_by('id')
     
     if search_value:
-        tipos = tipos.filter(
+        pasos = pasos.filter(
             Q(descripcion__icontains=search_value) |
             Q(activo__icontains=search_value)
         )
     
-    total_records = tipos.count()
-    tipos = tipos[start:start + length]
+    total_records = pasos.count()
+    pasos = pasos[start:start + length]
     
     data = []
-    for tipo in tipos:
+    for paso in pasos:
         data.append({
-            'id': tipo.id,
-            'descripcion': tipo.descripcion,
-            'activo': tipo.estado_texto, 
-            'importancia': tipo.importancia,
-            'activo_bool': tipo.activo,
-            'orden':tipo.orden
+            'id': paso.id,
+            'descripcion': paso.descripcion,
+            'activo': paso.estado_texto, 
+            'importancia': paso.importancia,
+            'activo_bool': paso.activo,
+            'orden':paso.orden
         })
     
     return JsonResponse({

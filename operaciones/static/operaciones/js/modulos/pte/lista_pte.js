@@ -545,13 +545,14 @@ $(document).ready(function () {
                                 if (mostrarFechaEntrega) {
                                     datos.fecha_entrega = $('#fechaEntrega').val();
                                 }
+                                const fechaEntregaData = mostrarFechaEntrega ? $('#fechaEntrega').val() : null;
                                 BMAjax(
                                     url, 
                                     datos,
                                     method
                                 ).done(function(response) {
                                     if (response.exito) {
-                                        actualizarEstatusEnTiempoReal(dropdownButton, textoEstatus, nuevoEstatus);
+                                        actualizarEstatusEnTiempoReal(dropdownButton, textoEstatus, nuevoEstatus, fechaEntregaData, comentario, tablaDetallePTE);
                                         if (response.paso_actualizado_4) {
                                             tablaDetallePTE.rows().every(function() {
                                                 const data = this.data();
@@ -597,10 +598,8 @@ $(document).ready(function () {
                                             });
                                             aviso("info", "Volumetría completada automáticamente");
                                         }
-                                    
-                                        actualizarProgresoPaso4(pteId, tablaDetallePTE);
-                                        actualizarProgresoGeneralPTE(pteId);
-                                        
+                                        actualizarProgresoPaso4(pteId, tablaDetallePTE)
+                                        actualizarProgresoGeneralPTE(pteId)
                                     }
                                 });
                             }
@@ -764,6 +763,8 @@ $(document).ready(function () {
                                 "title": "Fecha Entrega",
                                 "orderable": false,
                                 "className": "text-center",
+                                "width": "9%",
+
                             },
                             {
                                 "data": "comentario",
@@ -1102,7 +1103,7 @@ function fnHTMLTablaSubpasos(pteId) {
 }
 
 // Función para actualizar estatus
-function actualizarEstatusEnTiempoReal(dropdownButton, nuevoTexto, nuevoEstatus, fechaInputId = 'fechaEntrega', comentarioInputId = 'comentarioCambio') {
+function actualizarEstatusEnTiempoReal(dropdownButton, nuevoTexto, nuevoEstatus, fechaInputId, comentarioInputId) {
     const estatusClasses = {
         'PENDIENTE': 'bg-warning',
         'PROCESO': 'bg-primary', 
@@ -1128,7 +1129,7 @@ function actualizarEstatusEnTiempoReal(dropdownButton, nuevoTexto, nuevoEstatus,
     // Buscar por texto del header
     headers.each(function(index) {
         const headerText = $(this).text().trim().toLowerCase();
-        if (headerText.includes('fecha')) {
+        if (headerText.includes('fecha entrega')) {
             fechaEntregaCell = tds.eq(index);
         } else if (headerText.includes('comentario')) {
             comentarioCell = tds.eq(index);
@@ -1155,15 +1156,15 @@ function actualizarEstatusEnTiempoReal(dropdownButton, nuevoTexto, nuevoEstatus,
     // Actualizar fecha si es COMPLETADO
     if (nuevoEstatus == '3' && fechaEntregaCell) {
         const fechaInput = $(`#${fechaInputId}`);
-        if (fechaInput.length && fechaInput.val()) {
+        if (fechaInputId) {
             // Convertir de YYYY-MM-DD a DD/MM/YYYY
             const fecha = fechaInput.val();
-            const parts = fecha.split('-');
+            const parts = fechaInputId.split('-');
             if (parts.length === 3) {
                 const fechaFormateada = `${parts[2]}/${parts[1]}/${parts[0]}`;
                 fechaEntregaCell.text(fechaFormateada);
             } else {
-                fechaEntregaCell.text(fecha);
+                fechaEntregaCell.text(fechaInputId);
             }
         } else {
             // Si no hay fecha en el input pero es paso 4, mostrar input de fecha
@@ -1196,9 +1197,8 @@ function actualizarEstatusEnTiempoReal(dropdownButton, nuevoTexto, nuevoEstatus,
     }
     
     // Actualizar comentario
-    const comentario = $(`#${comentarioInputId}`).val().trim();
-    if (comentario && comentarioCell) {
-        comentarioCell.text(comentario);
+    if (comentarioInputId && comentarioCell) {
+        comentarioCell.text(comentarioInputId);
     }
 }
 // Función para actualizar progreso del paso 4
