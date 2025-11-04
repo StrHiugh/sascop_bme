@@ -1,3 +1,11 @@
+/*
+ * __filename__   : lista_pte.js
+ * __author__     : ARMANDO PERERA
+ * __description__: JS la view de pte's
+ * __version__    : 1.0.1
+ * __app__        : BME SUBTEC
+ */
+
 $(document).ready(function () {
     window.tablaPte = $("#tabla").DataTable({
         processing: true,
