@@ -1120,17 +1120,19 @@ function actualizarEstatusEnTiempoReal(dropdownButton, nuevoTexto, nuevoEstatus,
     // Buscar columnas dinámicamente
     const tr = dropdownButton.closest('tr');
     const table = tr.closest('table');
-    const headers = table.find('th');
-    const tds = tr.find('td');
-    
+    const headers = table.find('> thead > tr > th'); 
+    const tds = tr.find('> td'); 
+
     let fechaEntregaCell = null;
     let comentarioCell = null;
     
+
     // Buscar por texto del header
     headers.each(function(index) {
         const headerText = $(this).text().trim().toLowerCase();
         if (headerText.includes('fecha entrega')) {
             fechaEntregaCell = tds.eq(index);
+            
         } else if (headerText.includes('comentario')) {
             comentarioCell = tds.eq(index);
         }
