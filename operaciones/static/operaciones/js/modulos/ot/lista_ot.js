@@ -154,36 +154,14 @@ $(document).ready(function () {
     // Mover select de length
     $("#tabla_length").detach().appendTo("#select-length");
 
-    // Panel de filtros
-    $("#btn-panel-filtros").on("click", function () {
-        fn_show_panel("#panel-filtro");
-    });
-
-    // Aplicar filtros
-    $("#filtrar").on("click", function () {
-        tablaPte.draw();
-        fn_show_panel();
-    });
-
-    // Limpiar filtros
-    $("#limpiar").on("click", function () {
-        $("#slc-estado").val("");
-        tablaPte.draw();
-    });
-
-    // Abrir modal para crear PTE
-    $(document).on("click", ".crear-pte", function() {
-        abrirModalCrearPTE();
-    });
-
     // Evento para editar PTE
     $("#tabla tbody").on("click", ".editar_ot", function() {
         const otID = $(this).data('id');
-        abrirModalEditarPTE(otID);
+        abrirModalEditarOT(otID);
     });
 
     // Función para abrir modal de edición
-    function abrirModalEditarPTE(otID) {
+    function abrirModalEditarOT(otID) {
         $("#formCrearOT")[0].reset();
         $("#modalCrearOTLabel").text("Editar OT");
         // Obtener datos del PTE
@@ -226,21 +204,6 @@ $(document).ready(function () {
                     contenido: "Error al cargar los datos de la OT",
                 });
             });
-    }
-
-    function abrirModalCrearPTE() {
-        $("#formCrearOT")[0].reset();
-        $("#ot_id").val('');
-        $("#modalCrearOTLabel").text("Crear Nueva PTE");
-        $("#btnGuardarOT").html('Guardar PTE');
-        const today = new Date().toISOString().split('T')[0];
-        $("#fecha_solicitud").val(today);
-        
-        // Cargar lista de lideres
-        cargarResponsablesProyecto();
-        
-        const modal = new bootstrap.Modal(document.getElementById('modalCrearOT'));
-        modal.show();
     }
 
     // Función para cargar responsables de proyecto
@@ -307,13 +270,6 @@ $(document).ready(function () {
             }
         });
     });
-    // Resetear modal cuando se cierre
-    $('#modalCrearOT').on('hidden.bs.modal', function () {
-        $("#formCrearOT")[0].reset();
-        $("#ot_id").val('');
-        $("#modalCrearOTLabel").text("Crear Nueva OT");
-        $("#btnGuardarOT").html('Guardar OT');
-    });
 
     $(document).on("click", ".eliminar_ot", function () {
         const id = $(this).data('id');
@@ -347,59 +303,6 @@ $(document).ready(function () {
         });
     });
 
-    // Evento para crear OTE desde PTE
-    $(document).on("click", ".crear-ot", function () {
-        const pteId = $(this).data('id');
-        BMensaje({
-            titulo: "Crear Orden de Trabajo",
-            subtitulo: `
-                <div class="mb-3">
-                    <p>¿Desea crear una Orden de Trabajo a partir de esta PTE?</p>
-                    <label for="folioOT" class="form-label">Folio de la OT:</label>
-                    <input type="text" class="form-control" id="folioOT" placeholder="Ingrese el folio de la OT" required>
-                </div>
-            `,
-            botones: [
-                {
-                    texto: "Crear OT",
-                    clase: "btn-primary",
-                    funcion: function() {
-                        const folioOT = $('#folioOT').val().trim();
-                        
-                        if (!folioOT) {
-                            aviso("advertencia", "El folio de la OT es obligatorio");
-                            return;
-                        }
-                        
-                        const url = urlCrearOT;
-                        const method = "POST";
-                        
-                        BMAjax(
-                            url, 
-                            { 
-                                ot_id: pteId,
-                                folio: folioOT,
-                                csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val()
-                            },
-                            method
-                        ).done(function(response) {
-                            if (response.exito) {
-                                tablaPte.ajax.reload();
-                            } else {
-                                aviso(response.tipo_aviso, response.detalles);
-                            }
-                        });
-                    }
-                },
-                {
-                    texto: "Cancelar", 
-                    clase: "btn-light",
-                    funcion: function() { return }
-                }
-            ]
-        });
-    });
-
     // Evento para cambiar tipo de OT (INICIAL/REPROGRAMACION)
     $(document).on('change', '#id_tipo', function() {
         const tipoSeleccionado = $(this).val();
@@ -417,9 +320,11 @@ $(document).ready(function () {
         if (esReprogramacion) {
             $divOTPrincipal.show().removeAttr('hidden');
             $divNumReprogramacion.show().removeAttr('hidden');
+            $('#responsable_proyecto').removeAttr('disabled');
         } else {
             $divOTPrincipal.hide().attr('hidden', 'hidden');
             $divNumReprogramacion.hide().attr('hidden', 'hidden');
+            $('#responsable_proyecto').attr('disabled');
         }
         
         // Habilitar/deshabilitar campos según el tipo

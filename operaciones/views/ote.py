@@ -230,9 +230,7 @@ def cambiar_estatus_ot(request):
             'exito': False,
             'detalles': f'Error al cambiar estatus: {str(e)}'
         })
-        
-        
-        
+            
 @require_http_methods(["POST"])
 @login_required
 def editar_ot(request):
@@ -290,5 +288,4 @@ def editar_ot(request):
             'tipo_aviso': 'error',
             'detalles': f'Error al actualizar OT: {str(e)}'
         })
-        
         

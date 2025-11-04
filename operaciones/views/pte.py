@@ -51,6 +51,28 @@ def datatable_ptes(request):
     # Filtro adicional del input de búsqueda
     filtro_buscar = request.GET.get('filtro', '')
     
+    order_column_index = request.GET.get('order[0][column]', '0')
+    order_direction = request.GET.get('order[0][dir]', 'asc')
+    # Mapear índice de columna al campo correspondiente
+    column_mapping = {
+        '0': 'id',  # Columna 0 (ampliar)
+        '1': 'id',  # Columna 1 (ID)
+        '2': 'id_tipo__descripcion',  # Columna 2 (Tipo)
+        '3': 'oficio_pte',  # Columna 3 (Folio PTE)
+        '4': 'descripcion_trabajo',  # Columna 4 (Descripción)
+        '5': 'fecha_entrega',  # Columna 5 (Fecha entrega)
+        '6': 'estatus',  # Columna 6 (Estatus) 
+        '7': 'id',  # Columna 7 (Progreso) - se ordena por ID como fallback
+        '8': 'id'  # Columna 8 (Opciones)
+    }
+    
+    # Obtener el campo por el cual ordenar
+    order_field = column_mapping.get(order_column_index, 'id')
+    
+    # Aplicar el orden descendente o ascendente
+    if order_direction == 'desc':
+        order_field = f'-{order_field}'
+    
     ptes = PTEHeader.objects.filter(estatus__gt=0).select_related('id_tipo').annotate(
         estatus_texto=Case(
             When(estatus=1, then=Value('PENDIENTE')),
@@ -60,7 +82,7 @@ def datatable_ptes(request):
             default=Value('DESCONOCIDO'),
             output_field=CharField()
         )
-    ).order_by('id')    
+    ).order_by(order_field)    
     
     if search_value:
         ptes = ptes.filter(
