@@ -79,6 +79,7 @@ def datatable_ptes(request):
             When(estatus=2, then=Value('PROCESO')),
             When(estatus=3, then=Value('ENTREGADA')),
             When(estatus=4, then=Value('CANCELADA')),
+            When(estatus=9, then=Value('SUSPENDIDA')),
             default=Value('DESCONOCIDO'),
             output_field=CharField()
         )
@@ -98,10 +99,20 @@ def datatable_ptes(request):
             Q(oficio_solicitud__icontains=filtro_buscar) 
         )
     
-    filtro_estado = request.GET.get('estado', '')
-    if filtro_estado:
-        ptes = ptes.filter(estado=filtro_estado)
     
+    #FILTROS DEL PANEL
+    filtro_estatus = request.GET.get('estatus', '')
+    filtro_tipo = request.GET.get('tipo', '')
+    filtro_responsable = request.GET.get('responsable_proyecto', '')
+    if filtro_estatus:
+        ptes = ptes.filter(estatus=filtro_estatus)
+    
+    if filtro_tipo:
+        ptes = ptes.filter(id_tipo_id=filtro_tipo)
+    
+    if filtro_responsable:
+        ptes = ptes.filter(id_responsable_proyecto_id=filtro_responsable)
+        
     total_records = ptes.count()
     ptes = ptes[start:start + length]
     

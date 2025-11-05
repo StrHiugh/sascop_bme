@@ -21,6 +21,10 @@
                 <i class="fas fa-plus me-2"></i>
                 <span>Crear nuevo</span>
             </a>
+            <button class="btn btn-outline-secondary" id="btn-panel-filtros">
+                <i class="fas fa-filter me-2"></i>
+                Filtros
+            </button>
         </div>
     </div>
 </div>
@@ -58,19 +62,37 @@
     <div class="offcanvas-body">
         <form id="form-filtros">
             <div class="mb-3">
-                <label class="form-label">Estado</label>
-                <select class="form-select" id="filtro-estado">
-                    <option value="">Todos los estados</option>
-                    <option value="disponible">Disponible</option>
-                    <option value="no-disponible">No disponible</option>
+                <label class="form-label">Estatus</label>
+                <select class="form-select" id="estatus">
+                    <option value="" selected disabled>Seleccione un estatus</option>
+                    <option value="1">PENDIENTE</option>
+                    <option value="2">PROCESO</option>
+                    <option value="3">ENTREGADA</option>
+                    <option value="4">CANCELADA</option>
+                    <option value="9">SUSPENDIDA</option>
+
                 </select>
             </div>
             <div class="mb-3">
                 <label class="form-label">Tipo</label>
-                <select class="form-select" id="filtro-tipo">
-                    <option value="">Todos los tipos</option>
-                    <option value="computadora">Computadora</option>
-                    <option value="servidor">Servidor</option>
+                <select class="form-select" id="tipo">
+                    <option value="" selected disabled>Seleccione un tipo</option>
+                    <option value="1">PTE</option>
+                    <option value="2">LICITACION</option>
+                    <option value="3">COSTEO CLASE V</option>
+                    <option value="10">COSTEO CLASE IV</option>
+                    <option value="11">COSTEO CLASE III</option>
+                    <option value="12">OBRA</option>
+                    <option value="14">MERCADEOS</option>
+                    <option value="13">UDC</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Responsable proyecto</label>
+                <select class="form-select" id="responsable_proyecto">
+                    <option value="">Todos los estados</option>
+                    <option value="disponible">Disponible</option>
+                    <option value="no-disponible">No disponible</option>
                 </select>
             </div>
             <div class="d-grid gap-2">

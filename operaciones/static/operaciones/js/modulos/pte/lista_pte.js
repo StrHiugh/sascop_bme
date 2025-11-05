@@ -29,6 +29,9 @@ $(document).ready(function () {
             data: function (extra) {
                 extra.filtro = $("#filtro-buscar").val();
                 extra.estado = $("#slc-estado").val();
+                extra.estatus = $("#estatus").val();
+                extra.tipo = $("#tipo").val();
+                extra.responsable_proyecto = $("#responsable_proyecto").val();
             }
         },
         columns: [
@@ -83,6 +86,7 @@ $(document).ready(function () {
                         'PROCESO': 'bg-primary', 
                         'ENTREGADA': 'bg-success',
                         'CANCELADA': 'bg-danger',
+                        'SUSPENDIDA': 'bg-secondary',
                         'DESCONOCIDO': 'bg-secondary'
                     };
                     
@@ -97,6 +101,7 @@ $(document).ready(function () {
                                 <li><a class="dropdown-item cambiar-estatus-pte" data-estatus="2">PROCESO</a></li>
                                 <li><a class="dropdown-item cambiar-estatus-pte" data-estatus="3">ENTREGADA</a></li>
                                 <li><a class="dropdown-item cambiar-estatus-pte" data-estatus="4">CANCELADA</a></li>
+                                <li><a class="dropdown-item cambiar-estatus-pte" data-estatus="9">SUSPENDIDA</a></li>
                             </ul>
                         </div>
                     `;
@@ -836,19 +841,49 @@ $(document).ready(function () {
 
     // Panel de filtros
     $("#btn-panel-filtros").on("click", function () {
-        fn_show_panel("#panel-filtro");
+        // Mostrar el offcanvas de Bootstrap
+        
+        var filtrosOffcanvas = new bootstrap.Offcanvas(document.getElementById('panelFiltros'));
+        filtrosOffcanvas.show();
+        cargarResponsablesProyecto();
     });
 
     // Aplicar filtros
-    $("#filtrar").on("click", function () {
+    $("#aplicar-filtros").on("click", function () {
+        // Obtener valores de los filtros
+        var estatus = $("#estatus").val();
+        var tipo = $("#tipo").val();
+        var responsable = $("#responsable_proyecto").val();
+        
+        // Aplicar filtros a la DataTable
         tablaPte.draw();
-        fn_show_panel();
+        
+        // Cerrar el panel
+        var filtrosOffcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('panelFiltros'));
+        filtrosOffcanvas.hide();
+        iniciarLoader();
+        setTimeout(function() {
+            finalizarLoader();
+        }, 2000);
     });
 
     // Limpiar filtros
-    $("#limpiar").on("click", function () {
-        $("#slc-estado").val("");
+    $("#limpiar-filtros").on("click", function () {
+        // Limpiar todos los selects
+        $("#estatus").val("");
+        $("#tipo").val("");
+        $("#responsable_proyecto").val("");
+        
+        // Redibujar la tabla sin filtros
         tablaPte.draw();
+        
+        // Cerrar el panel (opcional)
+        var filtrosOffcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('panelFiltros'));
+        filtrosOffcanvas.hide();
+        iniciarLoader();
+        setTimeout(function() {
+            finalizarLoader();
+        }, 2000);
     });
 
     // Abrir modal para crear PTE
