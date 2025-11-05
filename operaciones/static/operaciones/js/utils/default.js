@@ -109,7 +109,7 @@ function aviso(tipo_aviso, parametros) {
     if (alertContainer.length === 0) {
         $("body").prepend(`
             <div id="smart-alert-container" 
-                style="position: fixed; top: 95px; right: 20px; z-index: 9999; 
+                style="position: fixed; top: 75px; right: 20px; z-index: 9999; 
                     max-width: 350px; pointer-events: none;"></div>
         `);
         alertContainer = $("#smart-alert-container");

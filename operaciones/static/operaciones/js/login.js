@@ -52,11 +52,10 @@ $(document).ready(function() {
     // Validación del formulario de login
     $('.login-form').submit(function(e) {
         e.preventDefault(); // ← Esto evita el envío inmediato
-        iniciarLoader();
         const form = this;
         const username = $('input[name="username"]').val();
         const password = $('input[name="password"]').val();
-
+        
         if (!username || !password) {
             aviso('advertencia', 'Campos incompletos. Por favor, ingrese sus datos correctamente.');
             return false;
@@ -66,16 +65,17 @@ $(document).ready(function() {
         const button = $('.login-btn');
         const originalText = button.html();
         
+        iniciarLoader();
         button.prop('disabled', true).html(`
             <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
             Iniciando sesión...
-        `);
-        
+            `);
+            
         // Esperar 5 segundos antes de enviar el formulario
         setTimeout(function() {
             form.submit();
             finalizarLoader();
-        }, 1000);
+        }, 2000);
     });
     
     // Validación del formulario de recuperación
