@@ -902,7 +902,6 @@ $(document).ready(function () {
     function abrirModalEditarPTE(pteId) {
         $("#formCrearPTE")[0].reset();
         $("#modalCrearPTELabel").text("Editar PTE");
-        $("#btnGuardarPTE").prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Cargando...');
         // Obtener datos del PTE
         BMAjax(
             urlObtenerDatos, {id:pteId}, "GET")
