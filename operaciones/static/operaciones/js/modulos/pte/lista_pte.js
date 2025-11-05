@@ -864,7 +864,7 @@ $(document).ready(function () {
         iniciarLoader();
         setTimeout(function() {
             finalizarLoader();
-        }, 2000);
+        }, 1300);
     });
 
     // Limpiar filtros
@@ -883,7 +883,7 @@ $(document).ready(function () {
         iniciarLoader();
         setTimeout(function() {
             finalizarLoader();
-        }, 2000);
+        }, 1300);
     });
 
     // Abrir modal para crear PTE
