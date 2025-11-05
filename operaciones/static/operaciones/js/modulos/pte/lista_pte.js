@@ -31,7 +31,7 @@ $(document).ready(function () {
                 extra.estado = $("#slc-estado").val();
                 extra.estatus = $("#estatus").val();
                 extra.tipo = $("#tipo").val();
-                extra.responsable_proyecto = $("#responsable_proyecto").val();
+                extra.responsable_proyecto = $("#id_responsable_proyecto").val();
             }
         },
         columns: [
@@ -845,7 +845,7 @@ $(document).ready(function () {
         
         var filtrosOffcanvas = new bootstrap.Offcanvas(document.getElementById('panelFiltros'));
         filtrosOffcanvas.show();
-        cargarResponsablesProyecto();
+        cargarResponsablesProyectoModal();
     });
 
     // Aplicar filtros
@@ -853,7 +853,7 @@ $(document).ready(function () {
         // Obtener valores de los filtros
         var estatus = $("#estatus").val();
         var tipo = $("#tipo").val();
-        var responsable = $("#responsable_proyecto").val();
+        var responsable = $("#id_responsable_proyecto").val();
         
         // Aplicar filtros a la DataTable
         tablaPte.draw();
@@ -872,7 +872,7 @@ $(document).ready(function () {
         // Limpiar todos los selects
         $("#estatus").val("");
         $("#tipo").val("");
-        $("#responsable_proyecto").val("");
+        $("#id_responsable_proyecto").val("");
         
         // Redibujar la tabla sin filtros
         tablaPte.draw();
@@ -922,7 +922,6 @@ $(document).ready(function () {
                 $("#id_prioridad").val(pte.id_prioridad);
                 cargarResponsablesProyecto().done(function() {
                     $("#responsable_proyecto").val(pte.id_responsable_proyecto);
-                    $("#btnGuardarPTE").prop('disabled', false).html('Actualizar');
                 });
                 
                 // Mostrar modal
@@ -977,6 +976,31 @@ $(document).ready(function () {
         });
     }
     
+    function cargarResponsablesProyectoModal() {
+        return $.ajax({
+            url: urlObtenerResponsables,
+            type: 'GET',
+            dataType: 'json',
+            success: function(data) {
+                const select = $('#id_responsable_proyecto');
+                select.empty();
+                select.append('<option value="" selected disabled>Seleccione un responsable</option>');
+                
+                if (data && data.length > 0) {
+                    data.forEach(function(responsable) {
+                        select.append(`<option value="${responsable.id}">${responsable.descripcion}</option>`);
+                    });
+                } else {
+                    select.append('<option value="" disabled>No hay responsables disponibles</option>');
+                }
+            },
+            error: function(xhr, status, error) {
+                const select = $('#id_responsable_proyecto');
+                select.empty().append('<option value="" disabled>Error al cargar responsables</option>');
+            }
+        });
+    }
+
     $("#btnGuardarPTE").off('click').on("click", function() {
         const pteId = $("#pte_id").val();
         const formData = new FormData($("#formCrearPTE")[0]);
