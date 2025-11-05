@@ -104,6 +104,7 @@ def datatable_ptes(request):
     filtro_estatus = request.GET.get('estatus', '')
     filtro_tipo = request.GET.get('tipo', '')
     filtro_responsable = request.GET.get('responsable_proyecto', '')
+    filtro_anio = request.GET.get('anio', '')
     if filtro_estatus:
         ptes = ptes.filter(estatus=filtro_estatus)
     
@@ -112,6 +113,9 @@ def datatable_ptes(request):
     
     if filtro_responsable:
         ptes = ptes.filter(id_responsable_proyecto_id=filtro_responsable)
+    
+    if filtro_anio:
+        ptes = ptes.filter(fecha_solicitud__year=filtro_anio)
         
     total_records = ptes.count()
     ptes = ptes[start:start + length]

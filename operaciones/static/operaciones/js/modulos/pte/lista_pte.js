@@ -32,6 +32,7 @@ $(document).ready(function () {
                 extra.estatus = $("#estatus").val();
                 extra.tipo = $("#tipo").val();
                 extra.responsable_proyecto = $("#id_responsable_proyecto").val();
+                extra.anio = $("#anio").val();
             }
         },
         columns: [
