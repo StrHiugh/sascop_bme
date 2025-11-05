@@ -30,12 +30,12 @@ class PTEHeader(models.Model):
     fecha_solicitud = models.DateField(blank=True, null=True)
     fecha_entrega = models.DateField(blank=True, null=True)
     plazo_dias = models.FloatField()
-    id_orden_trabajo = models.CharField(max_length=100)
-    id_responsable_proyecto = models.ForeignKey(ResponsableProyecto, on_delete=models.CASCADE)
+    id_orden_trabajo = models.CharField(max_length=100, blank=True, null=True)
+    id_responsable_proyecto = models.ForeignKey(ResponsableProyecto, on_delete=models.CASCADE, blank=True, null=True) ##QUITAR LUEGOOO
     total_homologado = models.DecimalField(max_digits=15, decimal_places=2, default=0)
     estatus = models.IntegerField(choices=ESTATUS_CHOICES, default=1)
     prioridad = models.IntegerField(blank=True, null=True)
-    comentario = models.TextField(blank=True)
+    comentario = models.TextField(blank=True, null=True)
 
     class Meta:
         db_table = 'pte_header'
