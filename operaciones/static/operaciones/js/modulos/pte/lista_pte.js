@@ -1047,7 +1047,7 @@ $(document).ready(function () {
                     aviso(response.tipo_aviso, response.detalles);
                     const modal = bootstrap.Modal.getInstance(document.getElementById('modalCrearPTE'));
                     modal.hide();
-                    tablaPte.ajax.reload();
+                    // tablaPte.ajax.reload()(null, false);
                 } else {
                     aviso(response.tipo_aviso, response.detalles);
                 }
