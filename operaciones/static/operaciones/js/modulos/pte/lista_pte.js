@@ -874,6 +874,7 @@ $(document).ready(function () {
         $("#estatus").val("");
         $("#tipo").val("");
         $("#id_responsable_proyecto").val("");
+        $("#anio").val("");
         
         // Redibujar la tabla sin filtros
         tablaPte.draw();
