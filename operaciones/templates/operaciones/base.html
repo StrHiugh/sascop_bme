@@ -63,24 +63,31 @@
                             <span class="nav-text">Inicio</span>
                         </a>
                     </li>
+                    {% if perms.operaciones.view_pteheader %}
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'operaciones:lista_pte' %}">
                             <i class="fas fa-file-alt"></i>
                             <span class="nav-text">PTE's</span>
                         </a>
                     </li>
+                    {% endif %}
+                    {% if perms.operaciones.view_ote %}
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'operaciones:lista_ot' %}">
                             <i class="fas fa-tasks"></i>
                             <span class="nav-text">OT's</span>
                         </a>
                     </li>
+                    {% endif %}
+                    {% if perms.operaciones.view_produccion %}
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'operaciones:lista_produccion' %}">
                             <i class="fas fa-industry"></i>
                             <span class="nav-text">Producción</span>
                         </a>
                     </li>
+                    {% endif %}
+                    {% if perms.operaciones.view_paso %}
                     <li class="nav-item has-submenu">
                         <a class="nav-link dropdown-toggle hidden">
                             <i class="fa-solid fa-rectangle-list"></i>
@@ -138,6 +145,7 @@
                             </li>
                         </ul>
                     </li>
+                    {% endif %}
                     <li class="nav-item">
                         <a class="nav-link" href="#">
                             <i class="fas fa-cog"></i>

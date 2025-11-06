@@ -50,7 +50,7 @@
                 </div>
             </div>
             <div class="card-footer bg-transparent">
-                <a href="{% url 'operaciones:lista_ot' %}" class="btn btn-sm btn-outline-dark">
+                <a href="{% url 'operaciones:lista_ot' %}" class="btn btn-sm btn-outline-dark {% if not perms.operaciones.view_ote %}disabled-link{% endif %}">
                     <i class="fas fa-list me-1"></i>Ver todos
                 </a>
             </div>
@@ -72,7 +72,7 @@
                 </div>
             </div>
             <div class="card-footer bg-transparent">
-                <a href="{% url 'operaciones:lista_produccion' %}" class="btn btn-sm btn-outline-dark">
+                <a href="{% url 'operaciones:lista_produccion' %}" class="btn btn-sm btn-outline-dark {% if not perms.operaciones.lista_produccion %}disabled-link{% endif %}">
                     <i class="fas fa-list me-1"></i>Ver todos
                 </a>
             </div>

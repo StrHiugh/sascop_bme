@@ -115,7 +115,22 @@ def datatable_ptes(request):
         ptes = ptes.filter(id_responsable_proyecto_id=filtro_responsable)
     
     if filtro_anio:
-        ptes = ptes.filter(fecha_solicitud__year=filtro_anio)
+        # Intentar extraer el año del oficio_pte (formato: BME-3801-025-2024)
+        ptes_con_anio_en_oficio = ptes.filter(oficio_pte__regex=r'.*-(\d{4})$')
+        ptes_sin_anio_en_oficio = ptes.exclude(oficio_pte__regex=r'.*-(\d{4})$')
+        
+        # Filtrar los que tienen año en oficio_pte
+        ptes_con_anio = ptes_con_anio_en_oficio.filter(
+            oficio_pte__endswith=f"-{filtro_anio}"
+        )
+        
+        # Filtrar los que NO tienen año en oficio_pte por fecha_solicitud
+        ptes_sin_anio = ptes_sin_anio_en_oficio.filter(
+            fecha_solicitud__year=filtro_anio
+        )
+        
+        # Combinar ambos resultados
+        ptes = ptes_con_anio | ptes_sin_anio
         
     total_records = ptes.count()
     ptes = ptes[start:start + length]
@@ -782,6 +797,13 @@ def editar_pte(request):
 def eliminar_pte(request):
     """Eliminación lógica de PTE"""
     try:
+        if not request.user.has_perm('operaciones.delete_pteheader'):
+            return JsonResponse({
+                'tipo_aviso': 'error',
+                'detalles': 'No tienes permiso para eliminar PTEs',
+                'exito': False
+            })
+        
         # Obtener el ID del PTE
         pte_id = request.POST.get('id')
 

@@ -148,11 +148,21 @@ $(document).ready(function () {
                         <a class="table-icon editar_pte" title="Editar" data-id="${fila.id}">
                             <i class="fas fa-edit"></i>
                         </a>
-                        <a class="table-icon eliminar_pte" title="Eliminar" data-id="${fila.id}">
-                            <i class="fas fa-trash"></i>
-                        </a>
                     `;
-                    
+                    if (puedeEliminarPte) {
+                        botones += `
+                            <a class="table-icon eliminar_pte" title="Eliminar" data-id="${fila.id}">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        `;
+                    } else {
+                        botones += `
+                            <a class="table-icon disabled" title="Sin permisos para eliminar" 
+                            style="opacity: 0.5; cursor: not-allowed; color: #6c757d;">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        `;
+                    }
                     // Si el progreso es 100%, mostrar botón para crear OTE
                     if (fila.progreso === 100) {
                         botones += `
@@ -161,7 +171,6 @@ $(document).ready(function () {
                             </a>
                         `;
                     }
-                    
                     return botones;
                 }
             }

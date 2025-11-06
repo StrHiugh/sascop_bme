@@ -1,6 +1,6 @@
 from decimal import Decimal, InvalidOperation
 from django.shortcuts import render, get_object_or_404
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, permission_required
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 from django.db.models import Q, Case, When, Value, CharField, OrderBy,F
@@ -148,6 +148,13 @@ def obtener_tipos(request):
 @require_http_methods(["POST"])
 def editar_tipos(request):
     try:
+        if not request.user.has_perm('operaciones.change_tipo'):
+            return JsonResponse({
+                'tipo_aviso': 'error',
+                'detalles': 'No tienes permisos para editar',
+                'exito': False
+            })
+        
         id = request.POST.get('id')
         descripcion = request.POST.get('descripcion')
         afectacion = request.POST.get('afectacion')

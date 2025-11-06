@@ -240,7 +240,7 @@
     var urlObtenerProgresoGeneralPTE  = "{% url 'operaciones:obtener_progreso_general_pte' %}";
     var urlActualizarFecha  = "{% url 'operaciones:actualizar_fecha' %}";
     var urlCambiarEstatusPTE  = "{% url 'operaciones:cambiar_estatus_pte' %}";
-    {% comment %} var urlEditar = "{% url 'operaciones:editar_pte' 0 %}".replace('/0', ''); {% endcomment %}
+    const puedeEliminarPte = {{ perms.operaciones.delete_pteheader|yesno:"true,false" }};
     
 </script>
 {% endblock %}
