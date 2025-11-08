@@ -5,7 +5,8 @@
  * __version__    : 1.0.1
  * __app__        : BME SUBTEC
  */
-
+let REGISTRO_ACTIVIDAD = new RegistroActividad(0,null,"REGISTRAR")
+let tablaSubpasosGlobal = null;
 $(document).ready(function () {
     window.tablaPte = $("#tabla").DataTable({
         processing: true,
@@ -513,7 +514,9 @@ $(document).ready(function () {
                 const textoEstatus = $(this).text().trim();
                 const mostrarFechaEntrega = (nuevoEstatus == '3');
                 const dropdownButton = $(this).closest('.dropdown').find('.dropdown-toggle');
-
+                let datosPaso = tablaDetallePTE.row($(this).parents('tr')).data() ? 
+                    tablaDetallePTE.row($(this).parents('tr')).data() : 
+                    tablaSubpasosGlobal.row($(this).parents('tr')).data();
                 let contenidoMensaje = `
                     <div class="mb-3">
                         <p>¿Estás seguro de cambiar el estatus a <strong>${textoEstatus}</strong>?</p>
@@ -558,17 +561,26 @@ $(document).ready(function () {
                                         return;
                                     }
                                 }
+                                let log = new RegistroActividad(1,datosPaso.id,"ACTUALIZAR");
+                                log.agregar_actividad({
+                                    nombre:"Actualizó",
+                                    valor_actual:textoEstatus,
+                                    valor_anterior:datosPaso.estatus_pte_texto,
+                                    detalle:`el estatus del paso ${datosPaso.orden} de la PTE: ${datosPaso.folio_pte}`})   
+                                    
+                                // Agregar fecha de entrega solo si existe
                                 const datos = {
                                     paso_id: pasoId,
                                     nuevo_estatus: nuevoEstatus,
-                                    comentario: comentario, 
+                                    comentario: comentario,
+                                    registro_actividad: JSON.stringify(log.actividad), 
                                     csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val()
                                 };
-                                // Agregar fecha de entrega solo si existe
                                 if (mostrarFechaEntrega) {
                                     datos.fecha_entrega = $('#fechaEntrega').val();
                                 }
                                 const fechaEntregaData = mostrarFechaEntrega ? $('#fechaEntrega').val() : null;
+
                                 BMAjax(
                                     url, 
                                     datos,
@@ -700,7 +712,7 @@ $(document).ready(function () {
                     ).show();
                     
                     // Inicializar DataTable de subpasos
-                    let tablaSubpasos = $(`#tabla-subpasos_${pteId}`).DataTable({
+                    tablaSubpasosGlobal = $(`#tabla-subpasos_${pteId}`).DataTable({
                         processing: true,
                         serverSide: true,
                         responsive: true,
@@ -834,7 +846,6 @@ $(document).ready(function () {
                     tr.addClass('shown-subpaso');
                 }
             });
-            
             tr.addClass('shown');
         }
     });
@@ -933,7 +944,8 @@ $(document).ready(function () {
                 cargarResponsablesProyecto().done(function() {
                     $("#responsable_proyecto").val(pte.id_responsable_proyecto);
                 });
-                
+                REGISTRO_ACTIVIDAD.registra_actuales("#formCrearPTE");
+                REGISTRO_ACTIVIDAD.actualiza_registro_id(pte.id);
                 // Mostrar modal
                 const modal = new bootstrap.Modal(document.getElementById('modalCrearPTE'));
                 modal.show();
@@ -1035,6 +1047,23 @@ $(document).ready(function () {
         const url = pteId ? urlEditarPTE : urlCrearPTE;
         const method = "POST";
         
+        REGISTRO_ACTIVIDAD._evento = pteId ? "MODIFICAR" : "CREAR";
+        if (REGISTRO_ACTIVIDAD._evento=="MODIFICAR"){
+            REGISTRO_ACTIVIDAD.detecta_cambios("#formCrearPTE");
+            const agrega_detalle = e => ({...e, detalle: `de la PTE: ${$("#oficio_pte").val()}`});
+            REGISTRO_ACTIVIDAD.transforma_cambios(agrega_detalle);
+            formData.append('registro_actividad', JSON.stringify(REGISTRO_ACTIVIDAD.actividad));
+        }else{
+            REGISTRO_ACTIVIDAD._cambios = [];
+            REGISTRO_ACTIVIDAD.agregar_actividad({
+                nombre:"Creó",
+                valor_actual:"",
+                valor_anterior:"",
+                detalle:` ${$("#id_tipo option:selected").text()} con folio: ${$("#oficio_pte").val()}`
+            })
+            formData.append('registro_actividad', JSON.stringify(REGISTRO_ACTIVIDAD.actividad));
+        }   
+
         // Enviar datos
         $.ajax({
             url: url,
@@ -1071,6 +1100,7 @@ $(document).ready(function () {
     
     $(document).on("click", ".eliminar_pte", function () {
         const id = $(this).data('id');
+        let datos = tablaPte.row($(this).parents('tr')).data();
         BMensaje({
             titulo: "Confirmación",
             subtitulo: "¿Estás seguro de eliminar esta PTE?",
@@ -1079,11 +1109,21 @@ $(document).ready(function () {
                     texto: "Sí, continuar",
                     clase: "btn-primary",
                     funcion: function() {
+                        let log = new RegistroActividad(0,datos.id,"ELIMINAR");
+                        log.agregar_actividad({
+                            nombre:"Eliminó",
+                            valor_actual:"",
+                            valor_anterior:"",
+                            detalle:`${datos.descripcion_tipo} con folio: ${datos.oficio_pte}`})
+
                         const url = urlEliminarPTE;
                         const method = "POST";
                         BMAjax(
                             url, 
-                            { id: id },
+                            { 
+                                id: id,
+                                registro_actividad: JSON.stringify(log.actividad),
+                            },
                             method
                         ).done(function(response) {
                             if (response.exito) {
@@ -1105,6 +1145,8 @@ $(document).ready(function () {
     // Evento para crear OTE desde PTE
     $(document).on("click", ".crear-ot", function () {
         const pteId = $(this).data('id');
+        let datos = tablaPte.row($(this).parents('tr')).data();
+
         BMensaje({
             titulo: "Crear Orden de Trabajo",
             subtitulo: `
@@ -1129,11 +1171,19 @@ $(document).ready(function () {
                         const url = urlCrearOT;
                         const method = "POST";
                         
+                        let log = new RegistroActividad(4,null,"CREAR");
+                        log.agregar_actividad({
+                            nombre:"Creó",
+                            valor_actual:"",
+                            valor_anterior:"",
+                            detalle:`una Orden de Trabajo con folio: ${folioOT} a partir de la PTE: ${datos.oficio_pte}`})  
+
                         BMAjax(
                             url, 
                             { 
                                 pte_id: pteId,
                                 folio: folioOT,
+                                registro_actividad: JSON.stringify(log.actividad),
                                 csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val()
                             },
                             method

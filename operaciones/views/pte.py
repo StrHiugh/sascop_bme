@@ -8,7 +8,7 @@ from django.http import JsonResponse
 from django.db.models import Case, When, Value, CharField,Q, ExpressionWrapper, Count,F
 from operaciones.models.catalogos_models import Embarcacion, Estatus, ResponsableProyecto, Tipo
 from ..models import PTEHeader, PTEDetalle, OTE, Produccion, Paso
-
+from ..registro_actividad import registrar_actividad
 @login_required(login_url='/accounts/login/')
 def index(request):
     """Página principal del sistema"""
@@ -181,7 +181,7 @@ def datatable_pte_detalle(request):
     
     detalles = PTEDetalle.objects.filter(
         id_pte_header_id=pte_header_id, id_paso__tipo=1  # Solo pasos principales
-    ).select_related('id_paso').annotate(
+    ).select_related('id_paso','id_pte_header').annotate(
         estatus_pte_texto=Case(
             When(estatus_paso=1, then=Value('PENDIENTE')),
             When(estatus_paso=2, then=Value('PROCESO')),
@@ -231,7 +231,8 @@ def datatable_pte_detalle(request):
             'es_subpaso': detalle.id_paso.tipo == 2,  # Flag para identificar subpasos
             'progreso_subpasos': getattr(detalle, 'progreso_subpasos', None),  # Progreso solo para paso 4
             'total_subpasos': getattr(detalle, 'total_subpasos', 0),
-            'subpasos_completados': getattr(detalle, 'subpasos_completados', 0)
+            'subpasos_completados': getattr(detalle, 'subpasos_completados', 0),
+            'folio_pte': detalle.id_pte_header.oficio_pte
         })
     
     return JsonResponse({
@@ -249,7 +250,7 @@ def datatable_subpasos(request):
     subpasos = PTEDetalle.objects.filter(
         id_pte_header_id=pte_header_id,
         id_paso__tipo=2  # Solo subpasos
-    ).select_related('id_paso').annotate(
+    ).select_related('id_paso','id_pte_header' ).annotate(
         estatus_pte_texto=Case(
             When(estatus_paso=1, then=Value('PENDIENTE')),
             When(estatus_paso=2, then=Value('PROCESO')),
@@ -272,7 +273,9 @@ def datatable_subpasos(request):
             'fecha_entrega': subpaso.fecha_entrega.strftime('%d/%m/%Y') if subpaso.fecha_entrega else None,
             'fecha_inicio': subpaso.fecha_inicio,
             'fecha_termino': subpaso.fecha_termino,
-            'comentario': subpaso.comentario or ''
+            'comentario': subpaso.comentario or '',
+            'folio_pte': subpaso.id_pte_header.oficio_pte
+            
         })    
     return JsonResponse({
         'data': data
@@ -488,6 +491,7 @@ def obtener_responsables_proyecto(request):
 
 @require_http_methods(["POST"])
 @login_required
+@registrar_actividad
 def crear_pte(request):
     """Crear PTE con header y detalles"""
     try:
@@ -570,7 +574,8 @@ def crear_pte(request):
             'exito': True,
             'tipo_aviso': 'exito',
             'detalles': f'PTE creado correctamente',
-            'id': pte_header.id
+            'id': pte_header.id,
+            'registro_id':pte_header.id,
         })
         
     except ValueError as e:
@@ -588,6 +593,7 @@ def crear_pte(request):
 
 @require_http_methods(["POST"])
 @login_required
+@registrar_actividad
 def cambiar_estatus_paso(request):
     """Cambiar estatus de un paso del PTE"""
     try:
@@ -736,6 +742,7 @@ def obtener_datos_pte(request):
 
 @require_http_methods(["POST"])
 @login_required
+@registrar_actividad
 def editar_pte(request):
     """Editar PTE existente"""
     try:
@@ -794,6 +801,7 @@ def editar_pte(request):
         
 @require_http_methods(["POST"])
 @login_required
+@registrar_actividad
 def eliminar_pte(request):
     """Eliminación lógica de PTE"""
     try:
@@ -841,6 +849,7 @@ def eliminar_pte(request):
 
 @require_http_methods(["POST"])
 @login_required
+@registrar_actividad
 def crear_ot_desde_pte(request):
     """Crear OT automáticamente desde PTE completada"""
     try:
@@ -940,7 +949,8 @@ def crear_ot_desde_pte(request):
             'exito': True,
             'tipo_aviso': 'exito',
             'detalles': f'OT creada correctamente: {ote.orden_trabajo}',
-            'ote_id': ote.id
+            'ote_id': ote.id,
+            'registro_id': ote.id,
         })
         
     except PTEHeader.DoesNotExist:
