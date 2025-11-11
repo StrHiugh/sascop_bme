@@ -1,0 +1,115 @@
+{% extends 'operaciones/base.html' %}
+{% load static %}
+{% block titulos %}
+<div class="header-modulo">
+    <div class="header-modulo-container">
+        <div class="header-title-section">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-2">
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'operaciones:index' %}" class="text-decoration-none">
+                            Inicio
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item active">Registro actividad</li>
+                </ol>
+            </nav>
+            <h1 class="h2 fw-bold mb-0">REGISTRO DE ACTIVIDAD</h1>
+        </div>
+        <div class="header-buttons-section">
+            <button class="btn btn-outline-secondary" id="btn-panel-filtros">
+                <i class="fas fa-filter me-2"></i>
+                Filtros
+            </button>
+        </div>
+    </div>
+</div>
+{%endblock%}
+{% block content %}
+<div class="bm-content">
+    <div class="bm-cont-elementos">
+        <div class="bm-cont-elementos-body">
+            <div class="row mb-3">
+                <div class="col-md-6 col-lg-4">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0">
+                            <i class="fas fa-search"></i>
+                        </span>
+                        <input type="text" class="form-control border-start-0" id="filtro-buscar" placeholder="Enter para filtrar">
+                    </div>
+                </div>
+                <div class="col-md-2 col-lg-2">
+                    <div id="select-length"></div>
+                </div>
+            </div>
+            <!-- Tabla -->
+            <table id="tabla" class="table table-hover dataTable-width-100">
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Panel de Filtros con Offcanvas de Bootstrap 5 -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="panelFiltros">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title">Filtros</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body">
+        <form id="form-filtros">
+            <div class="mb-3">
+                <label class="form-label">Afectacion en</label>
+                <select class="form-select" id="filtro-afectacion">
+                    <option value="" selected disabled>Seleccione un evento</option>
+                    <option value="0">PTE Header</option>
+                    <option value="1">PTE Detalle</option>
+                    <option value="2">Paso</option>
+                    <option value="3">Tipo</option>
+                    <option value="4">OT</option>
+                    <option value="5">Sitio</option>
+                    <option value="6">Estatus</option>
+                    <option value="7">Embarcacion</option>
+                    <option value="8">Unidad Medida</option>
+                    <option value="9">Produccion</option>
+                    <option value="10">Producto</option>
+                    <option value="11">Responsable Proyecto</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Evento</label>
+                <select class="form-select" id="filtro-evento">
+                    <option value="" selected disabled>Seleccione un evento</option>
+                    <option value="MODIFICAR">MODIFICAR</option>
+                    <option value="CREAR">CREAR</option>
+                    <option value="ELIMINAR">ELIMINAR</option>
+                    <option value="ACTUALIZAR">ACTUALIZAR</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Usuario</label>
+                <select class="form-select" id="filtro-usuario">
+                </select>
+            </div>
+            <div class="d-grid gap-2">
+                <button type="button" class="btn btn-primary" id="aplicar-filtros">
+                    <i class="fas fa-check me-2"></i>Aplicar Filtros
+                </button>
+                <button type="button" class="btn btn-outline-secondary" id="limpiar-filtros">
+                    <i class="fas fa-eraser me-2"></i>Limpiar Filtros
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'operaciones/js/modulos/registro_actividad/registro_actividad_index.js'%}?v=1.0.0"></script>
+
+<script>
+    var urlDatatable = "{% url 'operaciones:datatable_registro_actividad' %}";
+    var urlObtenerUsuarios = "{% url 'operaciones:obtener_usuarios_log' %}";
+    
+</script>
+{% endblock %}

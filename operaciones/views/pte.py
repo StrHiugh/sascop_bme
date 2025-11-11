@@ -283,6 +283,7 @@ def datatable_subpasos(request):
     
 @require_http_methods(["POST"])
 @login_required
+@registrar_actividad
 def cambiar_estatus_pte(request):
     """Cambiar estatus de una PTE"""
     try:
@@ -420,6 +421,7 @@ def obtener_progreso_paso4(request):
 
 @require_http_methods(["POST"])
 @login_required
+@registrar_actividad
 def actualizar_fecha(request):
     """Actualizar fecha de inicio de un paso"""
     try:

@@ -191,7 +191,7 @@ $(document).ready(function () {
         const textoEstatus = $(this).text().trim();
         const mostrarFechaEntrega = (nuevoEstatus == '3');
         const dropdownButton = $(this).closest('.dropdown').find('.dropdown-toggle');
-
+        console.log(rowData)
         let contenidoMensaje = `
             <div class="mb-3">
                 <p>¿Estás seguro de cambiar el estatus de la PTE a <strong>${textoEstatus}</strong>?</p>
@@ -236,10 +236,18 @@ $(document).ready(function () {
                                 return;
                             }
                         }
+                        let log = new RegistroActividad(0,rowData.id,"ACTUALIZAR");
+                        log.agregar_actividad({
+                            nombre:"Actualizó",
+                            valor_actual:textoEstatus,
+                            valor_anterior:rowData.estatus_texto,
+                            detalle:`el estatus de: <b>${rowData.estatus_texto}</b> a: <b>${textoEstatus}</b>, de la PTE HEADER: <b>${rowData.oficio_pte}</b>`})   
+                        
                         const datos = {
                             pte_id: pteId,
                             nuevo_estatus: nuevoEstatus,
                             comentario: comentario, 
+                            registro_actividad: JSON.stringify(log.actividad),
                             csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val()
                         };
                         // Agregar fecha de entrega solo si existe
@@ -566,7 +574,7 @@ $(document).ready(function () {
                                     nombre:"Actualizó",
                                     valor_actual:textoEstatus,
                                     valor_anterior:datosPaso.estatus_pte_texto,
-                                    detalle:`el estatus del paso ${datosPaso.orden} de la PTE: ${datosPaso.folio_pte}`})   
+                                    detalle:`el estatus de: <b>${datosPaso.estatus_pte_texto}</b> a: <b>${textoEstatus}</b>, del paso <b>${datosPaso.orden}</b> de la PTE: <b>${datosPaso.folio_pte}</b>`})   
                                     
                                 // Agregar fecha de entrega solo si existe
                                 const datos = {
@@ -651,13 +659,25 @@ $(document).ready(function () {
             // Evento para cambiar fecha de inicio, término y entrega
             $(`#tabla-detalle-pte_${pteId}`).on('change', '.fecha-input', function() {
                 const pasoId = $(this).data('paso-id');
+                let datosPaso = tablaDetallePTE.row($(this).parents('tr')).data() ? 
+                    tablaDetallePTE.row($(this).parents('tr')).data() : 
+                    tablaSubpasosGlobal.row($(this).parents('tr')).data();
                 const tipo = $(this).attr('tipo');
                 const nuevaFecha = $(this).val();
                 const fechaCell = $(this).closest('td');
-                
                 if (!nuevaFecha) {
                     return;
                 }
+
+                let log = new RegistroActividad(1,datosPaso.id,"ACTUALIZAR");
+                log.agregar_actividad({
+                    nombre:"Actualizó",
+                    valor_actual:nuevaFecha,
+                    valor_anterior:(tipo=='1')?datosPaso.fecha_inicio:(tipo=='2')?datosPaso.fecha_termino:datosPaso.fecha_entrega,
+                    detalle:`la fecha de:<b> ${(tipo=='1')?datosPaso.fecha_inicio:(tipo=='2')?datosPaso.fecha_termino:datosPaso.fecha_entrega}</b> a: <b>${nuevaFecha}
+                        ${(tipo=='1')?'de inicio':
+                        (tipo=='2')?'de término':'de entrega'} </b>
+                        del paso <b>${datosPaso.orden}</b> de la PTE: <b>${datosPaso.folio_pte}</b>`}) 
                 
                 BMAjax(
                     urlActualizarFecha, 
@@ -665,6 +685,7 @@ $(document).ready(function () {
                         id_paso: pasoId,
                         tipo: tipo,
                         fecha: nuevaFecha,
+                        registro_actividad: JSON.stringify(log.actividad),
                         csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val()
                     },
                     "POST"
@@ -863,7 +884,6 @@ $(document).ready(function () {
     // Panel de filtros
     $("#btn-panel-filtros").on("click", function () {
         // Mostrar el offcanvas de Bootstrap
-        
         var filtrosOffcanvas = new bootstrap.Offcanvas(document.getElementById('panelFiltros'));
         filtrosOffcanvas.show();
         cargarResponsablesProyectoModal();
@@ -927,6 +947,7 @@ $(document).ready(function () {
         BMAjax(
             urlObtenerDatos, {id:pteId}, "GET")
             .done(function(datos) {
+                iniciarLoader();
                 const pte = datos.datos;
                 // Llenar formulario con datos existentes
                 $("#pte_id").val(pte.id);
@@ -944,8 +965,12 @@ $(document).ready(function () {
                 cargarResponsablesProyecto().done(function() {
                     $("#responsable_proyecto").val(pte.id_responsable_proyecto);
                 });
-                REGISTRO_ACTIVIDAD.registra_actuales("#formCrearPTE");
-                REGISTRO_ACTIVIDAD.actualiza_registro_id(pte.id);
+
+                setTimeout(function() {
+                    finalizarLoader();
+                    REGISTRO_ACTIVIDAD.registra_actuales("#formCrearPTE");
+                    REGISTRO_ACTIVIDAD.actualiza_registro_id(pte.id);
+                }, 1500);
                 // Mostrar modal
                 const modal = new bootstrap.Modal(document.getElementById('modalCrearPTE'));
                 modal.show();
@@ -1050,7 +1075,7 @@ $(document).ready(function () {
         REGISTRO_ACTIVIDAD._evento = pteId ? "MODIFICAR" : "CREAR";
         if (REGISTRO_ACTIVIDAD._evento=="MODIFICAR"){
             REGISTRO_ACTIVIDAD.detecta_cambios("#formCrearPTE");
-            const agrega_detalle = e => ({...e, detalle: `de la PTE: ${$("#oficio_pte").val()}`});
+            const agrega_detalle = e => ({...e, detalle: `de la PTE: <b>${$("#oficio_pte").val()}</b>`});
             REGISTRO_ACTIVIDAD.transforma_cambios(agrega_detalle);
             formData.append('registro_actividad', JSON.stringify(REGISTRO_ACTIVIDAD.actividad));
         }else{
@@ -1176,7 +1201,7 @@ $(document).ready(function () {
                             nombre:"Creó",
                             valor_actual:"",
                             valor_anterior:"",
-                            detalle:`una Orden de Trabajo con folio: ${folioOT} a partir de la PTE: ${datos.oficio_pte}`})  
+                            detalle:`una Orden de Trabajo con folio: <b>${folioOT}</b> a partir de la PTE: <b>${datos.oficio_pte}</b>`})  
 
                         BMAjax(
                             url, 

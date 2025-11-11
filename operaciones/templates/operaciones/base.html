@@ -146,12 +146,16 @@
                         </ul>
                     </li>
                     {% endif %}
+
+                    {% if perms.operaciones.view_registroactividad %}
                     <li class="nav-item">
-                        <a class="nav-link" href="#">
+                        <a class="nav-link" href="{%url 'operaciones:registro_actividad'%}">
                             <i class="fa-solid fa-clock"></i>
-                            <span class="nav-text">Registro de eventos</span>
+                            <span class="nav-text">Registro de actividad</span>
                         </a>
                     </li>
+                    {% endif %}
+
                     <li class="nav-item">
                         <a class="nav-link" href="#">
                             <i class="fas fa-cog"></i>

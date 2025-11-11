@@ -469,7 +469,9 @@ const FORMATEA_EVENTO = [
 
 estiliza_campo = {
 	// 0 - Concepto Tabulador
-	"0":{},
+	"0":{
+		"null":""
+	},
 	// 1 - Variable
 	"1":{
 		"nombre_variable": "nombre de la variable",

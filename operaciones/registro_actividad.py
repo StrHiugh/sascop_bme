@@ -53,7 +53,6 @@ def _procesar_registro_actividad(request, registro_data, response_data):
         return
     
     try:
-        print (registro_data)
         registro_json = json.loads(registro_data)
         tabla_log = registro_json.get("tabla_log")
         evento_principal = registro_json.get("evento", "EDITAR")
@@ -82,18 +81,16 @@ def _procesar_registro_actividad(request, registro_data, response_data):
                 valor_anterior=cambio.get("valor_anterior", ""),
                 valor_actual=cambio.get("valor_actual", ""),
                 afectacion=_obtener_nombre_tabla(tabla_log),
-                usuario_id=request.user.id,
+                usuario_id_id=request.user.id,
                 detalle=cambio.get("detalle", ""),
-                fecha = timezone.now()
+                fecha = timezone.localtime()
             )
             registros_a_guardar.append(registro)
-        
         if registros_a_guardar:
             RegistroActividad.objects.bulk_create(registros_a_guardar)
             
     except Exception as e:
-        print(f"Error guardando registro actividad: {e}")
-
+        return
 
 def _obtener_nombre_tabla(tabla_log_id):
     """Obtiene el nombre legible de la tabla basado en su ID."""

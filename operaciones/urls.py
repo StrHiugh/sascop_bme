@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import login, pte, ote, produccion, api, catalogos
+from .views import login, pte, ote, produccion, api, catalogos, registro_actividad
 
 app_name = 'operaciones'
 
@@ -37,6 +37,11 @@ urlpatterns = [
     path('ot/eliminar/', ote.eliminar_ot, name='eliminar_ot'),
     path('ot/editar/', ote.editar_ot, name='editar_ot'),
     path('ot/cambiar_estatus_ot/', ote.cambiar_estatus_ot, name='cambiar_estatus_ot'),
+    
+    #URLs para registro de actividad
+    path('registro_actividad/', registro_actividad.registro_actividad, name='registro_actividad'),
+    path('registro_actividad/datatable', registro_actividad.datatable_registro_actividad, name='datatable_registro_actividad'),
+    path('registro_actividad/usuarios', registro_actividad.obtener_usuarios, name='obtener_usuarios_log'),
     
     # URLs para Producción
     path('produccion/', produccion.lista_produccion, name='lista_produccion'),
