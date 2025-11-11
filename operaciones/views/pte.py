@@ -17,10 +17,20 @@ def index(request):
     total_otes = OTE.objects.count()
     total_produccion = Produccion.objects.count()
     
+    # Contar PTEs por cada estatus
+    ptes_activo = PTEHeader.objects.filter(estatus=1).count()
+    ptes_en_proceso = PTEHeader.objects.filter(estatus=2).count()
+    ptes_terminado = PTEHeader.objects.filter(estatus=3).count()
+    ptes_cancelado = PTEHeader.objects.filter(estatus=4).count()
+    
     context = {
         'total_ptes': total_ptes,
         'total_otes': total_otes,
         'total_produccion': total_produccion,
+        'ptes_activo': ptes_activo,
+        'ptes_en_proceso': ptes_en_proceso,
+        'ptes_terminado': ptes_terminado,
+        'ptes_cancelado': ptes_cancelado,
     }
     return render(request, 'operaciones/index.html', context)
 
