@@ -40,9 +40,9 @@ def datatable_registro_actividad(request):
             Q(detalle__icontains=search_value) |
             Q(fecha__icontains=search_value) |
             Q(campo__icontains=search_value) |
-            Q(usuario__first_name__icontains=search_value) |
-            Q(usuario__last_name__icontains=search_value) |
-            Q(usuario__email__icontains=search_value)
+            Q(usuario_id__first_name__icontains=search_value) |
+            Q(usuario_id__last_name__icontains=search_value) |
+            Q(usuario_id__email__icontains=search_value)
         )
     
     if usuario_id:
@@ -55,8 +55,8 @@ def datatable_registro_actividad(request):
         registros = registros.filter(tabla_log=afectacion)
     
     # Ordenamiento
-    order_column = request.POST.get('order[0][column]', '0')
-    order_dir = request.POST.get('order[0][dir]', 'desc')
+    order_column = request.GET.get('order[0][column]', '0')
+    order_dir = request.GET.get('order[0][dir]', 'desc')
     
     column_map = {
         '0': 'id',

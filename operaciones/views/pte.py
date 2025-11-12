@@ -633,7 +633,8 @@ def cambiar_estatus_paso(request):
         if comentario:
             detalle.comentario = comentario
             
-        if int(nuevo_estatus) == 3 and estatus_anterior != 3:
+        if int(nuevo_estatus) == 3:
+            print ("HOOOOOLAAAA")
             if fecha_entrega:
                 detalle.fecha_entrega = fecha_entrega
             else:

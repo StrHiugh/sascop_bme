@@ -191,7 +191,6 @@ $(document).ready(function () {
         const textoEstatus = $(this).text().trim();
         const mostrarFechaEntrega = (nuevoEstatus == '3');
         const dropdownButton = $(this).closest('.dropdown').find('.dropdown-toggle');
-        console.log(rowData)
         let contenidoMensaje = `
             <div class="mb-3">
                 <p>¿Estás seguro de cambiar el estatus de la PTE a <strong>${textoEstatus}</strong>?</p>

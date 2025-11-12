@@ -3,7 +3,7 @@ $(document).ready(function () {
         processing: true,
         serverSide: true,
         responsive: true,
-        order: [[2, "desc"]],
+        order: [[4, "desc"]],
         lengthMenu: [10, 100, 500, 1000],
         dom: '<"row"<"col-sm-12 col-md-6"l>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
         language: {
