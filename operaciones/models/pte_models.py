@@ -51,6 +51,7 @@ class PTEDetalle(models.Model):
     fecha_inicio = models.DateField(null=True, blank=True)
     fecha_termino = models.DateField(null=True, blank=True)
     comentario = models.TextField(blank=True)
+    archivo = models.TextField(blank=True, null=True)
 
     class Meta:
         db_table = 'pte_detalle'

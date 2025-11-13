@@ -28,6 +28,7 @@ urlpatterns = [
     path('pte/obtener-progreso-general-pte/', pte.obtener_progreso_general_pte, name='obtener_progreso_general_pte'),
     path('pte/actualizar-fecha/', pte.actualizar_fecha, name='actualizar_fecha'),
     path('pte/cambiar_estatus_pte/', pte.cambiar_estatus_pte, name='cambiar_estatus_pte'),
+    path('pte/guardar_archivo_pte/', pte.guardar_archivo_pte, name='guardar_archivo_pte'),
     
     # URLs para OTE
     path('ot/', ote.lista_ote, name='lista_ot'),

@@ -511,10 +511,59 @@ $(document).ready(function () {
                         
                         }
                     },
+                    {
+                        "data": null,
+                        "title": "Opciones",
+                        "class": "text-center",
+                        "width": "120px",
+                        "orderable": false,
+                        "render": function(data, type, row) {
+                            if (row.archivo && row.archivo.trim() !== '') {
+                                // Codificar la URL para caracteres especiales
+                                const urlCodificada = encodeURI(row.archivo);
+                                const archivoAcortado = row.archivo.length > 30 ? 
+                                    row.archivo.substring(0, 30) + '...' : row.archivo;
+                                    
+                                return `
+                                    <a class="table-icon ver-archivo" 
+                                        title="Cambiar archivo" 
+                                        data-id="${row.id}">
+                                        <i class="fas fa-upload text-secondary"></i>
+                                    </a>
+                                    <a class="table-icon ver-archivo-externo" 
+                                        href="${urlCodificada}" 
+                                        target="_blank" 
+                                        title="Abrir: ${archivoAcortado}"
+                                        data-bs-toggle="tooltip"
+                                        data-bs-placement="top"
+                                        data-id="${row.id}">
+                                            <i class="fas fa-eye text-success"></i>
+                                    </a>
+                                `;
+                            } else {
+                                // Si no tiene archivo, mostrar solo ícono de subir
+                                return `
+                                    <a class="table-icon ver-archivo" title="Subir archivo" data-id="${row.id}">
+                                        <i class="fas fa-upload"></i>
+                                    </a>
+                                `;
+                            }
+                        }
+                    }
                 ]
             });
             
-            // Evento para cambiar estatus de un paso
+            //evento para cargar archivo
+            $(`#tabla-detalle-pte_${pteId}`).on('click', '.ver-archivo', function(){
+                const pasoId = $(this).data('id');
+                let datos = tablaDetallePTE.row($(this).parents('tr')).data() ? 
+                    tablaDetallePTE.row($(this).parents('tr')).data() : 
+                    tablaSubpasosGlobal.row($(this).parents('tr')).data();
+                window.tablaDetalleActiva = tablaDetallePTE.row($(this).parents('tr')).data() ? tablaDetallePTE : tablaSubpasosGlobal;
+                abrirModalSubirArchivo(datos);
+            })
+
+            //Evento para cambiar estatus de un paso
             $(`#tabla-detalle-pte_${pteId}`).on('click', '.cambiar-estatus-option', function() {
                 const pasoId = $(this).closest('.dropdown').find('.paso-id').val();
                 const nuevoEstatus = $(this).data('estatus');
@@ -860,6 +909,44 @@ $(document).ready(function () {
                                     `;
                                 }
                             },
+                            {
+                                "data": null,
+                                "title": "Opciones",
+                                "class": "text-center",
+                                "width": "120px",
+                                "orderable": false,
+                                "render": function(data, type, row) {
+                                    if (row.archivo && row.archivo.trim() !== '') {
+                                        const urlCodificada = encodeURI(row.archivo);
+                                        const archivoAcortado = row.archivo.length > 30 ? 
+                                            row.archivo.substring(0, 30) + '...' : row.archivo;
+                                            
+                                        return `
+                                            <a class="table-icon ver-archivo" 
+                                                title="Cambiar archivo" 
+                                                data-id="${row.id}">
+                                                <i class="fas fa-upload text-secondary"></i>
+                                            </a>
+                                            <a class="table-icon ver-archivo-externo" 
+                                                href="${urlCodificada}" 
+                                                target="_blank" 
+                                                title="Abrir: ${archivoAcortado}"
+                                                data-bs-toggle="tooltip"
+                                                data-bs-placement="top"
+                                                data-id="${row.id}">
+                                                    <i class="fas fa-eye text-success"></i>
+                                            </a>
+                                        `;
+                                    } else {
+                                        // Si no tiene archivo, mostrar solo ícono de subir
+                                        return `
+                                            <a class="table-icon ver-archivo" title="Subir archivo" data-id="${row.id}">
+                                                <i class="fas fa-upload"></i>
+                                            </a>
+                                        `;
+                                    }
+                                }
+                            }
                         ]
                     });
                     
@@ -981,6 +1068,30 @@ $(document).ready(function () {
             });
     }
 
+    // Función modificada para aceptar datos del paso
+    function abrirModalSubirArchivo(datosPaso = null) {
+        const modal = new bootstrap.Modal(document.getElementById('modalSubirArchivo'));
+        const enlaceInput = document.getElementById('enlaceArchivo');
+        
+        if (datosPaso) {
+            if (datosPaso.archivo) {
+                enlaceInput.value = datosPaso.archivo;
+            } else {
+                enlaceInput.value = '';
+            }
+
+            window.pasoActual = datosPaso;
+        } else {
+            enlaceInput.value = '';
+            window.pasoActual = null;
+        }
+        
+        modal.show();
+        setTimeout(() => {
+            enlaceInput.focus();
+        }, 500);
+    }
+
     function abrirModalCrearPTE() {
         $("#formCrearPTE")[0].reset();
         $("#pte_id").val('');
@@ -1100,7 +1211,7 @@ $(document).ready(function () {
                     aviso(response.tipo_aviso, response.detalles);
                     const modal = bootstrap.Modal.getInstance(document.getElementById('modalCrearPTE'));
                     modal.hide();
-                    // tablaPte.ajax.reload()(null, false);
+                    tablaPte.ajax.reload();
                 } else {
                     aviso(response.tipo_aviso, response.detalles);
                 }
@@ -1231,6 +1342,54 @@ $(document).ready(function () {
 
 });
 
+// Funcion para guardar el archivo
+function guardarEnlaceArchivo() {
+    const enlace = $('#enlaceArchivo').val().trim();
+    
+    if (!enlace) {
+        aviso("advertencia", "Por favor ingresa un enlace válido");
+        $('#enlaceArchivo').focus();
+        return;
+    }
+    
+    // Validación de URL
+    if (!enlace.startsWith('http://') && !enlace.startsWith('https://')) {
+        aviso("advertencia", "La URL debe comenzar con http:// o https://");
+        $('#enlaceArchivo').focus();
+        $('#enlaceArchivo').select();
+        return;
+    }
+    
+    if (window.pasoActual) {
+        $.ajax({
+            url: urlGuardarArchivo,
+            method: "POST",
+            data: {
+                csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val(),
+                paso_id: window.pasoActual.id,
+                archivo: enlace
+            },
+            success: function(response) {
+                if (response.exito) {
+                    aviso("exito", "Archivo guardado correctamente");
+                    $('#modalSubirArchivo').modal('hide');
+                    window.pasoActual = null;
+                    console.log(window.tablaDetalleActiva)
+                    if (window.tablaDetalleActiva) {
+                        window.tablaDetalleActiva.ajax.reload(null, false);
+                        window.tablaDetalleActiva = null; // Limpiar referencia
+                    }
+                } else {
+                    aviso("error", response.message || "Error al guardar el archivo");
+                }
+            },
+            error: function() {
+                aviso("error", "Error al guardar el archivo");
+            }
+        });
+    }
+}
+
 // Función para generar HTML de la tabla de detalles
 function fnHTMLTablaDetallePTE(pteId) {
     return `
@@ -1276,7 +1435,6 @@ function actualizarEstatusEnTiempoReal(dropdownButton, nuevoTexto, nuevoEstatus,
 
     let fechaEntregaCell = null;
     let comentarioCell = null;
-    
 
     // Buscar por texto del header
     headers.each(function(index) {
@@ -1320,7 +1478,7 @@ function actualizarEstatusEnTiempoReal(dropdownButton, nuevoTexto, nuevoEstatus,
         fechaEntregaCell.text('');
     }
 
-    const inputsFecha = tr.find('.fecha-input');
+    const inputsFecha = tr.find('.fecha-in put');
     if (inputsFecha.length) {
         if ([3, 14].includes(nuevoEstatus)) {
             // Si el nuevo estatus es COMPLETADO o NO APLICA, deshabilitar los inputs

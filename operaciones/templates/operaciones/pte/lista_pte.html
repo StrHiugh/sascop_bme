@@ -219,6 +219,40 @@
         </div>
     </div>
 </div>
+
+<!-- Modal para subir archivo a pasos de PTE -->
+<div class="modal fade" id="modalSubirArchivo" tabindex="-1" aria-labelledby="modalSubirArchivoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalSubirArchivoLabel">Subir archivo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formSubirArchivo">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="enlaceArchivo" class="form-label">
+                            Enlace del archivo
+                        </label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="enlaceArchivo" name="enlaceArchivo" placeholder="Pega el enlace aquí..." required>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="guardarEnlaceArchivo()">
+                    <i class="fas fa-save me-2"></i>Guardar
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -240,6 +274,7 @@
     var urlObtenerProgresoGeneralPTE  = "{% url 'operaciones:obtener_progreso_general_pte' %}";
     var urlActualizarFecha  = "{% url 'operaciones:actualizar_fecha' %}";
     var urlCambiarEstatusPTE  = "{% url 'operaciones:cambiar_estatus_pte' %}";
+    var urlGuardarArchivo  = "{% url 'operaciones:guardar_archivo_pte' %}";
     const puedeEliminarPte = {{ perms.operaciones.delete_pteheader|yesno:"true,false" }};
     
 </script>

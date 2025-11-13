@@ -82,23 +82,6 @@ $(document).ready(function () {
                 "width": "40%",
                 render: fnFormatDescripcion
             },
-            // {
-            //     "data": null,
-            //     "title": "Acciones",
-            //     "class": "text-center",
-            //     "width": "100px",
-            //     "orderable": false,
-            //     "render": function(data, type, row) {
-            //         return `
-            //             <a class="table-icon ver-detalle" title="Ver detalles" data-id="${row.id}">
-            //                 <i class="fas fa-eye"></i>
-            //             </a>
-            //             <a class="table-icon descargar-registro" title="Descargar registro" data-id="${row.id}">
-            //                 <i class="fas fa-download"></i>
-            //             </a>
-            //         `;
-            //     }
-            // }
         ],
         drawCallback: function (settings) {
             $("[data-toggle='tooltip']").tooltip();

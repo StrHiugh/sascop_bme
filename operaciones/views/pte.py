@@ -242,7 +242,8 @@ def datatable_pte_detalle(request):
             'progreso_subpasos': getattr(detalle, 'progreso_subpasos', None),  # Progreso solo para paso 4
             'total_subpasos': getattr(detalle, 'total_subpasos', 0),
             'subpasos_completados': getattr(detalle, 'subpasos_completados', 0),
-            'folio_pte': detalle.id_pte_header.oficio_pte
+            'folio_pte': detalle.id_pte_header.oficio_pte,
+            'archivo': detalle.archivo
         })
     
     return JsonResponse({
@@ -284,8 +285,8 @@ def datatable_subpasos(request):
             'fecha_inicio': subpaso.fecha_inicio,
             'fecha_termino': subpaso.fecha_termino,
             'comentario': subpaso.comentario or '',
-            'folio_pte': subpaso.id_pte_header.oficio_pte
-            
+            'folio_pte': subpaso.id_pte_header.oficio_pte,
+            'archivo': subpaso.archivo
         })    
     return JsonResponse({
         'data': data
@@ -634,7 +635,6 @@ def cambiar_estatus_paso(request):
             detalle.comentario = comentario
             
         if int(nuevo_estatus) == 3:
-            print ("HOOOOOLAAAA")
             if fecha_entrega:
                 detalle.fecha_entrega = fecha_entrega
             else:
@@ -859,6 +859,50 @@ def eliminar_pte(request):
             'detalles': f'Error al eliminar PTE: {str(e)}',
             'exito': False
         })
+
+@require_http_methods(["POST"])
+@login_required
+def guardar_archivo_pte(request):
+    """Guardar Archivo de entregables de pte"""
+    try:
+        # Obtener el ID del PTE
+        paso_id = request.POST.get('paso_id')
+        url = request.POST.get('archivo')
+        
+        if not paso_id:
+            return JsonResponse({
+                'tipo_aviso': 'error',
+                'detalles': 'ID del paso no proporcionado',
+                'exito': False
+            })
+
+        # Obtener y actualizar el paso
+        paso = PTEDetalle.objects.get(id=paso_id)
+        paso.archivo = url
+        paso.save()
+        
+        return JsonResponse({
+            'tipo_aviso': 'exito',
+            'detalles': 'URL asignada correctamente',
+            'exito': True
+        })
+
+    except PTEDetalle.DoesNotExist:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': 'Paso no encontrado',
+            'exito': False
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': f'Error al asignar url: {str(e)}',
+            'exito': False
+        })
+
+
+
 
 @require_http_methods(["POST"])
 @login_required
