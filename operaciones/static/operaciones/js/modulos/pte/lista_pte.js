@@ -473,7 +473,7 @@ $(document).ready(function () {
                                 
                                 return `
                                     <div>
-                                        <div class="small text-dark mb-1" style="font-size: 12px;">Avance general:</div>
+                                        <div class="small text-dark mb-1" style="font-size: 12px;"><b>Avance general:</b></div>
                                         <div class="progress" style="height: 15px;">
                                             <div class="progress-bar ${color} progress-bar" 
                                                 role="progressbar" 
@@ -527,7 +527,7 @@ $(document).ready(function () {
                                 return `
                                     <a class="table-icon ver-archivo" 
                                         title="Cambiar archivo" 
-                                        data-id="${row.id}">
+                                        data-id="${row.id}"  >
                                         <i class="fas fa-upload text-secondary"></i>
                                     </a>
                                     <a class="table-icon ver-archivo-externo" 
@@ -622,7 +622,7 @@ $(document).ready(function () {
                                     nombre:"Actualizó",
                                     valor_actual:textoEstatus,
                                     valor_anterior:datosPaso.estatus_pte_texto,
-                                    detalle:`el estatus de: <b>${datosPaso.estatus_pte_texto}</b> a: <b>${textoEstatus}</b>, del paso <b>${datosPaso.orden}</b> de la PTE: <b>${datosPaso.folio_pte}</b>`})   
+                                    detalle:`el estatus de: <b>${datosPaso.estatus_pte_texto}</b> a: <b>${textoEstatus}</b>, del paso <b>${datosPaso.orden} - ${datosPaso.desc_paso}</b> de la PTE: <b>${datosPaso.folio_pte}</b>`})   
                                     
                                 // Agregar fecha de entrega solo si existe
                                 const datos = {
@@ -1478,7 +1478,7 @@ function actualizarEstatusEnTiempoReal(dropdownButton, nuevoTexto, nuevoEstatus,
         fechaEntregaCell.text('');
     }
 
-    const inputsFecha = tr.find('.fecha-in put');
+    const inputsFecha = tr.find('.fecha-input');
     if (inputsFecha.length) {
         if ([3, 14].includes(nuevoEstatus)) {
             // Si el nuevo estatus es COMPLETADO o NO APLICA, deshabilitar los inputs

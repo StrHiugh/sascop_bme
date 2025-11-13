@@ -38,6 +38,11 @@ $(document).ready(function () {
                 "data": "afectacion",
                 "title": "Afectación en",
                 "orderable": true,
+                render: (data, type, row) =>  `
+                    <div>
+                        <strong>${data}</strong>
+                    </div>
+                `
             },
             {
                 "data": "evento",
