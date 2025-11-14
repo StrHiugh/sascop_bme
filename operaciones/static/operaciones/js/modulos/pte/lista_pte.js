@@ -64,6 +64,10 @@ $(document).ready(function () {
                 "data": "oficio_pte",
                 "title": "Folio PTE"
             },
+            {
+                "data": "oficio_solicitud",
+                "title": "Oficio solicitud"
+            },
             // {
             //     "data": "oficio_solicitud",
             //     "title": "Oficio solicitud"
@@ -74,7 +78,8 @@ $(document).ready(function () {
             },
             {
                 "data": "fecha_entrega",
-                "title": "Fecha entrega"
+                "title": "Fecha entrega",
+                "className": "text-center",
             },
             {
                 "data": "estatus_texto",
@@ -142,7 +147,7 @@ $(document).ready(function () {
                 "data": null,
                 "title": "Opciones",
                 "class": "text-center",
-                "width": "150px",
+                "width": "5%",
                 "orderable": false,
                 render: function (fila) {
                     let botones = `

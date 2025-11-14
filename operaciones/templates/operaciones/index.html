@@ -183,7 +183,7 @@ $(document).ready(function() {
         });
     }
     
-    // Inicializar gráfico con datos reales
+    // Inicializar gráfico
     function inicializarGrafico() {
         var chart = echarts.init(document.getElementById('pieChart'));
         var totalPtes = {{ ptes_activo }} + {{ ptes_en_proceso }} + {{ ptes_terminado }} + {{ ptes_cancelado }};
@@ -257,9 +257,9 @@ $(document).ready(function() {
     }, 60000);
     
     // Actualizar estadísticas cada 30 segundos
-    setInterval(function() {
-        cargarEstadisticas();
-    }, 30000);
+    //setInterval(function() {
+    //    cargarEstadisticas();
+    //}, 30000);
 });
 
 // Función para recargar actividad manualmente
