@@ -186,11 +186,14 @@ $(document).ready(function() {
     // Inicializar gráfico con datos reales
     function inicializarGrafico() {
         var chart = echarts.init(document.getElementById('pieChart'));
+        var totalPtes = {{ ptes_activo }} + {{ ptes_en_proceso }} + {{ ptes_terminado }} + {{ ptes_cancelado }};
+        
         var option = {
             title: {
-                text: 'Propuestas Tecnicas Economicas',
-                subtext: 'Estatus de ptes',
-                left: 'center'
+                text: 'Propuestas Técnicas Económicas',
+                subtext: 'Distribución por estatus',
+                left: 'center',
+                top: '1%'
             },
             tooltip: {
                 trigger: 'item',
@@ -199,21 +202,44 @@ $(document).ready(function() {
             legend: {
                 orient: 'vertical',
                 left: 'left',
+                top: '70%',
                 data: ['Pendiente', 'En Proceso', 'Terminado', 'Cancelado']
             },
             series: [
                 {
                     name: 'PTEs',
                     type: 'pie',
-                    radius: '50%',
+                    radius: ['30%', '70%'],
+                    center: ['50%', '55%'],
                     data: [
                         {value: {{ ptes_activo }}, name: 'Pendiente', itemStyle: {color: '#ffc107'}},
                         {value: {{ ptes_en_proceso }}, name: 'En Proceso', itemStyle: {color: '#007bff'}},
                         {value: {{ ptes_terminado }}, name: 'Terminado', itemStyle: {color: '#198754'}},
                         {value: {{ ptes_cancelado }}, name: 'Cancelado', itemStyle: {color: '#dc3545'}}
                     ],
+                    label: {
+                        formatter: '{b}: {c}'
+                    },
+                    // Texto en el centro del gráfico
+                    labelLine: {
+                        length: 10,
+                        length2: 20
+                    }
                 }
-            ]
+            ],
+            // Texto en el centro del donut
+            graphic: {
+                type: 'text',
+                left: 'center',
+                top: '50%',
+                style: {
+                    text: `Total:\n${totalPtes}`,
+                    textAlign: 'center',
+                    fill: '#333',
+                    fontSize: 16,
+                    fontWeight: 'bold'
+                }
+            }
         };
         
         chart.setOption(option);
