@@ -158,12 +158,27 @@ $(document).ready(function () {
     $("#tabla tbody").on("click", ".editar_ot", function() {
         const otID = $(this).data('id');
         abrirModalEditarOT(otID);
+        window.ot_actual = otID;
     });
 
     // Función para abrir modal de edición
     function abrirModalEditarOT(otID) {
         $("#formCrearOT")[0].reset();
         $("#modalCrearOTLabel").text("Editar OT");
+
+        const $divOTPrincipal = $('#ot_principal').closest('.mb-3');
+        const $divNumReprogramacion = $('#num_reprogramacion').closest('.mb-3');
+        
+        // Ocultar campos por defecto
+        $divOTPrincipal.hide().attr('hidden', 'hidden');
+        $divNumReprogramacion.hide().attr('hidden', 'hidden');
+        $('#num_reprogramacion').val('').prop('disabled', true);
+        $('#ot_principal').val('').prop('disabled', true);
+        
+        if ($('#ot_principal').hasClass('select2-hidden-accessible')) {
+            $('#ot_principal').select2('destroy');
+        }
+
         // Obtener datos del PTE
         BMAjax(
             urlObtenerDatos, {id:otID}, "GET")
@@ -186,12 +201,18 @@ $(document).ready(function () {
                 cargarResponsablesProyecto().done(function() {
                     $("#responsable_proyecto").val(ot.responsable_proyecto);
                 });
+
                 // Verificar si es reprogramación y habilitar campos
                 const esReprogramacion = (ot.id_tipo_id === 5);
-                if (esReprogramacion) {
+                if (esReprogramacion) { 
+                    // Mostrar campos de reprogramación
+                    $divOTPrincipal.show().removeAttr('hidden');
+                    $divNumReprogramacion.show().removeAttr('hidden');
+                    
                     $('#num_reprogramacion').val(ot.num_reprogramacion).prop('disabled', false);
                     $('#ot_principal').val(ot.ot_principal_id).prop('disabled', false);
-                    cargarOTsPrincipales().done(function() {
+
+                    cargarOTsPrincipales(ot.id).done(function() {
                         $('#ot_principal').val(ot.ot_principal_id);
                     });
                 }
@@ -337,13 +358,12 @@ $(document).ready(function () {
             $('#ot_principal').val('');
         } else {
             // Si es reprogramación, cargar las OTs disponibles
-            cargarOTsPrincipales();
+            cargarOTsPrincipales(window.ot_actual);
         }
     });
 
-    function cargarOTsPrincipales() {
+    function cargarOTsPrincipales(ot_id) {
         const selectOT = $('#ot_principal');
-        
         // Mostrar estado de carga
         selectOT.empty().append('<option value="">Cargando OTs...</option>').prop('disabled', true);
         
@@ -351,6 +371,9 @@ $(document).ready(function () {
             url: urlObtenerOTPrincipal,
             type: 'GET',
             dataType: 'json',
+            data: { 
+                ot_id: ot_id
+            },
             success: function(response) {                
                 selectOT.empty();
                 selectOT.append('<option value="" selected disabled>Seleccione una OT principal</option>');

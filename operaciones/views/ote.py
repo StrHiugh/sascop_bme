@@ -77,7 +77,7 @@ def datatable_ot(request):
             'descripcion_tipo':ot.id_tipo.descripcion,
             'estatus': estatus_display,
             'estatus_numero': ot.estatus,  # -1 o 1
-            'estatus_ot_id': ot.id_estatus_ot_id,  # ID del estatus
+            'estatus_ot_id': ot.id_estatus_ot_id,
             'estatus_ot_texto': estatus_ot_texto,
             'responsable_proyecto': ot.id_responsable_proyecto_id if ot.id_responsable_proyecto_id else '',
             'responsable_cliente':ot.responsable_cliente,
@@ -86,10 +86,11 @@ def datatable_ot(request):
             'oficio_ot': ot.oficio_ot,
             'orden_trabajo':ot.orden_trabajo,
             'descripcion_trabajo': ot.descripcion_trabajo,
-            'fecha_inicio_programada': ot.fecha_inicio_programada.isoformat() if ot.fecha_inicio_programada else None,
-            'fecha_termino_programada': ot.fecha_termino_programada.isoformat() if ot.fecha_termino_programada else None,
+            'fecha_inicio_programada': ot.fecha_inicio_programada.strftime('%d/%m/%Y') if ot.fecha_inicio_programada else None,
+            'fecha_inicio_real': ot.fecha_inicio_real.strftime('%d/%m/%Y') if ot.fecha_inicio_real else None, 
+            'fecha_termino_programada': ot.fecha_termino_programada.strftime('%d/%m/%Y') if ot.fecha_termino_programada else None,
+            'fecha_termino_real': ot.fecha_termino_real.strftime('%d/%m/%Y') if ot.fecha_termino_real else None,   
             'comentario':ot.comentario,
-            
         })
     
     return JsonResponse({
@@ -121,7 +122,9 @@ def obtener_datos_ot(request):
             'orden_trabajo':ot.orden_trabajo,
             'descripcion_trabajo': ot.descripcion_trabajo,
             'fecha_inicio_programada': ot.fecha_inicio_programada.isoformat() if ot.fecha_inicio_programada else None,
+            'fecha_inicio_real': ot.fecha_inicio_real.strftime('%d/%m/%Y') if ot.fecha_inicio_real else None, 
             'fecha_termino_programada': ot.fecha_termino_programada.isoformat() if ot.fecha_termino_programada else None,
+            'fecha_termino_real': ot.fecha_termino_real.strftime('%d/%m/%Y') if ot.fecha_termino_real else None,   
             'comentario':ot.comentario,
         }
         
@@ -136,15 +139,20 @@ def obtener_datos_ot(request):
             'detalles': f'Error al obtener datos de la OT: {str(e)}'
         })
         
+@require_http_methods(["GET"])
 def obtener_ots_principales(request):
     """Obtener todas las OTs para el selector de OT principal"""
     try:
+        ot_id = request.GET.get('ot_id')
         # Filtra solo OTs que pueden ser principales (excluye las que ya son reprogramaciones)
         ots = OTE.objects.filter(
             id_tipo=4, 
         ).exclude(
-            estatus=0
+            estatus=0,
         ).values('id', 'orden_trabajo', 'descripcion_trabajo')
+        
+        if ot_id:
+            ots = ots.exclude(id=ot_id)
         
         data = list(ots)
         return JsonResponse(data, safe=False)
