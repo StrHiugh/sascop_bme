@@ -51,20 +51,52 @@
 
 <div class="col-12 p-3 mt-4">
     <div class="card">
-
+        <div class="card-header bg-transparent border-bottom-0">
+            <ul class="nav nav-tabs card-header-tabs" id="powerbiTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active text-dark fw-semibold" id="pte-tab" data-bs-toggle="tab" data-bs-target="#pte-content" type="button" role="tab" aria-controls="pte" aria-selected="true">
+                        <i class="fas fa-file-alt me-2"></i>PTE
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link text-secondary fw-medium" id="produccion-tab" data-bs-toggle="tab" data-bs-target="#produccion-content" type="button" role="tab" aria-controls="produccion" aria-selected="false">
+                        <i class="fas fa-chart-line me-2"></i>Producción
+                    </button>
+                </li>
+            </ul>
+        </div>
         <div class="card-body p-1" style="overflow: hidden;">
-            <div id="powerbi-wrapper" style="width: 1920px; height: 1080px;">
-                <iframe 
-                    id="powerbi-frame"
-                    src="https://app.powerbi.com/view?r=eyJrIjoiYzI0NDAyZDMtOWE2ZC00YjMzLWI1MGQtNDhhNWI1MGQzMTI0IiwidCI6IjY1MTZkMzQ2LTIxZWItNDJmYS04MjMzLTJmYjEwYWUzNDNhNiIsImMiOjR9"
-                    width="100%" 
-                    height="100%"
-                    allowfullscreen>
-                </iframe>
+            <div class="tab-content">
+                <!-- Tab PTE -->
+                <div class="tab-pane fade show active" id="pte-content" role="tabpanel" aria-labelledby="pte-tab">
+                    <div class="powerbi-container" style="height: 1080px; overflow: auto;">
+                        <iframe 
+                            id="powerbi-frame-pte"
+                            src="https://app.powerbi.com/view?r=eyJrIjoiYzI0NDAyZDMtOWE2ZC00YjMzLWI1MGQtNDhhNWI1MGQzMTI0IiwidCI6IjY1MTZkMzQ2LTIxZWItNDJmYS04MjMzLTJmYjEwYWUzNDNhNiIsImMiOjR9"
+                            width="100%" 
+                            height="100%"
+                            allowfullscreen>
+                        </iframe>
+                    </div>
+                </div>
+                
+                <!-- Tab Producción -->
+                <div class="tab-pane fade" id="produccion-content" role="tabpanel" aria-labelledby="produccion-tab">
+                    <div class="powerbi-container" style="height: 1080px; overflow: auto;">
+                        <iframe 
+                            id="powerbi-frame-produccion"
+                            src="https://app.powerbi.com/view?r=eyJrIjoiMjY0NTMwOGMtODc0ZS00MGFlLTk5NjAtMzMxMGQ4NTI2Yjg1IiwidCI6IjY1MTZkMzQ2LTIxZWItNDJmYS04MjMzLTJmYjEwYWUzNDNhNiIsImMiOjR9&pageName=9b900b38d4c4ec3c0d78"
+                            width="100%" 
+                            height="100%"
+                            allowfullscreen>
+                        </iframe>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
 
 <!-- Actividad Reciente -->
 <div class="row p-3">
@@ -111,24 +143,20 @@
 const urlActividadReciente = '{% url "operaciones:datatable_registro_actividad" %}';
 
 $(document).ready(function() {
-    function adjustPowerBIScale() {
-        const wrapper = document.getElementById('powerbi-wrapper');
-        const container = wrapper.parentElement;
-        const containerWidth = container.offsetWidth;
+    // Manejar cambio de tabs de Power BI
+    $('#powerbiTabs button').on('click', function (e) {
+        // Remover active de todos los tabs
+        $('#powerbiTabs .nav-link').removeClass('active text-dark').addClass('text-secondary');
+        $('#powerbiTabs .nav-link').removeClass('fw-semibold').addClass('fw-medium');
         
-        // Calcular scale ratio
-        const scaleRatio = containerWidth / 1920;
+        // Agregar active al tab clickeado
+        $(this).removeClass('text-secondary').addClass('active text-dark fw-semibold');
         
-        // Aplicar transform
-        wrapper.style.transform = `scale(${scaleRatio})`;
-        wrapper.style.transformOrigin = '0 0';
-        
-        // Ajustar altura del contenedor
-        container.style.height = (1080 * scaleRatio) + 'px';
-    }
-    
-    adjustPowerBIScale();
-    window.addEventListener('resize', adjustPowerBIScale);
+        // Mostrar el contenido correspondiente
+        const target = $(this).data('bs-target');
+        $('.tab-pane').removeClass('show active');
+        $(target).addClass('show active');
+    });
 
     // Cargar estadísticas adicionales
     function cargarEstadisticas() {
@@ -289,11 +317,6 @@ $(document).ready(function() {
     setInterval(function() {
         cargarActividadReciente();
     }, 60000);
-    
-    // Actualizar estadísticas cada 30 segundos
-    //setInterval(function() {
-    //    cargarEstadisticas();
-    //}, 30000);
 });
 
 // Función para recargar actividad manualmente
@@ -421,6 +444,39 @@ window.addEventListener('resize', function() {
 
 .badge {
     font-size: 0.75em;
+}
+
+.nav-tabs .nav-link {
+    color: #6c757d !important;
+    font-weight: 500;
+    border: none;
+    padding: 0.75rem 1.5rem;
+}
+
+.nav-tabs .nav-link.active {
+    color: #000 !important;
+    font-weight: 600;
+    background-color: transparent;
+    border-bottom: 3px solid #007bff;
+}
+
+.nav-tabs .nav-link:hover {
+    color: #495057 !important;
+    border-bottom: 3px solid #dee2e6;
+}
+
+.nav-tabs .nav-link.active:hover {
+    border-bottom: 3px solid #007bff;
+}
+
+.card-header-tabs {
+    margin-bottom: 0;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.powerbi-container {
+    position: relative;
+    overflow: auto;
 }
 </style>
 {% endblock %}
