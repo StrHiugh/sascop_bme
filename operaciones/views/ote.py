@@ -24,7 +24,19 @@ def datatable_ot(request):
     # Filtro adicional del input de búsqueda
     filtro_buscar = request.GET.get('filtro', '')
     
-    ots = OTE.objects.filter(estatus__in=[-1,1], id_tipo_id = 4).select_related(
+    # Get filters
+    tipo_id = request.GET.get('tipo', '4') # Default to 4 (INICIAL)
+    ot_principal_id = request.GET.get('ot_principal', None)
+
+    filters = {'estatus__in': [-1, 1]}
+    
+    if tipo_id:
+        filters['id_tipo_id'] = tipo_id
+        
+    if ot_principal_id:
+        filters['ot_principal'] = ot_principal_id
+
+    ots = OTE.objects.filter(**filters).select_related(
         'id_tipo','id_pte_header','id_estatus_ot'
         ).annotate(
         estado_texto=Case(
@@ -57,7 +69,11 @@ def datatable_ot(request):
         ots = ots.filter(estado=filtro_estado)
     
     total_records = ots.count()
-    ots = ots[start:start + length]
+    
+    if length == -1:
+        ots = ots[start:]
+    else:
+        ots = ots[start:start + length]
     
     data = []
     for ot in ots:
@@ -91,6 +107,8 @@ def datatable_ot(request):
             'fecha_termino_programada': ot.fecha_termino_programada.strftime('%d/%m/%Y') if ot.fecha_termino_programada else None,
             'fecha_termino_real': ot.fecha_termino_real.strftime('%d/%m/%Y') if ot.fecha_termino_real else None,   
             'comentario':ot.comentario,
+            'ot_principal': ot.ot_principal,
+            'num_reprogramacion': ot.num_reprogramacion,
         })
     
     return JsonResponse({
@@ -121,11 +139,13 @@ def obtener_datos_ot(request):
             'estatus':ot.estatus,
             'orden_trabajo':ot.orden_trabajo,
             'descripcion_trabajo': ot.descripcion_trabajo,
-            'fecha_inicio_programada': ot.fecha_inicio_programada.isoformat() if ot.fecha_inicio_programada else None,
+            'fecha_inicio_programado': ot.fecha_inicio_programada.isoformat() if ot.fecha_inicio_programada else None,
             'fecha_inicio_real': ot.fecha_inicio_real.strftime('%d/%m/%Y') if ot.fecha_inicio_real else None, 
-            'fecha_termino_programada': ot.fecha_termino_programada.isoformat() if ot.fecha_termino_programada else None,
+            'fecha_termino_programado': ot.fecha_termino_programada.isoformat() if ot.fecha_termino_programada else None,
             'fecha_termino_real': ot.fecha_termino_real.strftime('%d/%m/%Y') if ot.fecha_termino_real else None,   
             'comentario':ot.comentario,
+            'ot_principal': ot.ot_principal,
+            'num_reprogramacion': ot.num_reprogramacion,
         }
         
         return JsonResponse({
@@ -256,7 +276,7 @@ def editar_ot(request):
         
         if ot.estatus == -1:
             ot.estatus = 1
-            
+        
         # Actualizar campos básicos
         ot.orden_trabajo = request.POST.get('orden_trabajo', ot.orden_trabajo)
         ot.responsable_cliente = request.POST.get('responsable_cliente', ot.responsable_cliente)

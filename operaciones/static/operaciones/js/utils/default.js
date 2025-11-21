@@ -9,7 +9,7 @@ function aviso(tipo_aviso, parametros) {
         tiempo: 4000,
         icono: "fa fa-bell"
     };
-    
+
     // Mapear tipos a estilos SmartNotification
     const estilos = {
         "exito": {
@@ -21,7 +21,7 @@ function aviso(tipo_aviso, parametros) {
         },
         "error": {
             titulo: "Error",
-            tipo: "error", 
+            tipo: "error",
             icono: "fa fa-exclamation-circle",
             color: "#d9534f",
             colorClaro: "#f2dede"
@@ -29,7 +29,7 @@ function aviso(tipo_aviso, parametros) {
         "advertencia": {
             titulo: "Advertencia",
             tipo: "warning",
-            icono: "fa fa-exclamation-triangle", 
+            icono: "fa fa-exclamation-triangle",
             color: "#f0ad4e",
             colorClaro: "#fcf8e3"
         },
@@ -50,7 +50,7 @@ function aviso(tipo_aviso, parametros) {
     };
 
     const estilo = estilos[tipo_aviso] || estilos.default;
-    
+
     obj.titulo = estilo.titulo;
     obj.tipo = estilo.tipo;
     obj.icono = estilo.icono;
@@ -61,7 +61,7 @@ function aviso(tipo_aviso, parametros) {
         obj.contenido = parametros;
     }
     $.extend(obj, parametros);
-    
+
     // Crear alerta estilo SmartNotification
     const alertId = "smart-alert-" + Date.now();
     const alertHtml = `
@@ -117,13 +117,13 @@ function aviso(tipo_aviso, parametros) {
 
     // Hacer el contenedor clickeable para las alertas
     alertContainer.css('pointer-events', 'auto');
-    
+
     // Calcular posición para stacking
     const alertasExistentes = alertContainer.find('.smart-alert').length;
     const topPosition = 20 + (alertasExistentes * 15); // 15PX por cada alerta
-    
+
     alertContainer.append(alertHtml);
-    
+
     // Posicionar la nueva alerta
     $("#" + alertId).css('top', topPosition + 'px');
 
@@ -140,7 +140,7 @@ function aviso(tipo_aviso, parametros) {
     }
 
     // Cerrar al hacer click en cualquier parte de la alerta
-    $("#" + alertId).on('click', function(e) {
+    $("#" + alertId).on('click', function (e) {
         if (!$(e.target).hasClass('close-smart-alert')) {
             cerrarSmartAviso(alertId);
         }
@@ -153,7 +153,7 @@ function cerrarSmartAviso(alertId) {
         .removeClass("fadeInRight")
         .addClass("fadeOutRight")
         .delay(300)
-        .queue(function(next) {
+        .queue(function (next) {
             $(this).remove();
             next();
             reorganizarAlertas();
@@ -164,11 +164,11 @@ function cerrarSmartAviso(alertId) {
 function reorganizarAlertas() {
     const alertContainer = $("#smart-alert-container");
     const alertas = alertContainer.find('.smart-alert');
-    
-    alertas.each(function(index) {
+
+    alertas.each(function (index) {
         $(this).css('top', (20 + (index * 90)) + 'px');
     });
-    
+
     // Si no hay alertas, hacer el contenedor no clickeable
     if (alertas.length === 0) {
         alertContainer.css('pointer-events', 'none');
@@ -213,129 +213,127 @@ var existeContenedorDHMensaje = false;
 
         existeInput = false;
 
-        if( !existeContenedorDHMensaje ){
+        if (!existeContenedorDHMensaje) {
             existeContenedorDHMensaje = true;
             $("body").append("<div id='div-dh-mensaje'></div>");
         }
 
         var cajaMensaje = $("<div>", { class: "contenedor-mensaje-alerta" });
-        var divMensaje = $("<div>", { class: "mensaje" }).appendTo( cajaMensaje );
-        var contenedor = $("<div>", { class: "container" }).appendTo( divMensaje );
+        var divMensaje = $("<div>", { class: "mensaje" }).appendTo(cajaMensaje);
+        var contenedor = $("<div>", { class: "container" }).appendTo(divMensaje);
 
         var titulo = $("<h2>", {
             class: "titulo",
             html: configuracion.titulo
-        }).appendTo( contenedor );
+        }).appendTo(contenedor);
 
         var p = $("<p>", {
             class: "subtitulo",
             html: configuracion.subtitulo
-        }).appendTo( contenedor );
+        }).appendTo(contenedor);
 
         /** FORMULARIO **/
-        if ( configuracion.tipo_input != undefined ){
-            switch( configuracion.tipo_input ){
+        if (configuracion.tipo_input != undefined) {
+            switch (configuracion.tipo_input) {
                 case "select":
-                var divInput = $("<div>", {
-                    class: "select",
-                    style: "width: 50%"
-                });
-                var input = $("<select>", { class: "dhm-input"});
-                if ( (configuracion.opciones != undefined) && typeof configuracion.opciones === "object" ) {
-                    for (var i = 0; i < configuracion.opciones.length; i++) {
-                        opcion = configuracion.opciones[i];
-                        $("<option/>", {
-                            value: opcion.valor,
-                            text: opcion.texto
-                        }).appendTo( input );
+                    var divInput = $("<div>", {
+                        class: "select",
+                        style: "width: 50%"
+                    });
+                    var input = $("<select>", { class: "dhm-input" });
+                    if ((configuracion.opciones != undefined) && typeof configuracion.opciones === "object") {
+                        for (var i = 0; i < configuracion.opciones.length; i++) {
+                            opcion = configuracion.opciones[i];
+                            $("<option/>", {
+                                value: opcion.valor,
+                                text: opcion.texto
+                            }).appendTo(input);
+                        }
                     }
-                }
-                input.appendTo( divInput );
-                divInput.append("<i></i>");
-                existeInput = true;
-                break;
+                    input.appendTo(divInput);
+                    divInput.append("<i></i>");
+                    existeInput = true;
+                    break;
                 case "text":
-                var divInput = $("<div>", {
-                    class: "input",
-                    style: "width: 50%"
-                });
-                var input = $("<input>", {
-                    class: "dhm-input",
-                    type: "text"
-                });
-                input.appendTo( divInput );
-                existeInput = true;
-                break;
+                    var divInput = $("<div>", {
+                        class: "input",
+                        style: "width: 50%"
+                    });
+                    var input = $("<input>", {
+                        class: "dhm-input",
+                        type: "text"
+                    });
+                    input.appendTo(divInput);
+                    existeInput = true;
+                    break;
             }
-            if ( existeInput ) {
+            if (existeInput) {
                 var divFormulario = $("<div>", {
-                class: "dhm-formulario smart-form"
+                    class: "dhm-formulario smart-form"
                 });
-                divInput.appendTo( divFormulario );
-                divFormulario.appendTo( contenedor);
+                divInput.appendTo(divFormulario);
+                divFormulario.appendTo(contenedor);
             }
         }
 
         /** BOTONERA **/
-        var botonera = $("<div>", { class: "botones" }).appendTo( contenedor );
-        if ( configuracion.botones != undefined && typeof configuracion.botones === "object" ){
+        var botonera = $("<div>", { class: "botones" }).appendTo(contenedor);
+        if (configuracion.botones != undefined && typeof configuracion.botones === "object") {
             botones = configuracion.botones;
 
             for (var i = 0; i < botones.length; i++) {
                 var objBoton = botones[i];
                 if (objBoton.clase == undefined) {
-                var claseBoton = "btn btn-primary";
-                }else{
-                var claseBoton = "btn " + objBoton.clase;
+                    var claseBoton = "btn btn-primary";
+                } else {
+                    var claseBoton = "btn " + objBoton.clase;
                 }
 
                 var nuevoBoton = $("<button/>", {
-                id: "dhm-bnt-"+i,
-                type: "button",
-                class: claseBoton,
-                "data-dhm_posicion": i
+                    id: "dhm-bnt-" + i,
+                    type: "button",
+                    class: claseBoton,
+                    "data-dhm_posicion": i
                 });
 
                 if (typeof objBoton.icono === "string") {
-                var icono = $("<i>", { class: "la " + objBoton.icono });
-                nuevoBoton.append(icono);
+                    var icono = $("<i>", { class: "la " + objBoton.icono });
+                    nuevoBoton.append(icono);
                 }
-                nuevoBoton.append( objBoton.texto );
-                nuevoBoton.appendTo( botonera );
+                nuevoBoton.append(objBoton.texto);
+                nuevoBoton.appendTo(botonera);
 
-                if ( typeof objBoton.funcion === "function" ) {
-                if ( existeInput ) {
-                    nuevoBoton[0].addEventListener("click", function(){
-                        var valor = $(".dhm-input").val();
-                        var posicion = $(this).data("dhm_posicion");
-                        botones[posicion].funcion(valor);
+                if (typeof objBoton.funcion === "function") {
+                    if (existeInput) {
+                        nuevoBoton[0].addEventListener("click", function () {
+                            var valor = $(".dhm-input").val();
+                            var posicion = $(this).data("dhm_posicion");
+                            botones[posicion].funcion(valor);
+                        });
+                    } else {
+                        nuevoBoton[0].addEventListener("click", objBoton.funcion);
+                    }
+                }
+                nuevoBoton.click(function (e) {
+                    cajaMensaje.fadeOut(400, function () {
+                        cajaMensaje.remove();
                     });
-                }else{
-                    nuevoBoton[0].addEventListener("click", objBoton.funcion );
-                }
-                }
-                nuevoBoton.click( function(e){
-                cajaMensaje.fadeOut(400,function(){
-                    cajaMensaje.remove();
+                    e.preventDefault();
                 });
-                e.preventDefault();
-                });
-
             }
-
-        }else{
+        } else {
             var nuevoBoton = $("<button/>", {
                 type: "button",
                 class: "btn btn-default",
                 text: "Cerrar"
-            }).appendTo( botonera );
-            nuevoBoton[0].addEventListener("click", function(e){
+            }).appendTo(botonera);
+            nuevoBoton[0].addEventListener("click", function (e) {
                 cajaMensaje.remove();
                 e.preventDefault();
             });
         }
         cajaMensaje.hide();
-        cajaMensaje.appendTo( "#div-dh-mensaje" );
+        cajaMensaje.appendTo("#div-dh-mensaje");
         cajaMensaje.fadeIn();
         return;
     };

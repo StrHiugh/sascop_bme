@@ -911,7 +911,7 @@ def crear_ot_desde_pte(request):
     """Crear OT automáticamente desde PTE completada"""
     try:
         pte_id = request.POST.get('pte_id')
-        oficio_ot = request.POST.get('folio')
+        oficio_ot = request.POST.get('oficio')
         
         if not pte_id or not oficio_ot:
             return JsonResponse({
@@ -946,15 +946,14 @@ def crear_ot_desde_pte(request):
             })
         
         # Verificar si el folio ya existe
-        if OTE.objects.filter(orden_trabajo=oficio_ot).exists():
+        if OTE.objects.filter(oficio_ot=oficio_ot).exists():
             return JsonResponse({
                 'exito': False,
                 'tipo_aviso': 'error',
                 'detalles': 'El oficio de OT ya existe'
             })
         
-        # Crear la OTE automáticamente
-        # Buscar un tipo adecuado para OTE (nivel_afectacion=2)
+        # Buscar un tipo (nivel_afectacion=2)
         tipo_ote = Tipo.objects.filter(nivel_afectacion=2).first()
         if not tipo_ote:
             return JsonResponse({
@@ -963,7 +962,7 @@ def crear_ot_desde_pte(request):
                 'detalles': 'No se encontró un tipo válido para OTE'
             })
         
-        # Buscar embarcación por defecto (puedes ajustar esto)
+        # Buscar embarcación
         embarcacion_default = Embarcacion.objects.filter(activo=1).first()
         if not embarcacion_default:
             return JsonResponse({
@@ -972,7 +971,7 @@ def crear_ot_desde_pte(request):
                 'detalles': 'No se encontró una embarcación válida'
             })
         
-        # Buscar estatus por defecto para OTE
+        # Buscar estatus para OT
         estatus_ote_default = Estatus.objects.filter(nivel_afectacion=2).first()
         if not estatus_ote_default:
             return JsonResponse({
@@ -989,15 +988,13 @@ def crear_ot_desde_pte(request):
         ote = OTE.objects.create(
             id_tipo=tipo_ote,
             id_pte_header=pte,
-            orden_trabajo=oficio_ot,
+            orden_trabajo='PENDIENTE',
             descripcion_trabajo=pte.descripcion_trabajo,
             id_responsable_proyecto=pte.id_responsable_proyecto,
             responsable_cliente="POR DEFINIR", 
-            oficio_ot='PENDIENTE',
+            oficio_ot=oficio_ot,
             id_embarcacion=embarcacion_default,
             id_estatus_ot=estatus_ote_default,
-            fecha_inicio_programada=fecha_actual,
-            fecha_termino_programada=fecha_termino,
             estatus=-1,
             comentario=""
         )
@@ -1005,8 +1002,7 @@ def crear_ot_desde_pte(request):
         return JsonResponse({
             'exito': True,
             'tipo_aviso': 'exito',
-            'detalles': f'OT creada correctamente: {ote.orden_trabajo}',
-            'ote_id': ote.id,
+            'detalles': f'OT creada correctamente: {ote.oficio_ot}',
             'registro_id': ote.id,
         })
         

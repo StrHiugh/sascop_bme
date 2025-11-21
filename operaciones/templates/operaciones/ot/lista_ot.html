@@ -91,7 +91,7 @@
 
 <!-- Modal para crear PTE -->
 <div class="modal fade" id="modalCrearOT" tabindex="-1" aria-labelledby="modalCrearOTLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="modalCrearOTLabel">Crear nueva OT</h5>
@@ -103,8 +103,15 @@
                     <div class="row">
                         <!-- Id oculta -->
                         <input type="hidden" id="ot_id" name="id">
-                        <!-- Fila dividida en 6 y 6 -->
-                        <div class="col-md-6">
+                        <div class="col-md-12">
+                            <div class="mb-3">
+                                <label for="descripcion_trabajo" class="form-label">
+                                    Descripción del Trabajo <span class="text-danger">*</span>
+                                </label>
+                                <textarea class="form-control" id="descripcion_trabajo" name="descripcion_trabajo" rows="2"></textarea>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
                             <div class="mb-3">
                                 <label for="orden_trabajo" class="form-label">Folio OT</label>
                                 <input type="text" class="form-control" id="orden_trabajo" name="orden_trabajo" required>
@@ -114,17 +121,16 @@
                                 <input type="text" class="form-control" placeholder="Ingrese el nombre del representante" id="responsable_cliente" name="responsable_cliente" required>
                             </div>
                             <div class="mb-3">
-                                <label for="responsable_proyecto" class="form-label">Responsable del Proyecto <span class="text-danger">*</span></label>
-                                <select class="form-select" id="responsable_proyecto" name="responsable_proyecto" disabled>
-                                </select>
+                                <label for="fecha_inicio_real" class="form-label">Fecha de inicio real</label>
+                                <input type="date" class="form-control" id="fecha_inicio_real" name="fecha_inicio_real">
                             </div>
-                            <div class="mb-3" hidden>
-                                <label for="ot_principal" class="form-label">OT a reprogramar</label>
-                                <select class="form-select" id="ot_principal" name="ot_principal" disabled>
+                            <div class="mb-3">
+                                <label for="responsable_proyecto" class="form-label">Responsable del Proyecto <span class="text-danger">*</span></label>
+                                <select class="form-select" id="responsable_proyecto" name="responsable_proyecto">
                                 </select>
                             </div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="mb-3">
                                 <label for="oficio_ot" class="form-label">Oficio OT</label>
                                 <input type="text" class="form-control" id="oficio_ot" name="oficio_ot" placeholder="SIN ASIGNACION">
@@ -139,6 +145,25 @@
                                 </select>
                             </div>
                             <div class="mb-3">
+                                <label for="fecha_termino_real" class="form-label">Fecha de termino real</label>
+                                <input type="date" class="form-control" id="fecha_termino_real" name="fecha_termino_real">
+                            </div>
+                            <div class="mb-3" hidden>
+                                <label for="ot_principal" class="form-label">OT a reprogramar</label>
+                                <select class="form-select" id="ot_principal" name="ot_principal" disabled>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="fecha_inicio_programado" class="form-label">Fecha de inicio programado</label>
+                                <input type="date" class="form-control" id="fecha_inicio_programado" name="fecha_inicio_programado">
+                            </div>
+                            <div class="mb-3">
+                                <label for="fecha_termino_programado" class="form-label">Fecha de termino programado</label>
+                                <input type="date" class="form-control" id="fecha_termino_programado" name="fecha_termino_programado">
+                            </div>
+                            <div class="mb-3">
                                 <label for="id_tipo" class="form-label">Tipo <span class="text-danger">*</span></label>
                                 <select class="form-select" id="id_tipo" name="id_tipo" required>
                                     <option value="" selected disabled>Seleccione un tipo</option>
@@ -151,21 +176,14 @@
                                 <input type="number" class="form-control" id="num_reprogramacion" name="num_reprogramacion">
                             </div>
                         </div>
-                        <!-- Comentario General (ocupa todo el ancho) -->
+                        <!-- Comentario General -->
                         <div class="col-md-12">
                             <div class="mb-3">
                                 <label for="comentario_general" class="form-label">Comentario</label>
                                 <textarea class="form-control" id="comentario_general" name="comentario_general" rows="2"></textarea>
                             </div>
                         </div>
-                        <div class="col-md-12">
-                            <div class="mb-3">
-                                <label for="descripcion_trabajo" class="form-label">
-                                    Descripción del Trabajo <span class="text-danger">*</span>
-                                </label>
-                                <textarea class="form-control" id="descripcion_trabajo" name="descripcion_trabajo" rows="2" disabled></textarea>
-                            </div>
-                        </div>
+                        
                     </div>
                 </form>
             </div>

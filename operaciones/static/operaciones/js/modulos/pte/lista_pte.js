@@ -1292,8 +1292,8 @@ $(document).ready(function () {
             subtitulo: `
                 <div class="mb-3">
                     <p>¿Desea crear una Orden de Trabajo a partir de esta PTE?</p>
-                    <label for="folioOT" class="form-label">Folio de la OT:</label>
-                    <input type="text" class="form-control" id="folioOT" placeholder="Ingrese el folio de la OT" required>
+                    <label for="oficioOT" class="form-label">Oficio de la OT:</label>
+                    <input type="text" class="form-control" id="oficioOT" placeholder="Ingrese el oficio de la OT" required>
                 </div>
             `,
             botones: [
@@ -1301,10 +1301,10 @@ $(document).ready(function () {
                     texto: "Crear OT",
                     clase: "btn-primary",
                     funcion: function() {
-                        const folioOT = $('#folioOT').val().trim();
+                        const oficioOT = $('#oficioOT').val().trim();
                         
-                        if (!folioOT) {
-                            aviso("advertencia", "El folio de la OT es obligatorio");
+                        if (!oficioOT) {
+                            aviso("advertencia", "El oficio de la OT es obligatorio");
                             return;
                         }
                         
@@ -1316,13 +1316,13 @@ $(document).ready(function () {
                             nombre:"Creó",
                             valor_actual:"",
                             valor_anterior:"",
-                            detalle:`una Orden de Trabajo con folio: <b>${folioOT}</b> a partir de la PTE: <b>${datos.oficio_pte}</b>`})  
+                            detalle:`una Orden de Trabajo con oficio: <b>${oficioOT}</b> a partir de la PTE: <b>${datos.oficio_pte}</b>`})  
 
                         BMAjax(
                             url, 
                             { 
                                 pte_id: pteId,
-                                folio: folioOT,
+                                oficio: oficioOT,
                                 registro_actividad: JSON.stringify(log.actividad),
                                 csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val()
                             },
@@ -1379,7 +1379,6 @@ function guardarEnlaceArchivo() {
                     aviso("exito", "Archivo guardado correctamente");
                     $('#modalSubirArchivo').modal('hide');
                     window.pasoActual = null;
-                    console.log(window.tablaDetalleActiva)
                     if (window.tablaDetalleActiva) {
                         window.tablaDetalleActiva.ajax.reload(null, false);
                         window.tablaDetalleActiva = null; // Limpiar referencia
