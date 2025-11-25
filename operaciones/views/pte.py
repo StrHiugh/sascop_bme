@@ -6,7 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
 from django.http import JsonResponse
 from django.db.models import Case, When, Value, CharField,Q, ExpressionWrapper, Count,F
-from operaciones.models.catalogos_models import Embarcacion, Estatus, ResponsableProyecto, Tipo
+from operaciones.models.catalogos_models import Sitio, Estatus, ResponsableProyecto, Tipo
 from ..models import PTEHeader, PTEDetalle, OTE, Produccion, Paso
 from ..registro_actividad import registrar_actividad
 @login_required(login_url='/accounts/login/')

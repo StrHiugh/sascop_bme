@@ -3,7 +3,7 @@ $(document).ready(function () {
         processing: true,
         serverSide: true,
         responsive: true,
-        order: [[1, "desc"]],
+        order: [[0, "asc"]],
         lengthMenu: [10, 25, 50, 100],
         dom: '<"row"<"col-sm-12 col-md-6"l>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
         language: {
@@ -33,8 +33,8 @@ $(document).ready(function () {
                 "title": "Descripcion"
             },
             {
-                "data": "nivel_afectacion",
-                "title": "Afectacion"
+                "data": "frente",
+                "title": "Frente"
             },
             {
                 "data": "activo",
@@ -78,24 +78,25 @@ $(document).ready(function () {
     // Mover select de length
     $("#tabla_length").detach().appendTo("#select-length");
 
-    // Panel de filtros
     $("#btn-panel-filtros").on("click", function () {
-        fn_show_panel("#panel-filtro");
+        var offcanvas = new bootstrap.Offcanvas(document.getElementById('panelFiltros'));
+        offcanvas.show();
     });
 
-    // Aplicar filtros
-    $("#filtrar").on("click", function () {
+    $("#aplicar-filtros").on("click", function () {
         tablaPte.draw();
-        fn_show_panel();
+        var offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('panelFiltros'));
+        offcanvas.hide();
     });
 
-    // Limpiar filtros
-    $("#limpiar").on("click", function () {
-        $("#slc-estado").val("");
+    $("#limpiar-filtros").on("click", function () {
+        $("#filtro-estado").val("");
+        $("#filtro-tipo").val("");
         tablaPte.draw();
+        var offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('panelFiltros'));
+        offcanvas.hide();
     });
 
-    
     // Abrir panel para crear nueva embarcación
     $(".btn-primary").on("click", function() {
         if ($(this).find('span').text().trim() === 'Crear nuevo') {
@@ -108,47 +109,49 @@ $(document).ready(function () {
         // Limpiar formulario
         $("#formulario-sitio")[0].reset();
         $("#id").val("");
-        $("#panel-title").text("Crear sitio");
-        
+        $("#panel-title").text("Crear Sitio");
+        $("#id_frente").val("");
+        $("#activo").prop("checked", true);
+
         // Mostrar panel
         var offcanvas = new bootstrap.Offcanvas(document.getElementById('panelCrearEditar'));
         offcanvas.show();
     }
 
     $(document).on("click", ".editar-sitio", function () {
-        const id = $(this).data('id');
-        abrirPanelEditar(id);
+        const sitio_id = $(this).data('id');
+        abrirPanelEditar(sitio_id);
     });
-    
+
     // Función para abrir panel de edición
     function abrirPanelEditar(id) {
         BMAjax(
-            urlObtenerSitio, {id:id}, "GET")
-            .done(function(data) {
+            urlObtenerSitio, { id: id }, "GET")
+            .done(function (data) {
                 $("#id").val(data.id);
                 $("#descripcion").val(data.descripcion);
-                $("#afectacion").val(data.afectacion);
                 $("#comentario").val(data.comentario);
-                $("#panel-title").text("Editar sitio");
-                
+                $("#id_frente").val(data.id_frente);
+                $("#panel-title").text("Editar Sitio");
+
                 // Mostrar panel
                 var offcanvas = new bootstrap.Offcanvas(document.getElementById('panelCrearEditar'));
                 offcanvas.show();
             })
-            .fail(function() {
+            .fail(function () {
                 aviso("error", {
                     contenido: "Error al cargar los datos del sitio",
                 });
             });
     }
 
-    // Guardar embarcación
-    $("#btn-guardar").on("click", function() {
+    // Guardar sitio
+    $("#btn-guardar").on("click", function () {
         const formData = {
             id: $("#id").val(),
             descripcion: $("#descripcion").val(),
-            afectacion: $("#afectacion").val(),
-            comentario: $("#comentario").val()
+            comentario: $("#comentario").val(),
+            id_frente: $("#id_frente").val()
         };
 
         // Validación básica
@@ -157,9 +160,11 @@ $(document).ready(function () {
                 contenido: "La descripción es obligatoria",
             });
             return;
-        } else if (!formData.afectacion) {
+        }
+
+        if (!formData.id_frente) {
             aviso("advertencia", {
-                contenido: "La afectación es obligatoria",
+                contenido: "El frente es obligatorio",
             });
             return;
         }
@@ -167,8 +172,8 @@ $(document).ready(function () {
         const url = formData.id ? urlEditarSitio : urlCrearSitio;
         const method = "POST";
         BMAjax(
-            url, 
-            formData, 
+            url,
+            formData,
             method
         ).done(function(response) {
             if (response.exito) {
@@ -178,33 +183,33 @@ $(document).ready(function () {
             }
         });
     });
-    
+
+    // Eliminar Sitio
     $(document).on("click", ".eliminar-sitio", function () {
-        const id = $(this).data('id');
+        const sitio_id = $(this).data('id');
         BMensaje({
             titulo: "Confirmación",
-            subtitulo: "¿Estás seguro de eliminar este sitio y su afectación?",
+            subtitulo: "¿Estás seguro de eliminar este sitio?",
             botones: [
                 {
                     texto: "Sí, continuar",
                     clase: "btn-primary",
-                    funcion: function() {
+                    funcion: function () {
                         const url = urlEliminarSitio;
                         const method = "POST";
                         BMAjax(
-                            url, 
-                            { id: id },
+                            url,
+                            { sitio_id: sitio_id },
                             method
-                        ).done(function(response) {
+                        ).done(function (response) {
                             if (response.exito) {
                                 tablaPte.ajax.reload();
                             }
                         });
-
                     }
                 },
                 {
-                    texto: "Cancelar", 
+                    texto: "Cancelar",
                     clase: "btn-light",
                     funcion: function() { return }
                 }

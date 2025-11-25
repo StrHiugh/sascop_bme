@@ -103,12 +103,18 @@
                     <div class="row">
                         <!-- Id oculta -->
                         <input type="hidden" id="ot_id" name="id">
-                        <div class="col-md-12">
+                        <div class="col-md-11">
                             <div class="mb-3">
                                 <label for="descripcion_trabajo" class="form-label">
                                     Descripción del Trabajo <span class="text-danger">*</span>
                                 </label>
                                 <textarea class="form-control" id="descripcion_trabajo" name="descripcion_trabajo" rows="2"></textarea>
+                            </div>
+                        </div>
+                        <div class="col-md-1">
+                            <div class="mb-3">
+                                <label for="plazo_dias" class="form-label">Plazo(días)</label>
+                                <input type="text" class="form-control" id="plazo_dias" name="plazo_dias" style="height: 62px;" required>
                             </div>
                         </div>
                         <div class="col-md-4">
@@ -119,6 +125,16 @@
                             <div class="mb-3">
                                 <label for="responsable_cliente" class="form-label">Responsable del cliente</label>
                                 <input type="text" class="form-control" placeholder="Ingrese el nombre del representante" id="responsable_cliente" name="responsable_cliente" required>
+                            </div>
+                            <div class="mb-3" hidden>
+                                <label for="id_embarcacion" class="form-label">Embarcacion <span class="text-danger">*</span></label>
+                                <select class="form-select" id="id_embarcacion" name="id_embarcacion" required>
+                                </select>
+                            </div>
+                            <div class="mb-3" hidden>
+                                <label for="id_patio" class="form-label">Patio <span class="text-danger">*</span></label>
+                                <select class="form-select" id="id_patio" name="id_patio" required>
+                                </select>
                             </div>
                             <div class="mb-3">
                                 <label for="fecha_inicio_real" class="form-label">Fecha de inicio real</label>
@@ -136,12 +152,17 @@
                                 <input type="text" class="form-control" id="oficio_ot" name="oficio_ot" placeholder="SIN ASIGNACION">
                             </div>
                             <div class="mb-3">
-                                <label for="id_embarcacion" class="form-label">Embarcacion <span class="text-danger">*</span></label>
-                                <select class="form-select" id="id_embarcacion" name="id_embarcacion" required>
-                                    <option value="" selected disabled>Seleccione una Embarcacion</option>
-                                    <option value="1">BPD BLUE GIANT</option>
-                                    <option value="2">BPD BLUE STINGRAY</option>
-                                    <option value="3">BPD HOS IRON HORSE</option>
+                                <label for="id_frente" class="form-label">Frente <span class="text-danger">*</span></label>
+                                <select class="form-select" id="id_frente" name="id_frente" required>
+                                    <option value="" selected disabled>Seleccione un frente de trabajo</option>
+                                    <option value="1">BARCO</option>
+                                    <option value="2">TIERRA</option>
+                                    <option value="3">CP / PS</option>
+                                </select>
+                            </div>
+                            <div class="mb-3" hidden>
+                                <label for="id_plataforma" class="form-label">Plataforma <span class="text-danger">*</span></label>
+                                <select class="form-select" id="id_plataforma" name="id_plataforma" required>
                                 </select>
                             </div>
                             <div class="mb-3">
@@ -153,6 +174,14 @@
                                 <select class="form-select" id="ot_principal" name="ot_principal" disabled>
                                 </select>
                             </div>
+                            <div class="mb-3">
+                                <label for="monto_mxn" class="form-label">Monto MXN</label>
+                                <div class="input-group mt-1">
+                                    <span class="input-group-text">$</span>
+                                    <input type="text" class="form-control decimal-input" id="monto_mxn" name="monto_mxn" 
+                                        pattern="[0-9]*\.?[0-9]*" placeholder="0.000000">
+                                </div>
+                            </div>
                         </div>
                         <div class="col-md-4">
                             <div class="mb-3">
@@ -162,6 +191,11 @@
                             <div class="mb-3">
                                 <label for="fecha_termino_programado" class="form-label">Fecha de termino programado</label>
                                 <input type="date" class="form-control" id="fecha_termino_programado" name="fecha_termino_programado">
+                            </div>
+                            <div class="mb-3" hidden>
+                                <label for="id_intercom" class="form-label">Intercom <span class="text-danger">*</span></label>
+                                <select class="form-select" id="id_intercom" name="id_intercom" required>
+                                </select>
                             </div>
                             <div class="mb-3">
                                 <label for="id_tipo" class="form-label">Tipo <span class="text-danger">*</span></label>
@@ -174,6 +208,14 @@
                             <div class="mb-3" hidden>
                                 <label for="num_reprogramacion" class="form-label">Numero de reprogramacion</label>
                                 <input type="number" class="form-control" id="num_reprogramacion" name="num_reprogramacion">
+                            </div>
+                            <div class="mb-3">
+                                <label for="monto_usd" class="form-label">Monto USD</label>
+                                <div class="input-group mt-1">
+                                    <span class="input-group-text">$</span>
+                                    <input type="text" class="form-control decimal-input" id="monto_usd" name="monto_usd"
+                                        pattern="[0-9]*\.?[0-9]*" placeholder="0.000000">
+                                </div>
                             </div>
                         </div>
                         <!-- Comentario General -->
@@ -214,6 +256,7 @@
     var urlObtenerDatos = "{% url 'operaciones:obtener_datos_ot' %}";
     var urlEliminarOT = "{% url 'operaciones:eliminar_ot' %}";
     var urlCrearOT = "{% url 'operaciones:crear_ot_desde_pte' %}";
+    var urlObtenerSitiosPorFrente = "{% url 'operaciones:obtener_sitios_por_frente' %}";
     
 </script>
 {% endblock %}

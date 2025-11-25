@@ -1,5 +1,5 @@
 from django.db import models
-from .catalogos_models import Estatus, ResponsableProyecto, Tipo, Sitio
+from .catalogos_models import Estatus, ResponsableProyecto, Tipo, Frente
 
 class Paso(models.Model):
     descripcion = models.CharField(max_length=200)

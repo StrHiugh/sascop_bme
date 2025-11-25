@@ -1,5 +1,5 @@
 from django.db import models
-from .catalogos_models import Sitio, Estatus, Embarcacion, UnidadMedida, Tipo
+from .catalogos_models import Sitio, Estatus, UnidadMedida, Tipo
 from .ote_models import OTE
 
 class Producto(models.Model):

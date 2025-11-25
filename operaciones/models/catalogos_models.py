@@ -19,19 +19,14 @@ class Tipo(models.Model):
     def __str__(self):
         return f"{self.descripcion} ({self.nivel_afectacion})"
 
-class Sitio(models.Model):
-    TIPO_SITIO_CHOICES = [
-        ('1', 'PARTIDA'),
-        ('2', 'TRABAJO'),
-    ]
-    
+class Frente(models.Model):
     descripcion = models.CharField(max_length=200)
-    nivel_afectacion = models.IntegerField(choices=TIPO_SITIO_CHOICES, default=0)
+    nivel_afectacion = models.IntegerField(blank=True, null=True)
     comentario = models.TextField(blank=True, null=True)
     activo = models.BooleanField(default=True)
 
     class Meta:
-        db_table = 'sitio'
+        db_table = 'frente'
 
     def __str__(self):
         return self.descripcion
@@ -55,12 +50,13 @@ class Estatus(models.Model):
     def __str__(self):
         return self.descripcion
 
-class Embarcacion(models.Model):
+class Sitio(models.Model):
     descripcion = models.CharField(max_length=100)
     activo = models.BooleanField(default=True)
+    id_frente = models.ForeignKey(Frente, on_delete=models.CASCADE, blank=True, null=True)
     comentario = models.TextField(blank=True, null=True)
     class Meta:
-        db_table = 'embarcacion'
+        db_table = 'sitio'
 
     def __str__(self):
         return self.descripcion

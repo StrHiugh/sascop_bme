@@ -38,6 +38,7 @@ urlpatterns = [
     path('ot/eliminar/', ote.eliminar_ot, name='eliminar_ot'),
     path('ot/editar/', ote.editar_ot, name='editar_ot'),
     path('ot/cambiar_estatus_ot/', ote.cambiar_estatus_ot, name='cambiar_estatus_ot'),
+    path('ot/obtener_sitios_frente/', ote.obtener_sitios_por_frente, name='obtener_sitios_por_frente'),
     
     #URLs para registro de actividad
     path('registro_actividad/', registro_actividad.registro_actividad, name='registro_actividad'),
@@ -63,13 +64,13 @@ urlpatterns = [
     path('catalogos/tipos/obtener/', catalogos.obtener_tipos, name='obtener_tipos'),
     path('catalogos/tipos/editar/', catalogos.editar_tipos, name='editar_tipos'),
     
-    # URLs para Embarcaciones
-    path('catalogos/embarcaciones/', catalogos.lista_embarcaciones, name='lista_embarcaciones'),
-    path('catalogos/datatable_embarcaciones/', catalogos.datatable_embarcaciones, name='datatable_embarcaciones'),
-    path('catalogos/embarcaciones/crear/', catalogos.crear_embarcacion, name='crear_embarcacion'),
-    path('catalogos/embarcaciones/eliminar/', catalogos.eliminar_embarcacion, name='eliminar_embarcacion'),
-    path('catalogos/embarcaciones/obtener/', catalogos.obtener_embarcacion, name='obtener_embarcacion'),
-    path('catalogos/embarcaciones/editar/', catalogos.editar_estatus, name='editar_embarcacion'),
+    # # URLs para Embarcaciones
+    # path('catalogos/embarcaciones/', catalogos.lista_embarcaciones, name='lista_embarcaciones'),
+    # path('catalogos/datatable_embarcaciones/', catalogos.datatable_embarcaciones, name='datatable_embarcaciones'),
+    # path('catalogos/embarcaciones/crear/', catalogos.crear_embarcacion, name='crear_embarcacion'),
+    # path('catalogos/embarcaciones/eliminar/', catalogos.eliminar_embarcacion, name='eliminar_embarcacion'),
+    # path('catalogos/embarcaciones/obtener/', catalogos.obtener_embarcacion, name='obtener_embarcacion'),
+    # path('catalogos/embarcaciones/editar/', catalogos.editar_estatus, name='editar_embarcacion'),
     
     # URLS para Estatus
     path('catalogos/estatus/', catalogos.lista_cobro, name='lista_estatus'),
@@ -86,6 +87,14 @@ urlpatterns = [
     path('catalogos/unidad_medida/eliminar/', catalogos.eliminar_unidad_medida, name='eliminar_unidad_medida'),
     path('catalogos/unidad_medida/obtener/', catalogos.obtener_unidad_medida, name='obtener_unidad_medida'),
     path('catalogos/unidad_medida/editar/', catalogos.editar_unidad_medida, name='editar_unidad_medida'),
+    
+    #URLs para Frentes
+    path('catalogos/frentes/', catalogos.lista_frentes, name='lista_frentes'),
+    path('catalogos/datatable_frentes/', catalogos.datatable_frentes, name='datatable_frentes'),
+    path('catalogos/frentes/crear/', catalogos.crear_frente, name='crear_frente'),
+    path('catalogos/frentes/eliminar/', catalogos.eliminar_frente, name='eliminar_frente'),
+    path('catalogos/frentes/obtener/', catalogos.obtener_frente, name='obtener_frente'),
+    path('catalogos/frentes/editar/', catalogos.editar_frente, name='editar_frente'),
     
     #URLs para Sitios
     path('catalogos/sitios/', catalogos.lista_sitios, name='lista_sitios'),

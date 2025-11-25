@@ -185,41 +185,44 @@ def editar_tipos(request):
         })
 
 @login_required(login_url='/accounts/login/')
-def lista_embarcaciones(request):
-    """Lista de todas los embarcaciones"""
-    return render(request, 'operaciones/catalogos/embarcaciones/lista_embarcaciones.html')
+def lista_sitios(request):
+    """Lista de todas los sitios"""
+    frentes = Frente.objects.filter(activo=True, nivel_afectacion=1)
+    return render(request, 'operaciones/catalogos/sitios/lista_sitios.html', {'frentes': frentes})
 
-def datatable_embarcaciones(request):
+def datatable_sitios(request):
     draw = int(request.GET.get('draw', 1))
     start = int(request.GET.get('start', 0))
     length = int(request.GET.get('length', 10))
     search_value = request.GET.get('filtro', '')
     
-    embarcaciones = Embarcacion.objects.filter(activo=1).annotate(
+    sitios = Sitio.objects.filter(activo=1).annotate(
         estado_texto=Case(
             When(activo=True, then=Value('Activo')),
             When(activo=False, then=Value('Inactivo')),
             default=Value('Desconocido'),
             output_field=CharField()
         ),
-    )
+        frente_descripcion=F('id_frente__descripcion')
+    ).order_by('id')
     
     if search_value:
-        embarcaciones = embarcaciones.filter(
+        sitios = sitios.filter(
             Q(descripcion__icontains=search_value) |
             Q(activo__icontains=search_value)
         )
     
-    total_records = embarcaciones.count()
-    embarcaciones = embarcaciones[start:start + length]
+    total_records = sitios.count()
+    sitios = sitios[start:start + length]
     
     data = []
-    for embarcacion in embarcaciones:
+    for sitio in sitios:
         data.append({
-            'id': embarcacion.id,
-            'descripcion': embarcacion.descripcion,
-            'activo': embarcacion.estado_texto, 
-            'activo_bool': embarcacion.activo, 
+            'id': sitio.id,
+            'descripcion': sitio.descripcion,
+            'activo': sitio.estado_texto, 
+            'activo_bool': sitio.activo, 
+            'frente': sitio.frente_descripcion,
         })
     
     return JsonResponse({
@@ -230,113 +233,118 @@ def datatable_embarcaciones(request):
     })
 
 @require_http_methods(["POST"])
-def crear_embarcacion(request):
+def crear_sitio(request):
     try:
         descripcion = request.POST.get('descripcion')
         comentario = request.POST.get('comentario', '')
+        id_frente = request.POST.get('id_frente')
         activo = True
         
-        embarcacion = Embarcacion.objects.create(
+        sitio = Sitio.objects.create(
             descripcion=descripcion,
             comentario=comentario,
+            id_frente_id=id_frente,
             activo=activo
         )
         
         return JsonResponse({
             'exito': True,
             'tipo_aviso': 'exito',
-            'detalles': 'Embarcación creada correctamente',
-            'id': embarcacion.id
+            'detalles': 'Sitio creada correctamente',
+            'id': sitio.id
         })
     except Exception as e:
         return JsonResponse({
             'exito': False,
             'tipo_aviso': 'error',
-            'detalles': f'Error al crear embarcación: {str(e)}'
+            'detalles': f'Error al crear sitio: {str(e)}'
         })
         
 @require_http_methods(["POST"])
-def eliminar_embarcacion(request):
+def eliminar_sitio(request):
     try:
-        # Obtener el ID de la embarcación
-        embarcacion_id = request.POST.get('embarcacion_id')
+        # Obtener el ID de la sitio
+        sitio_id = request.POST.get('sitio_id')
         
-        if not embarcacion_id:
+        if not sitio_id:
             return JsonResponse({
                 'tipo_aviso': 'error',
-                'detalles': 'ID de embarcación no proporcionado',
+                'detalles': 'ID de sitio no proporcionado',
                 'exito': False
             })
 
         # Eliminación lógica
-        embarcacion = Embarcacion.objects.get(id=embarcacion_id)
-        embarcacion.activo = False
-        embarcacion.save()
+        sitio = Sitio.objects.get(id=sitio_id)
+        sitio.activo = False
+        sitio.save()
 
         return JsonResponse({
             'tipo_aviso': 'exito',
-            'detalles': 'Embarcación desactivada correctamente',
+            'detalles': 'Sitio desactivada correctamente',
             'exito': True
         })
 
-    except Embarcacion.DoesNotExist:
+    except Sitio.DoesNotExist:
         return JsonResponse({
             'tipo_aviso': 'error',
-            'detalles': 'Embarcación no encontrada',
+            'detalles': 'Sitio no encontrada',
             'exito': False
         })
         
     except Exception as e:
         return JsonResponse({
             'tipo_aviso': 'error',
-            'detalles': f'Error al desactivar embarcación: {str(e)}',
+            'detalles': f'Error al desactivar sitio: {str(e)}',
             'exito': False
         })
 
 @require_http_methods(["GET"])
-def obtener_embarcacion(request):
+def obtener_sitio(request):
     try:
-        embarcacion_id = request.GET.get('id')
-        embarcacion = Embarcacion.objects.get(id=embarcacion_id)
+        sitio_id = request.GET.get('id')
+        sitio = Sitio.objects.get(id=sitio_id)
         return JsonResponse({
-            'id': embarcacion.id,
-            'descripcion': embarcacion.descripcion,
-            'comentario': embarcacion.comentario,
-            'activo': embarcacion.activo
+            'id': sitio.id,
+            'descripcion': sitio.descripcion,
+            'comentario': sitio.comentario,
+            'id_frente': sitio.id_frente_id,
+            'activo': sitio.activo
         })
-    except Embarcacion.DoesNotExist:
+    except Sitio.DoesNotExist:
         return JsonResponse({
             'tipo_aviso': 'error',
-            'detalles': 'Embarcación no encontrada'
+            'detalles': 'Sitio no encontrada'
         }, status=404)
 
 @require_http_methods(["POST"])
-def editar_embarcacion(request):
+def editar_sitio(request):
     try:
-        embarcacion_id = request.POST.get('id')
+        sitio_id = request.POST.get('id')
         descripcion = request.POST.get('descripcion')
         comentario = request.POST.get('comentario', '')
+        id_frente = request.POST.get('id_frente')
         
-        embarcacion = Embarcacion.objects.get(id=embarcacion_id)
-        embarcacion.descripcion = descripcion
-        embarcacion.comentario = comentario
-        embarcacion.save()
+        sitio = Sitio.objects.get(id=sitio_id)
+        sitio.descripcion = descripcion
+        sitio.comentario = comentario
+        sitio.id_frente_id = id_frente
+        sitio.save()
         
         return JsonResponse({
             'tipo_aviso': 'exito',
-            'detalles': 'Embarcación actualizada correctamente',
+            'detalles': 'Sitio actualizada correctamente',
             'exito': True
         })
-    except Embarcacion.DoesNotExist:
+    except Sitio.DoesNotExist:
         return JsonResponse({
             'tipo_aviso': 'error',
-            'detalles': 'Embarcación no encontrada',
+            'detalles': 'Sitio no encontrada',
             'exito': False
         })
     except Exception as e:
         return JsonResponse({
             'tipo_aviso': 'error',
-            'detalles': f'Error al actualizar embarcación: {str(e)}',
+            'detalles': f'Error al actualizar sitio: {str(e)}',
             'exito': False
         })
 
@@ -496,7 +504,7 @@ def editar_estatus(request):
             'detalles': 'Estatus actualizada correctamente',
             'exito': True
         })
-    except Embarcacion.DoesNotExist:
+    except Sitio.DoesNotExist:
         return JsonResponse({
             'tipo_aviso': 'error',
             'detalles': 'Estatus no encontrada',
@@ -689,17 +697,17 @@ def editar_unidad_medida(request):
         })
 
 @login_required(login_url='/accounts/login/')
-def lista_sitios(request):
+def lista_frentes(request):
     """Lista de todas los estados de cobro"""
-    return render(request, 'operaciones/catalogos/sitios/lista_sitios.html')
+    return render(request, 'operaciones/catalogos/frentes/lista_frentes.html')
 
-def datatable_sitios(request):
+def datatable_frentes(request):
     draw = int(request.GET.get('draw', 1))
     start = int(request.GET.get('start', 0))
     length = int(request.GET.get('length', 10))
     search_value = request.GET.get('filtro', '')
     
-    tipos = Sitio.objects.filter(activo=1).annotate(
+    tipos = Frente.objects.filter(activo=1).annotate(
         estado_texto=Case(
             When(activo=True, then=Value('Activo')),
             When(activo=False, then=Value('Inactivo')),
@@ -707,12 +715,12 @@ def datatable_sitios(request):
             output_field=CharField()
         ),
         nivel_texto=Case(
-            When(nivel_afectacion=1, then=Value('Partida')),
-            When(nivel_afectacion=2, then=Value('Zona de trabajo')),
+            When(nivel_afectacion=1, then=Value('Sitios')),
+            When(nivel_afectacion=2, then=Value('OTs')),
             default=Value('No definido'),
             output_field=CharField()
         )
-    )
+    ).order_by('id')
     
     if search_value:
         tipos = tipos.filter(
@@ -741,13 +749,13 @@ def datatable_sitios(request):
     })
     
 @require_http_methods(["POST"])
-def crear_sitio(request):
+def crear_frente(request):
     try:
         descripcion = request.POST.get('descripcion')
         afectacion = request.POST.get('afectacion')
         comentario = request.POST.get('comentario', '')
         activo = True
-        sitio = Sitio.objects.create(
+        frente = Frente.objects.create(
             descripcion=descripcion,
             nivel_afectacion=afectacion,
             comentario=comentario,
@@ -756,18 +764,18 @@ def crear_sitio(request):
         return JsonResponse({
             'exito': True,
             'tipo_aviso': 'exito',
-            'detalles': 'Sitio creado correctamente',
-            'id': sitio.id
+            'detalles': 'Frente creado correctamente',
+            'id': frente.id
         })
     except Exception as e:
         return JsonResponse({
             'exito': False,
             'tipo_aviso': 'error',
-            'detalles': f'Error al crear sitio: {str(e)}'
+            'detalles': f'Error al crear frente: {str(e)}'
         })
         
 @require_http_methods(["POST"])
-def eliminar_sitio(request):
+def eliminar_frente(request):
     try:
         # Obtener el ID de la embarcación
         id = request.POST.get('id')
@@ -775,82 +783,82 @@ def eliminar_sitio(request):
         if not id:
             return JsonResponse({
                 'tipo_aviso': 'error',
-                'detalles': 'ID de sitio no proporcionado',
+                'detalles': 'ID de frente no proporcionado',
                 'exito': False
             })
 
         # Eliminación lógica
-        sitio = Sitio.objects.get(id=id)
-        sitio.activo = False
-        sitio.save()
+        frente = Frente.objects.get(id=id)
+        frente.activo = False
+        frente.save()
 
         return JsonResponse({
             'tipo_aviso': 'exito',
-            'detalles': 'Sitio desactivado correctamente',
+            'detalles': 'Frente desactivado correctamente',
             'exito': True
         })
 
-    except Sitio.DoesNotExist:
+    except Frente.DoesNotExist:
         return JsonResponse({
             'tipo_aviso': 'error',
-            'detalles': 'Sitio no encontrado',
+            'detalles': 'Frente no encontrado',
             'exito': False
         })
         
     except Exception as e:
         return JsonResponse({
             'tipo_aviso': 'error',
-            'detalles': f'Error al desactivar sitio: {str(e)}',
+            'detalles': f'Error al desactivar frente: {str(e)}',
             'exito': False
         })
 
 @require_http_methods(["GET"])
-def obtener_sitio(request):
+def obtener_frente(request):
     try:
         id = request.GET.get('id')
-        sitio = Sitio.objects.get(id=id)
+        frente = Frente.objects.get(id=id)
         return JsonResponse({
-            'id': sitio.id,
-            'descripcion': sitio.descripcion,
-            'afectacion': sitio.nivel_afectacion,
-            'comentario': sitio.comentario,
-            'activo': sitio.activo
+            'id': frente.id,
+            'descripcion': frente.descripcion,
+            'afectacion': frente.nivel_afectacion,
+            'comentario': frente.comentario,
+            'activo': frente.activo
         })
-    except Sitio.DoesNotExist:
+    except Frente.DoesNotExist:
         return JsonResponse({
             'tipo_aviso': 'error',
-            'detalles': 'Sitio no encontrado'
+            'detalles': 'Frente no encontrado'
         }, status=404)
 
 @require_http_methods(["POST"])
-def editar_sitio(request):
+def editar_frente(request):
     try:
         id = request.POST.get('id')
         descripcion = request.POST.get('descripcion')
         afectacion = request.POST.get('afectacion')
         comentario = request.POST.get('comentario', '')
         
-        sitio = Sitio.objects.get(id=id)
-        sitio.descripcion = descripcion
-        sitio.nivel_afectacion = afectacion
-        sitio.comentario = comentario
-        sitio.save()
+        frente = Frente.objects.get(id=id)
+        frente.descripcion = descripcion
+        frente.nivel_afectacion = afectacion
+        frente.comentario = comentario
+        frente.save()
         
         return JsonResponse({
             'tipo_aviso': 'exito',
-            'detalles': 'Sitio actualizada correctamente',
+            'detalles': 'Frente actualizada correctamente',
             'exito': True
         })
-    except Embarcacion.DoesNotExist:
+    except Frente.DoesNotExist:
         return JsonResponse({
             'tipo_aviso': 'error',
-            'detalles': 'Sitio no encontrada',
+            'detalles': 'Frente no encontrada',
             'exito': False
         })
     except Exception as e:
         return JsonResponse({
             'tipo_aviso': 'error',
-            'detalles': f'Error al actualizar el sitio: {str(e)}',
+            'detalles': f'Error al actualizar el frente: {str(e)}',
             'exito': False
         })
 

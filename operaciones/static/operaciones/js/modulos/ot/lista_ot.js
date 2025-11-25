@@ -65,11 +65,11 @@ $(document).ready(function () {
                 "title": "PTE proveniente"
             },
             {
-                "data": "fecha_inicio_programada",
+                "data": "fecha_inicio_real",
                 "title": "Fecha de inicio"
             },
             {
-                "data": "fecha_termino_programada",
+                "data": "fecha_termino_real",
                 "title": "Fecha término"
             },
             {
@@ -158,21 +158,21 @@ $(document).ready(function () {
     $("#tabla tbody").on("click", ".editar_ot", function () {
         const otID = $(this).data('id');
         abrirModalEditarOT(otID);
-        window.tablaActiva = tablaPte.row($(this).parents('tr')).data() ? 
-                    tablaPte: 
-                    tablaReprogramaciones;
+        window.tablaActiva = tablaPte.row($(this).parents('tr')).data() ?
+            tablaPte :
+            tablaReprogramaciones;
         window.ot_actual = otID;
     });
 
     // Evento para expandir detalles del OT y repros
     $(document).on("click", ".detalle-pte", function () {
-        window.tablaActiva = tablaPte.row($(this).parents('tr')).data() ? 
-                    tablaPte: 
-                    tablaReprogramaciones;
-        window.tablaTexto = tablaPte.row($(this).parents('tr')).data() ? 
-                    "OT": 
-                    "Reprogramacion";
-        
+        window.tablaActiva = tablaPte.row($(this).parents('tr')).data() ?
+            tablaPte :
+            tablaReprogramaciones;
+        window.tablaTexto = tablaPte.row($(this).parents('tr')).data() ?
+            "OT" :
+            "Reprogramacion";
+
         let tr = $(this).closest("tr");
         let row = window.tablaActiva.row(tr);
         let otId = row.data().id;
@@ -205,7 +205,7 @@ $(document).ready(function () {
 
     // Función para abrir modal de edición
     function abrirModalEditarOT(otID) {
-        
+
         $("#formCrearOT")[0].reset();
         $("#modalCrearOTLabel").text("Editar OT");
 
@@ -225,6 +225,7 @@ $(document).ready(function () {
         // Obtener datos del PTE
         BMAjax(urlObtenerDatos, { id: otID }, "GET")
             .done(function (datos) {
+                iniciarLoader();
                 const ot = datos.datos;
 
                 // Llenar formulario con datos existentes
@@ -232,13 +233,26 @@ $(document).ready(function () {
                 $("#orden_trabajo").val(ot.orden_trabajo);
                 $("#oficio_solicitud").val(ot.oficio_solicitud);
                 $("#descripcion_trabajo").val(ot.descripcion_trabajo);
-                $("#id_embarcacion").val(ot.id_embarcacion_id);
+                $("#id_frente").val(ot.id_frente);
                 $("#plazo_dias").val(ot.plazo_dias);
                 $("#id_tipo").val(ot.id_tipo_id);
                 $("#total_homologado").val(ot.total_homologado);
                 $("#oficio_ot").val(ot.oficio_ot);
                 $("#comentario_general").val(ot.comentario);
                 $("#responsable_cliente").val(ot.responsable_cliente);
+                $("#fecha_inicio_programado").val(ot.fecha_inicio_programado);
+                $("#fecha_termino_programado").val(ot.fecha_termino_programado);
+                $("#fecha_inicio_real").val(ot.fecha_inicio_real);
+                $("#fecha_termino_real").val(ot.fecha_termino_real);
+                $("#monto_mxn").val(ot.monto_mxn || "0.00");
+                $("#monto_usd").val(ot.monto_usd || "0.00");
+                $("#plazo_dias").val(ot.plazo_dias || "0");
+                toggleFrenteFields().then(function () {
+                    if (ot.id_embarcacion) $("#id_embarcacion").val(ot.id_embarcacion).trigger('change');
+                    if (ot.id_patio) $("#id_patio").val(ot.id_patio).trigger('change');
+                    if (ot.id_plataforma) $("#id_plataforma").val(ot.id_plataforma).trigger('change');
+                    if (ot.id_intercom) $("#id_intercom").val(ot.id_intercom).trigger('change');
+                });
 
                 cargarResponsablesProyecto().done(function () {
                     $("#responsable_proyecto").val(ot.responsable_proyecto);
@@ -254,15 +268,18 @@ $(document).ready(function () {
 
                     $('#num_reprogramacion').val(ot.num_reprogramacion).prop('disabled', false);
                     $('#ot_principal').prop('disabled', false);
-                    
-                    cargarOTsPrincipales(ot.id).done(function() {
+
+                    cargarOTsPrincipales(ot.id).done(function () {
                         if (ot.ot_principal) {
                             $('#ot_principal').val(ot.ot_principal).trigger('change');
                         }
                     });
                 }
-                
+
                 // Mostrar modal
+                setTimeout(() => {
+                    finalizarLoader();
+                }, 2000);
                 const modal = new bootstrap.Modal(document.getElementById('modalCrearOT'));
                 modal.show();
             })
@@ -304,16 +321,13 @@ $(document).ready(function () {
         const otId = $("#ot_id").val();
         const formData = new FormData($("#formCrearOT")[0]);
 
-        // Mostrar loading
         const btn = $(this);
         const originalText = btn.html();
         btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Guardando...');
 
-        // Determinar URL y método
         const url = otId ? urlEditarOT : urlCrearPTE;
         const method = "POST";
 
-        // Enviar datos
         $.ajax({
             url: url,
             type: method,
@@ -435,7 +449,6 @@ $(document).ready(function () {
                         selectOT.append(`<option value="${id}">${folio}</option>`);
                     });
 
-                    // INICIALIZAR SELECT2 CON BÚSQUEDA
                     selectOT.select2({
                         placeholder: "Buscar OT por folio...",
                         allowClear: true,
@@ -484,7 +497,7 @@ $(document).ready(function () {
         ).done(function (response) {
             if (response.exito) {
                 aviso("exito", "Estatus actualizado correctamente");
-                tablaPte.ajax.reload(); // Recargar la tabla
+                tablaPte.ajax.reload();
             } else {
                 aviso("error", response.detalles || "Error al cambiar el estatus");
             }
@@ -492,9 +505,45 @@ $(document).ready(function () {
             aviso("error", "Error al cambiar el estatus");
         });
     });
+
+    // Evento para cambiar frente
+    $('#id_frente').on('change', function () {
+        toggleFrenteFields();
+    });
+
+    // Función para calcular fecha término basada en plazo días
+    function calcularFechaTermino() {
+        const fechaInicio = $('#fecha_inicio_programado').val();
+        const plazoDias = parseInt($('#plazo_dias').val()) || 0;
+
+        if (fechaInicio && plazoDias > 0) {
+            const fechaInicioObj = new Date(fechaInicio);
+            const fechaTerminoObj = new Date(fechaInicioObj);
+            fechaTerminoObj.setDate(fechaTerminoObj.getDate() + plazoDias);
+
+            // Formatear a YYYY-MM-DD para input date
+            const year = fechaTerminoObj.getFullYear();
+            const month = String(fechaTerminoObj.getMonth() + 1).padStart(2, '0');
+            const day = String(fechaTerminoObj.getDate()).padStart(2, '0');
+            const fechaTermino = `${year}-${month}-${day}`;
+
+            $('#fecha_termino_programado').val(fechaTermino);
+        }
+    }
+
+    // Evento cuando cambia la fecha de inicio programado
+    $('#fecha_inicio_programado').on('change', function () {
+        calcularFechaTermino();
+    });
+
+    // Evento cuando cambia el plazo en días (también actualiza si ya hay fecha inicio)
+    $('#plazo_dias').on('input', function () {
+        if ($('#fecha_inicio_programado').val()) {
+            calcularFechaTermino();
+        }
+    });
 });
 
-// Función para generar HTML de la tabla de detalles
 function fnHTMLTablaDetallePTE(otId) {
     if (window.tablaTexto == "OT") {
         return `
@@ -525,7 +574,7 @@ function fnHTMLTablaDetallePTE(otId) {
                 </div>
             </div>
         `;
-    } else if(window.tablaTexto == "Reprogramacion"){
+    } else if (window.tablaTexto == "Reprogramacion") {
         return `
             <div class="detalle-ot-container p-3" style="background-color: #f8f9fa;">
                 <ul class="nav nav-tabs" id="myTab_${otId}" role="tablist">
@@ -600,11 +649,11 @@ function initTablaReprogramaciones(otId) {
                 "title": "PTE proveniente"
             },
             {
-                "data": "fecha_inicio_programada",
+                "data": "fecha_inicio_real",
                 "title": "Fecha de inicio"
             },
             {
-                "data": "fecha_termino_programada",
+                "data": "fecha_termino_real",
                 "title": "Fecha término"
             },
             {
@@ -666,6 +715,93 @@ function initTablaReprogramaciones(otId) {
         ],
         language: {
             emptyTable: "No hay reprogramaciones registradas"
+        }
+    });
+}
+
+function toggleFrenteFields() {
+    const frenteId = $('#id_frente').val();
+
+    const $divEmbarcacion = $('#id_embarcacion').closest('.mb-3');
+    const $divPlataforma = $('#id_plataforma').closest('.mb-3');
+    const $divIntercom = $('#id_intercom').closest('.mb-3');
+    const $divPatio = $('#id_patio').closest('.mb-3');
+
+    // Ocultar todos primero
+    $divEmbarcacion.attr('hidden', true);
+    $divPlataforma.attr('hidden', true);
+    $divIntercom.attr('hidden', true);
+    $divPatio.attr('hidden', true);
+
+    // Deshabilitar selects
+    $('#id_embarcacion, #id_plataforma, #id_intercom, #id_patio').prop('disabled', true);
+
+    let promises = [];
+
+    if (frenteId == '1') { // BARCO
+        $divEmbarcacion.removeAttr('hidden');
+        $divPlataforma.removeAttr('hidden');
+        $divIntercom.removeAttr('hidden');
+        promises.push(cargarSitios(6, '#id_embarcacion'));
+        promises.push(cargarSitios(7, '#id_plataforma'));
+        promises.push(cargarSitios(5, '#id_intercom'));
+
+    } else if (frenteId == '2') { // TIERRA
+        $divPatio.removeAttr('hidden');
+        $divPlataforma.removeAttr('hidden');
+        $divIntercom.removeAttr('hidden');
+        promises.push(cargarSitios(3, '#id_patio'));
+        promises.push(cargarSitios(7, '#id_plataforma'));
+        promises.push(cargarSitios(5, '#id_intercom'));
+
+    } else if (frenteId == '3') { // CP / PS
+        $divPlataforma.removeAttr('hidden');
+        promises.push(cargarSitios(7, '#id_plataforma'));
+    }
+
+    return Promise.all(promises);
+}
+
+function cargarSitios(frenteId, selectorId) {
+    const select = $(selectorId);
+    select.empty().append('<option value="">Cargando...</option>');
+
+    if (select.hasClass("select2-hidden-accessible")) {
+        select.select2('destroy');
+    }
+
+    return $.ajax({
+        url: urlObtenerSitiosPorFrente,
+        type: 'GET',
+        data: { frente_id: frenteId },
+        success: function (data) {
+            select.empty();
+            select.append('<option value="" selected disabled>Seleccione una opción</option>');
+
+            if (data && data.length > 0) {
+                data.forEach(function (sitio) {
+                    select.append(`<option value="${sitio.id}">${sitio.descripcion}</option>`);
+                });
+            } else {
+                select.append('<option value="" disabled>No hay opciones disponibles</option>');
+            }
+
+            select.prop('disabled', false);
+
+            select.select2({
+                placeholder: "Buscar...",
+                allowClear: true,
+                width: '100%',
+                dropdownParent: $('#modalCrearOT .modal-content'),
+                language: {
+                    noResults: function () { return "No se encontraron resultados"; },
+                    searching: function () { return "Buscando..."; }
+                }
+            });
+        },
+        error: function () {
+            select.empty().append('<option value="">Error al cargar</option>');
+            aviso("error", "Error al cargar opciones del sitio");
         }
     });
 }

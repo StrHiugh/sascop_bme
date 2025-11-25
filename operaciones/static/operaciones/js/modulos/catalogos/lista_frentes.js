@@ -33,6 +33,10 @@ $(document).ready(function () {
                 "title": "Descripcion"
             },
             {
+                "data": "nivel_afectacion",
+                "title": "Afectacion"
+            },
+            {
                 "data": "activo",
                 "title": "Estatus",
                 "render": function(data, type, row) {
@@ -49,10 +53,10 @@ $(document).ready(function () {
                 "class": "text-center",
                 "render": function(fila) {
                     return `
-                        <a class="table-icon editar-embarcacion" title="Editar paso" data-id="${fila.id}">
+                        <a class="table-icon editar-frente" title="Editar paso" data-id="${fila.id}">
                             <i class="fas fa-edit"></i>
                         </a>
-                        <a class="table-icon eliminar_embarcacion" title="Eliminar" data-id="${fila.id}">
+                        <a class="table-icon eliminar-frente" title="Eliminar" data-id="${fila.id}">
                             <i class="fas fa-trash"></i>
                         </a>
                     `;
@@ -74,24 +78,23 @@ $(document).ready(function () {
     // Mover select de length
     $("#tabla_length").detach().appendTo("#select-length");
 
+    // Panel de filtros
     $("#btn-panel-filtros").on("click", function () {
-        var offcanvas = new bootstrap.Offcanvas(document.getElementById('panelFiltros'));
-        offcanvas.show();
+        fn_show_panel("#panel-filtro");
     });
 
-    $("#aplicar-filtros").on("click", function () {
+    // Aplicar filtros
+    $("#filtrar").on("click", function () {
         tablaPte.draw();
-        var offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('panelFiltros'));
-        offcanvas.hide();
+        fn_show_panel();
     });
 
-    $("#limpiar-filtros").on("click", function () {
-        $("#filtro-estado").val("");
-        $("#filtro-tipo").val("");
+    // Limpiar filtros
+    $("#limpiar").on("click", function () {
+        $("#slc-estado").val("");
         tablaPte.draw();
-        var offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('panelFiltros'));
-        offcanvas.hide();
     });
+
 
     // Abrir panel para crear nueva embarcación
     $(".btn-primary").on("click", function() {
@@ -103,47 +106,48 @@ $(document).ready(function () {
     // Función para abrir panel de creación
     function abrirPanelCrear() {
         // Limpiar formulario
-        $("#formulario-embarcacion")[0].reset();
+        $("#formulario-frente")[0].reset();
         $("#id").val("");
-        $("#panel-title").text("Crear Embarcación");
-        $("#activo").prop("checked", true);
-        
+        $("#panel-title").text("Crear frente");
+
         // Mostrar panel
         var offcanvas = new bootstrap.Offcanvas(document.getElementById('panelCrearEditar'));
         offcanvas.show();
     }
 
-    $(document).on("click", ".editar-embarcacion", function () {
-        const embarcacion_id = $(this).data('id');
-        abrirPanelEditar(embarcacion_id);
+    $(document).on("click", ".editar-frente", function () {
+        const id = $(this).data('id');
+        abrirPanelEditar(id);
     });
-    
+
     // Función para abrir panel de edición
     function abrirPanelEditar(id) {
         BMAjax(
-            urlObtenerEmbarcacion, {id:id}, "GET")
-            .done(function(data) {
+            urlObtenerFrente, { id: id }, "GET")
+            .done(function (data) {
                 $("#id").val(data.id);
                 $("#descripcion").val(data.descripcion);
+                $("#afectacion").val(data.afectacion);
                 $("#comentario").val(data.comentario);
-                $("#panel-title").text("Editar Embarcación");
-                
+                $("#panel-title").text("Editar frente");
+
                 // Mostrar panel
                 var offcanvas = new bootstrap.Offcanvas(document.getElementById('panelCrearEditar'));
                 offcanvas.show();
             })
-            .fail(function() {
+            .fail(function () {
                 aviso("error", {
-                    contenido: "Error al cargar los datos de la embarcación",
+                    contenido: "Error al cargar los datos del frente",
                 });
             });
     }
 
     // Guardar embarcación
-    $("#btn-guardar").on("click", function() {
+    $("#btn-guardar").on("click", function () {
         const formData = {
             id: $("#id").val(),
             descripcion: $("#descripcion").val(),
+            afectacion: $("#afectacion").val(),
             comentario: $("#comentario").val()
         };
 
@@ -153,13 +157,18 @@ $(document).ready(function () {
                 contenido: "La descripción es obligatoria",
             });
             return;
+        } else if (!formData.afectacion) {
+            aviso("advertencia", {
+                contenido: "La afectación es obligatoria",
+            });
+            return;
         }
 
-        const url = formData.id ? urlEditarEmbarcacion : urlCrearEmbarcacion;
+        const url = formData.id ? urlEditarFrente : urlCrearFrente;
         const method = "POST";
         BMAjax(
-            url, 
-            formData, 
+            url,
+            formData,
             method
         ).done(function(response) {
             if (response.exito) {
@@ -169,33 +178,33 @@ $(document).ready(function () {
             }
         });
     });
-    
-    // Eliminar PTE
-    $(document).on("click", ".eliminar_embarcacion", function () {
-        const embarcacion_id = $(this).data('id');
+
+    $(document).on("click", ".eliminar-sitio", function () {
+        const id = $(this).data('id');
         BMensaje({
             titulo: "Confirmación",
-            subtitulo: "¿Estás seguro de eliminar esta embarcación?",
+            subtitulo: "¿Estás seguro de eliminar este frente y su afectación?",
             botones: [
                 {
                     texto: "Sí, continuar",
                     clase: "btn-primary",
-                    funcion: function() {
-                        const url = urlEliminarEmbarcacion;
+                    funcion: function () {
+                        const url = urlEliminarFrente;
                         const method = "POST";
                         BMAjax(
-                            url, 
-                            { embarcacion_id: embarcacion_id },
+                            url,
+                            { id: id },
                             method
-                        ).done(function(response) {
+                        ).done(function (response) {
                             if (response.exito) {
                                 tablaPte.ajax.reload();
                             }
                         });
+
                     }
                 },
                 {
-                    texto: "Cancelar", 
+                    texto: "Cancelar",
                     clase: "btn-light",
                     funcion: function() { return }
                 }

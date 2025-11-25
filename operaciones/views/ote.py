@@ -6,7 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
 from django.shortcuts import render, get_object_or_404
 from ..models import OTE
-from operaciones.models.catalogos_models import Embarcacion, Estatus, ResponsableProyecto, Tipo
+from operaciones.models.catalogos_models import Sitio, Estatus, ResponsableProyecto, Tipo
 from django.db.models import Case, When, Value, CharField,Q, ExpressionWrapper, Count,F
 
 @login_required(login_url='/accounts/login/')
@@ -48,7 +48,7 @@ def datatable_ot(request):
         ),
         estatus_ot_texto=F('id_estatus_ot__descripcion'),
         estatus_ot_id_db=F('id_estatus_ot_id')
-    )
+    ).order_by('-id')
 
     if search_value:
         ots = ots.filter(
@@ -89,7 +89,11 @@ def datatable_ot(request):
         data.append({
             'id': ot.id,
             'id_tipo_id': ot.id_tipo_id,
-            'id_embarcacion_id': ot.id_embarcacion_id,
+            'id_frente': ot.id_frente,
+            'id_embarcacion': ot.id_embarcacion,
+            'id_plataforma': ot.id_plataforma,
+            'id_intercom': ot.id_intercom,
+            'id_patio': ot.id_patio,
             'descripcion_tipo':ot.id_tipo.descripcion,
             'estatus': estatus_display,
             'estatus_numero': ot.estatus,  # -1 o 1
@@ -102,12 +106,13 @@ def datatable_ot(request):
             'oficio_ot': ot.oficio_ot,
             'orden_trabajo':ot.orden_trabajo,
             'descripcion_trabajo': ot.descripcion_trabajo,
-            'fecha_inicio_programada': ot.fecha_inicio_programada.strftime('%d/%m/%Y') if ot.fecha_inicio_programada else None,
+            'fecha_inicio_programada': ot.fecha_inicio_programado.strftime('%d/%m/%Y') if ot.fecha_inicio_programado else None,
             'fecha_inicio_real': ot.fecha_inicio_real.strftime('%d/%m/%Y') if ot.fecha_inicio_real else None, 
-            'fecha_termino_programada': ot.fecha_termino_programada.strftime('%d/%m/%Y') if ot.fecha_termino_programada else None,
+            'fecha_termino_programada': ot.fecha_termino_programado.strftime('%d/%m/%Y') if ot.fecha_termino_programado else None,
             'fecha_termino_real': ot.fecha_termino_real.strftime('%d/%m/%Y') if ot.fecha_termino_real else None,   
             'comentario':ot.comentario,
             'ot_principal': ot.ot_principal,
+            'plazo_dias': ot.plazo_dias,
             'num_reprogramacion': ot.num_reprogramacion,
         })
     
@@ -128,7 +133,11 @@ def obtener_datos_ot(request):
         datos_ot = {
             'id': ot.id,
             'id_tipo_id': ot.id_tipo_id,
-            'id_embarcacion_id': ot.id_embarcacion_id,
+            'id_frente': ot.id_frente,
+            'id_embarcacion': ot.id_embarcacion,
+            'id_plataforma': ot.id_plataforma,
+            'id_intercom': ot.id_intercom,
+            'id_patio': ot.id_patio,
             'descripcion_tipo':ot.id_tipo.descripcion,
             'estatus_ot':ot.id_estatus_ot_id,
             'responsable_proyecto': ot.id_responsable_proyecto_id if ot.id_responsable_proyecto_id else '',
@@ -139,13 +148,17 @@ def obtener_datos_ot(request):
             'estatus':ot.estatus,
             'orden_trabajo':ot.orden_trabajo,
             'descripcion_trabajo': ot.descripcion_trabajo,
-            'fecha_inicio_programado': ot.fecha_inicio_programada.isoformat() if ot.fecha_inicio_programada else None,
-            'fecha_inicio_real': ot.fecha_inicio_real.strftime('%d/%m/%Y') if ot.fecha_inicio_real else None, 
-            'fecha_termino_programado': ot.fecha_termino_programada.isoformat() if ot.fecha_termino_programada else None,
-            'fecha_termino_real': ot.fecha_termino_real.strftime('%d/%m/%Y') if ot.fecha_termino_real else None,   
+            'fecha_inicio_programado': ot.fecha_inicio_programado.isoformat() if ot.fecha_inicio_programado else None,
+            'fecha_inicio_real': ot.fecha_inicio_real.isoformat() if ot.fecha_inicio_real else None, 
+            'fecha_termino_programado': ot.fecha_termino_programado.isoformat() if ot.fecha_termino_programado else None,
+            'fecha_termino_real': ot.fecha_termino_real.isoformat() if ot.fecha_termino_real else None,   
             'comentario':ot.comentario,
             'ot_principal': ot.ot_principal,
             'num_reprogramacion': ot.num_reprogramacion,
+            'monto_mxn': ot.monto_mxn,
+            'monto_usd': ot.monto_usd,
+            'plazo_dias': ot.plazo_dias,
+            
         }
         
         return JsonResponse({
@@ -273,19 +286,42 @@ def editar_ot(request):
             })
         
         ot = get_object_or_404(OTE, id=ot_id)
-        
+
         if ot.estatus == -1:
             ot.estatus = 1
-        
         # Actualizar campos básicos
         ot.orden_trabajo = request.POST.get('orden_trabajo', ot.orden_trabajo)
         ot.responsable_cliente = request.POST.get('responsable_cliente', ot.responsable_cliente)
         ot.ot_principal = request.POST.get('ot_principal',ot.ot_principal)
         ot.oficio_ot = request.POST.get('oficio_ot', ot.oficio_ot)
-        ot.id_embarcacion_id = request.POST.get('id_embarcacion', ot.id_embarcacion_id)
         ot.id_tipo_id = request.POST.get('id_tipo', ot.id_tipo_id)
-        ot.comentario = request.POST.get('comentario_general', ot.comentario)
+        ot.comentario = request.POST.get('comentario_general')
+        ot.id_frente = request.POST.get('id_frente')
+        ot.id_embarcacion = request.POST.get('id_embarcacion')
+        ot.id_plataforma = request.POST.get('id_plataforma')
+        ot.id_intercom = request.POST.get('id_intercom')
+        ot.id_patio = request.POST.get('id_patio')
+        ot.plazo_dias = request.POST.get('plazo_dias')
+        # Actualizar montos
+        if request.POST.get('monto_mxn'):
+            ot.monto_mxn = request.POST.get('monto_mxn')
+
+        if request.POST.get('monto_usd'):
+            ot.monto_usd = request.POST.get('monto_usd')
         
+        # Actualizar fechas:
+        if request.POST.get('fecha_inicio_programado'):
+            ot.fecha_inicio_programado = request.POST['fecha_inicio_programado']
+            
+        if request.POST.get('fecha_termino_programado'):
+            ot.fecha_termino_programado = request.POST['fecha_termino_programado']
+    
+        if request.POST.get('fecha_inicio_real'):
+            ot.fecha_inicio_real = request.POST['fecha_inicio_real']
+            
+        if request.POST.get('fecha_termino_real'):
+            ot.fecha_termino_real = request.POST['fecha_termino_real']
+
         # Campos específicos para reprogramación
         num_reprogramacion = request.POST.get('num_reprogramacion')
         if num_reprogramacion and num_reprogramacion.strip(): 
@@ -317,3 +353,15 @@ def editar_ot(request):
             'detalles': f'Error al actualizar OT: {str(e)}'
         })
         
+
+@require_http_methods(["GET"])
+def obtener_sitios_por_frente(request):
+    try:
+        frente_id = request.GET.get('frente_id')
+        if not frente_id:
+            return JsonResponse([], safe=False)
+            
+        sitios = Sitio.objects.filter(id_frente_id=frente_id, activo=True).values('id', 'descripcion')
+        return JsonResponse(list(sitios), safe=False)
+    except Exception as e:
+        return JsonResponse([], safe=False)
