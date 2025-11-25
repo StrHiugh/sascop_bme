@@ -24,7 +24,6 @@ def datatable_ot(request):
     # Filtro adicional del input de búsqueda
     filtro_buscar = request.GET.get('filtro', '')
     
-    # Get filters
     tipo_id = request.GET.get('tipo', '4') # Default to 4 (INICIAL)
     ot_principal_id = request.GET.get('ot_principal', None)
 
@@ -177,7 +176,6 @@ def obtener_ots_principales(request):
     """Obtener todas las OTs para el selector de OT principal"""
     try:
         ot_id = request.GET.get('ot_id')
-        # Filtra solo OTs que pueden ser principales (excluye las que ya son reprogramaciones)
         ots = OTE.objects.filter(
             id_tipo=4, 
         ).exclude(
@@ -207,7 +205,6 @@ def eliminar_ot(request):
                 'exito': False
             })
 
-        # Eliminación lógica - cambiar estatus a 0
         ot = OTE.objects.get(id=ot_id)
         ot.estatus = 0  # Cambiar estatus a 0 para eliminación lógica
         ot.save()
@@ -247,11 +244,7 @@ def cambiar_estatus_ot(request):
             })
         
         ot = OTE.objects.get(id=ot_id)
-        
-        # Si el estatus actual es -1, cambiarlo a 1 (activo)
-        # if ot.estatus == -1:
-        #     ot.estatus = 1
-        
+
         # Actualizar el id_estatus_ot
         ot.id_estatus_ot_id = nuevo_estatus_id
         ot.save()
@@ -289,7 +282,6 @@ def editar_ot(request):
 
         if ot.estatus == -1:
             ot.estatus = 1
-        # Actualizar campos básicos
         ot.orden_trabajo = request.POST.get('orden_trabajo', ot.orden_trabajo)
         ot.responsable_cliente = request.POST.get('responsable_cliente', ot.responsable_cliente)
         ot.ot_principal = request.POST.get('ot_principal',ot.ot_principal)
