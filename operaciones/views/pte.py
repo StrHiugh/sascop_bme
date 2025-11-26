@@ -7,8 +7,9 @@ from django.views.decorators.http import require_http_methods
 from django.http import JsonResponse
 from django.db.models import Case, When, Value, CharField,Q, ExpressionWrapper, Count,F
 from operaciones.models.catalogos_models import Sitio, Estatus, ResponsableProyecto, Tipo
-from ..models import PTEHeader, PTEDetalle, OTE, Produccion, Paso
+from ..models import PTEHeader, PTEDetalle, OTE, Produccion, Paso, PasoOt, OTDetalle
 from ..registro_actividad import registrar_actividad
+
 @login_required(login_url='/accounts/login/')
 def index(request):
     """Página principal del sistema"""
@@ -633,7 +634,9 @@ def cambiar_estatus_paso(request):
         detalle.estatus_paso_id = int(nuevo_estatus)
         if comentario:
             detalle.comentario = comentario
-            
+        else:
+            detalle.comentario = None
+
         if int(nuevo_estatus) == 3:
             if fecha_entrega:
                 detalle.fecha_entrega = fecha_entrega
@@ -901,9 +904,6 @@ def guardar_archivo_pte(request):
             'exito': False
         })
 
-
-
-
 @require_http_methods(["POST"])
 @login_required
 @registrar_actividad
@@ -912,7 +912,10 @@ def crear_ot_desde_pte(request):
     try:
         pte_id = request.POST.get('pte_id')
         oficio_ot = request.POST.get('oficio')
-        
+        tipo_ot_id = request.POST.get('tipo_ot', '4')
+        ot_principal = request.POST.get('ot_principal')
+        num_reprogramacion = request.POST.get('num_reprogramacion')
+    
         if not pte_id or not oficio_ot:
             return JsonResponse({
                 'exito': False,
@@ -953,22 +956,13 @@ def crear_ot_desde_pte(request):
                 'detalles': 'El oficio de OT ya existe'
             })
         
-        # Buscar un tipo (nivel_afectacion=2)
-        tipo_ote = Tipo.objects.filter(nivel_afectacion=2).first()
-        if not tipo_ote:
+        try:
+            tipo_ote = Tipo.objects.get(id=tipo_ot_id, nivel_afectacion=2)
+        except Tipo.DoesNotExist:
             return JsonResponse({
                 'exito': False,
                 'tipo_aviso': 'error',
-                'detalles': 'No se encontró un tipo válido para OTE'
-            })
-        
-        # Buscar embarcación
-        embarcacion_default = Embarcacion.objects.filter(activo=1).first()
-        if not embarcacion_default:
-            return JsonResponse({
-                'exito': False,
-                'tipo_aviso': 'error',
-                'detalles': 'No se encontró una embarcación válida'
+                'detalles': 'Tipo de OT no válido'
             })
         
         # Buscar estatus para OT
@@ -993,12 +987,30 @@ def crear_ot_desde_pte(request):
             id_responsable_proyecto=pte.id_responsable_proyecto,
             responsable_cliente="POR DEFINIR", 
             oficio_ot=oficio_ot,
-            id_embarcacion=embarcacion_default,
             id_estatus_ot=estatus_ote_default,
+            ot_principal=ot_principal if ot_principal else None,
+            num_reprogramacion=num_reprogramacion if num_reprogramacion else None,
             estatus=-1,
             comentario=""
         )
+
+        #crear pasos de ot dependiendo el tipo de ot
+        tipo_paso_busqueda = 1 
+        if tipo_ote.id == 5:
+            tipo_paso_busqueda = 2
         
+        pasos_a_crear = PasoOt.objects.filter(tipo=tipo_paso_busqueda, activo=True).order_by('id')
+        
+        if pasos_a_crear:
+            detalles_a_crear = []
+            for paso in pasos_a_crear:
+                detalle = OTDetalle.objects.create(
+                    id_ot_id=ote.id,
+                    estatus_paso_id=1,
+                    id_paso_id=paso.id,
+                    comentario=""
+                )
+                
         return JsonResponse({
             'exito': True,
             'tipo_aviso': 'exito',
@@ -1018,3 +1030,4 @@ def crear_ot_desde_pte(request):
             'tipo_aviso': 'error',
             'detalles': f'Error al crear OT: {str(e)}'
         })
+

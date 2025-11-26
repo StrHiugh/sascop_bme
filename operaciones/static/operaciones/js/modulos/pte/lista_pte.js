@@ -587,20 +587,20 @@ $(document).ready(function () {
                 // Agregar campo de fecha solo si el estatus es 3
                 if (mostrarFechaEntrega) {
                     contenidoMensaje += `
-                        <div class="mb-3 col-3">
-                            <label for="fechaEntrega" class="form-label">Fecha de entrega:</label>
-                            <input type="date" class="form-control" id="fechaEntrega" value="${new Date().toISOString().split('T')[0]}" required>
-                        </div>
+                            <div class="mb-3 col-3">
+                                <label for="fechaEntrega" class="form-label">Fecha de entrega:</label>
+                                <input type="date" class="form-control" id="fechaEntrega" value="${new Date().toISOString().split('T')[0]}" required>
+                            </div>
                     `;
                 }
                 
                 contenidoMensaje += `
-                        <div class="mb-3 col-4">
-                            <label for="comentarioCambio" class="form-label">Comentario:</label>
-                            <textarea class="form-control" id="comentarioCambio" rows="1" placeholder="Agregar un comentario sobre este cambio..."></textarea>
+                            <div class="mb-3 col-4">
+                                <label for="comentarioCambio" class="form-label">Comentario:</label>
+                                <textarea class="form-control" id="comentarioCambio" rows="1" placeholder="Agregar un comentario sobre este cambio..."></textarea>
+                            </div>
                         </div>
                     </div>
-                </div>
                 `;
 
                 BMensaje({
@@ -718,9 +718,6 @@ $(document).ready(function () {
                 const tipo = $(this).attr('tipo');
                 const nuevaFecha = $(this).val();
                 const fechaCell = $(this).closest('td');
-                if (!nuevaFecha) {
-                    return;
-                }
 
                 let log = new RegistroActividad(1,datosPaso.id,"ACTUALIZAR");
                 log.agregar_actividad({
@@ -1290,10 +1287,39 @@ $(document).ready(function () {
         BMensaje({
             titulo: "Crear Orden de Trabajo",
             subtitulo: `
-                <div class="mb-3">
+                <div class="mb-3 contenedor_crear_ot">
                     <p>¿Desea crear una Orden de Trabajo a partir de esta PTE?</p>
-                    <label for="oficioOT" class="form-label">Oficio de la OT:</label>
-                    <input type="text" class="form-control" id="oficioOT" placeholder="Ingrese el oficio de la OT" required>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="tipoOT" class="form-label">Tipo de OT:</label>
+                                <select class="form-select" id="tipoOT" required>
+                                    <option value="" selected disabled>Seleccione el tipo</option>
+                                    <option value="4">INICIAL</option>
+                                    <option value="5">REPROGRAMACIÓN</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3 contenedor_ot" hidden>
+                            <div class="mb-3">
+                                <label for="ot_principal" class="form-label">OT a reprogramar</label>
+                                <select class="form-select" id="ot_principal" name="ot_principal" disabled>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3 contenedor_reprogramacion" hidden>
+                            <div class="mb-3">
+                                <label for="num_reprogramacion" class="form-label">Número de reprogramación</label>
+                                <input type="number" class="form-control" id="num_reprogramacion" name="num_reprogramacion" min="1">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="oficioOT" class="form-label">Oficio de la OT:</label>
+                                <input type="text" class="form-control" id="oficioOT" placeholder="Ingrese el oficio de la OT" required>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             `,
             botones: [
@@ -1302,9 +1328,16 @@ $(document).ready(function () {
                     clase: "btn-primary",
                     funcion: function() {
                         const oficioOT = $('#oficioOT').val().trim();
-                        
+                        const tipoOT = $('#tipoOT').val();
+                        const ot_principal = $('#ot_principal').val();
+                        const num_reprogramacion = $('#num_reprogramacion').val();
                         if (!oficioOT) {
                             aviso("advertencia", "El oficio de la OT es obligatorio");
+                            return;
+                        }
+                        
+                        if (!tipoOT) {
+                            aviso("advertencia", "El tipo de OT es obligatorio");
                             return;
                         }
                         
@@ -1323,6 +1356,9 @@ $(document).ready(function () {
                             { 
                                 pte_id: pteId,
                                 oficio: oficioOT,
+                                tipo_ot: tipoOT, 
+                                ot_principal: ot_principal ? ot_principal : null, 
+                                num_reprogramacion: num_reprogramacion ? num_reprogramacion : null, 
                                 registro_actividad: JSON.stringify(log.actividad),
                                 csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val()
                             },
@@ -1330,9 +1366,7 @@ $(document).ready(function () {
                         ).done(function(response) {
                             if (response.exito) {
                                 tablaPte.ajax.reload();
-                            } else {
-                                aviso(response.tipo_aviso, response.detalles);
-                            }
+                            } 
                         });
                     }
                 },
@@ -1344,6 +1378,81 @@ $(document).ready(function () {
             ]
         });
     });
+
+    // Evento para mostrar/ocultar campos de reprogramación
+    $(document).on('change', '#tipoOT', function() {
+        const esReprogramacion = ($(this).val() === '5');
+        const $divOTPrincipal =  $('.contenedor_ot');
+        const $divNumReprogramacion =  $('.contenedor_reprogramacion');
+
+        if (esReprogramacion) {
+            // Mostrar campos de reprogramación
+            $divOTPrincipal.show().removeAttr('hidden');
+            $divNumReprogramacion.show().removeAttr('hidden');
+            $('#ot_principal').prop('disabled', false);
+            
+            // Cargar OTs principales
+            cargarOTsPrincipales(null); 
+        } else {
+            // Ocultar campos de reprogramación
+            $divOTPrincipal.hide().attr('hidden', 'hidden');
+            $divNumReprogramacion.hide().attr('hidden', 'hidden');
+            $('#ot_principal').prop('disabled', true).val('');
+            $('#num_reprogramacion').val('');
+        }
+    });
+
+    function cargarOTsPrincipales(ot_id) {
+        const selectOT = $('#ot_principal');
+        // Mostrar estado de carga
+        selectOT.empty().append('<option value="">Cargando OTs...</option>').prop('disabled', true);
+
+        return $.ajax({
+            url: urlObtenerOTPrincipal,
+            type: 'GET',
+            dataType: 'json',
+            data: {
+                ot_id: ot_id
+            },
+            success: function (response) {
+                selectOT.empty();
+                selectOT.append('<option value="" selected disabled>Seleccione una OT principal</option>');
+
+                if (response && response.length > 0) {
+                    response.forEach(function (ot) {
+                        const id = ot.id || ot.ot_id;
+                        const folio = ot.orden_trabajo || ot.folio || 'Sin folio';
+                        selectOT.append(`<option value="${id}">${folio}</option>`);
+                    });
+
+                    selectOT.select2({
+                        placeholder: "Buscar OT por folio...",
+                        allowClear: true,
+                        width: '100%',
+                        dropdownParent: $('.contenedor_crear_ot'),
+                        language: {
+                            noResults: function () {
+                                return "No se encontraron OTs";
+                            },
+                            searching: function () {
+                                return "Buscando...";
+                            }
+                        }
+                    });
+                    
+                } else {
+                    selectOT.append('<option value="" disabled>No hay OTs disponibles</option>');
+                }
+
+                selectOT.prop('disabled', false);
+            },
+            error: function (xhr, status, error) {
+                selectOT.empty();
+                selectOT.append('<option value="" selected disabled>Error al cargar OTs</option>');
+                selectOT.prop('disabled', false);
+            }
+        });
+    }
 
 });
 
@@ -1381,7 +1490,6 @@ function guardarEnlaceArchivo() {
                     window.pasoActual = null;
                     if (window.tablaDetalleActiva) {
                         window.tablaDetalleActiva.ajax.reload(null, false);
-                        window.tablaDetalleActiva = null; // Limpiar referencia
                     }
                 } else {
                     aviso("error", response.message || "Error al guardar el archivo");

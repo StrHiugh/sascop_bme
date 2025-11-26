@@ -77,6 +77,22 @@ class PasoOt(models.Model):
     def __str__(self):
         return f"{self.orden}. {self.descripcion}"
 
+class OTDetalle(models.Model):
+    id_ot = models.ForeignKey(OTE, on_delete=models.CASCADE, related_name='detalles')
+    estatus_paso = models.ForeignKey(Estatus, on_delete=models.CASCADE, limit_choices_to={'nivel_afectacion': 4})
+    id_paso = models.ForeignKey(PasoOt, on_delete=models.CASCADE)
+    fecha_entrega = models.DateField(null=True, blank=True)
+    fecha_inicio = models.DateField(null=True, blank=True)
+    fecha_termino = models.DateField(null=True, blank=True)
+    comentario = models.TextField(blank=True, null=True)
+    archivo = models.TextField(blank=True, null=True)
+
+    class Meta:
+        db_table = 'ot_detalle'
+        ordering = ['id_paso__id']
+
+    def __str__(self):
+        return f"Detalle {self.id} - OT {self.id_ot.orden_trabajo}"
 
 class PartidaProyectada(models.Model):
     """

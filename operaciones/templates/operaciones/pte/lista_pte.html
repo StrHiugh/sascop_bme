@@ -276,6 +276,7 @@
     var urlCambiarEstatusPTE  = "{% url 'operaciones:cambiar_estatus_pte' %}";
     var urlGuardarArchivo  = "{% url 'operaciones:guardar_archivo_pte' %}";
     const puedeEliminarPte = {{ perms.operaciones.delete_pteheader|yesno:"true,false" }};
+    var urlObtenerOTPrincipal = "{% url 'operaciones:obtener_ots_principales' %}";
     
 </script>
 {% endblock %}

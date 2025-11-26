@@ -5,7 +5,8 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
 from django.shortcuts import render, get_object_or_404
-from ..models import OTE
+from ..models import OTE, OTDetalle
+from ..registro_actividad import registrar_actividad
 from operaciones.models.catalogos_models import Sitio, Estatus, ResponsableProyecto, Tipo
 from django.db.models import Case, When, Value, CharField,Q, ExpressionWrapper, Count,F
 
@@ -176,6 +177,7 @@ def obtener_ots_principales(request):
     """Obtener todas las OTs para el selector de OT principal"""
     try:
         ot_id = request.GET.get('ot_id')
+        
         ots = OTE.objects.filter(
             id_tipo=4, 
         ).exclude(
@@ -357,3 +359,190 @@ def obtener_sitios_por_frente(request):
         return JsonResponse(list(sitios), safe=False)
     except Exception as e:
         return JsonResponse([], safe=False)
+
+def datatable_ot_detalle(request):
+    """Datatable para detalle de OT"""
+    ot_id = request.GET.get('ot_id')
+    
+    # Parámetros de paginación
+    start = int(request.GET.get('start', 0))
+    length = int(request.GET.get('length', 10))
+    draw = int(request.GET.get('draw', 1))
+    
+    detalles = OTDetalle.objects.filter(
+        id_ot_id=ot_id
+    ).select_related('id_paso', 'id_ot', 'estatus_paso').annotate(
+        estatus_texto=F('estatus_paso__descripcion')
+    ).order_by('id_paso__id')
+    
+    # Total de registros (sin paginar)
+    total_records = detalles.count()
+    
+    # Aplicar paginación
+    if length != -1:
+        detalles = detalles[start:start + length]
+    
+    data = []
+    for detalle in detalles:        
+        data.append({
+            'id': detalle.id,
+            'orden': detalle.id_paso.orden,
+            'desc_paso': detalle.id_paso.descripcion,
+            'tipo_paso': detalle.id_paso.tipo,
+            'estatus_paso': detalle.estatus_paso_id,
+            'estatus_texto': detalle.estatus_texto,
+            'fecha_entrega': detalle.fecha_entrega.strftime('%d/%m/%Y') if detalle.fecha_entrega else None,
+            'fecha_inicio': detalle.fecha_inicio.strftime('%d/%m/%Y') if detalle.fecha_inicio else None,
+            'fecha_termino': detalle.fecha_termino.strftime('%d/%m/%Y') if detalle.fecha_termino else None,
+            'comentario': detalle.comentario or '',
+            'archivo': detalle.archivo,
+            'oficio_ot': detalle.id_ot.oficio_ot,
+        })
+    
+    return JsonResponse({
+        'draw': draw,
+        'recordsTotal': total_records, 
+        'recordsFiltered': total_records, 
+        'data': data
+    })
+
+@require_http_methods(["POST"])
+@login_required
+@registrar_actividad
+def cambiar_estatus_paso_ot(request):
+    """Cambiar estatus de un paso de OT"""
+    try:
+        paso_id = request.POST.get('paso_id')
+        nuevo_estatus = request.POST.get('nuevo_estatus')
+        comentario = request.POST.get('comentario', '')
+        fecha_entrega = request.POST.get('fecha_entrega', None)
+
+        if not paso_id or not nuevo_estatus:
+            return JsonResponse({
+                'exito': False,
+                'tipo_aviso': 'advertencia',
+                'detalles': 'Datos incompletos'
+            })
+        
+        detalle = OTDetalle.objects.get(id=paso_id)
+        # Guardar el estatus anterior para verificar cambios
+        estatus_anterior = detalle.estatus_paso_id
+        #Asignar nuevo estatus
+        detalle.estatus_paso_id = int(nuevo_estatus)
+        if comentario:
+            detalle.comentario = comentario
+        else:
+            detalle.comentario = None
+            
+        # Lógica de fechas automática (similar a PTE)
+        if int(nuevo_estatus) == 3: # COMPLETADO (asumiendo ID 3)
+            if fecha_entrega:
+                detalle.fecha_entrega = fecha_entrega
+            else:
+                detalle.fecha_entrega = timezone.now()   
+        # Si se cambia de COMPLETADO a otro estatus, limpiar la fecha de completado
+        elif estatus_anterior == 3 and int(nuevo_estatus) != 3:
+            detalle.fecha_entrega = None
+        detalle.save()
+        
+        return JsonResponse({
+            'exito': True,
+            'tipo_aviso': 'exito',
+            'detalles': 'Estatus actualizado correctamente'
+        })
+        
+    except OTDetalle.DoesNotExist:
+        return JsonResponse({
+            'exito': False,
+            'tipo_aviso': 'error',
+            'detalles': 'Paso no encontrado'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'exito': False,
+            'tipo_aviso': 'error',
+            'detalles': f'Error al cambiar estatus: {str(e)}'
+        })
+
+@require_http_methods(["POST"])
+@login_required
+@registrar_actividad
+def actualizar_fecha_ot(request):
+    """Actualizar fechas de un paso de OT"""
+    try:
+        id_paso = request.POST.get('id_paso')
+        fecha = request.POST.get('fecha')
+        tipo = request.POST.get('tipo') # 1: Inicio, 2: Termino, 3: Entrega
+        
+        if not id_paso:
+            return JsonResponse({
+                'exito': False,
+                'detalles': 'ID del paso no proporcionado'
+            })
+        
+        paso_detalle = OTDetalle.objects.get(id=id_paso)
+        
+        if tipo == '1':
+            paso_detalle.fecha_inicio = fecha if fecha else None
+        elif tipo == '2':
+            paso_detalle.fecha_termino = fecha if fecha else None
+        elif tipo == '3':
+            paso_detalle.fecha_entrega = fecha if fecha else None
+            
+        paso_detalle.save()
+        
+        return JsonResponse({
+            'exito': True,
+            'tipo_aviso': 'exito',
+            'detalles': 'Fecha actualizada correctamente'
+        })
+        
+    except OTDetalle.DoesNotExist:
+        return JsonResponse({
+            'exito': False,
+            'detalles': 'Paso no encontrado'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'exito': False,
+            'detalles': f'Error al actualizar fecha: {str(e)}'
+        })
+
+@require_http_methods(["POST"])
+@login_required
+def guardar_archivo_ot(request):
+    """Guardar Archivo de entregables de OT"""
+    try:
+        paso_id = request.POST.get('paso_id')
+        url = request.POST.get('archivo')
+        
+        if not paso_id:
+            return JsonResponse({
+                'tipo_aviso': 'error',
+                'detalles': 'ID del paso no proporcionado',
+                'exito': False
+            })
+
+        paso = OTDetalle.objects.get(id=paso_id)
+        paso.archivo = url
+        paso.save()
+        
+        return JsonResponse({
+            'tipo_aviso': 'exito',
+            'detalles': 'URL asignada correctamente',
+            'exito': True
+        })
+
+    except OTDetalle.DoesNotExist:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': 'Paso no encontrado',
+            'exito': False
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': f'Error al asignar url: {str(e)}',
+            'exito': False
+        })

@@ -9,13 +9,14 @@ TABLAS_LOG = [
     "Paso",                         # 2
     "Tipo",                         # 3
     "OT",                           # 4
-    "Sitio",                        # 5
-    "Estatus",                      # 6
-    "Embarcacion",                  # 7
-    "Unidad Medida",                # 8
-    "Produccion",                   # 9
-    "Producto",                     # 10
-    "Responsable Proyecto",         # 11
+    "OT Detalle",                   # 5
+    "Sitio",                        # 6
+    "Estatus",                      # 7
+    "Embarcacion",                  # 8
+    "Unidad Medida",                # 9
+    "Produccion",                   # 10
+    "Producto",                     # 11
+    "Responsable Proyecto",         # 12
 ]
 
 # Campos que se ignorarán en el registro de cambios

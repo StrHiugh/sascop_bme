@@ -190,15 +190,24 @@ $(document).ready(function () {
                     $(tablaReprogramacionesId).DataTable().destroy();
                     $(tablaReprogramacionesId).empty();
                 }
+
+                const tablaDetalleId = `#tabla-detalle-ot_${otId}`;
+                if ($.fn.DataTable.isDataTable(tablaDetalleId)) {
+                    $(tablaDetalleId).DataTable().destroy();
+                    $(tablaDetalleId).empty();
+                }
             }
         } else {
             // Abrir detalles
             $(this).find('i').removeClass('fa-plus-square').addClass('fa-minus-square');
             row.child(fnHTMLTablaDetallePTE(otId)).show();
 
-            // Inicializar DataTable de Reprogramaciones
+            // Inicializar DataTable de Reprogramaciones y Detalles
             if (window.tablaTexto === "OT") {
                 initTablaReprogramaciones(otId);
+                initTablaDetalleOT(otId);
+            } else if (window.tablaTexto === "Reprogramacion") {
+                initTablaDetalleOT(otId);
             }
         }
     });
@@ -288,6 +297,28 @@ $(document).ready(function () {
                     contenido: "Error al cargar los datos de la OT",
                 });
             });
+    }
+
+    function abrirModalSubirArchivo(datosPaso = null) {
+        const modal = new bootstrap.Modal(document.getElementById('modalSubirArchivo'));
+        const enlaceInput = document.getElementById('enlaceArchivoOt');
+        if (datosPaso) {
+            if (datosPaso.archivo) {
+                enlaceInput.value = datosPaso.archivo;
+            } else {
+                enlaceInput.value = '';
+            }
+
+            window.pasoActual = datosPaso;
+        } else {
+            enlaceInput.value = '';
+            window.pasoActual = null;
+        }
+        
+        modal.show();
+        setTimeout(() => {
+            enlaceInput.focus();
+        }, 500);
     }
 
     // Función para cargar responsables de proyecto
@@ -542,7 +573,202 @@ $(document).ready(function () {
             calcularFechaTermino();
         }
     });
+
+    $(document).on('click', '.cambiar-estatus-paso-option', function(e) {
+        e.preventDefault();
+        
+        const pasoId = $(this).closest('.dropdown').find('.paso-id').val();
+        const nuevoEstatus = $(this).data('estatus');
+        const textoEstatus = $(this).text().trim();
+        const mostrarFechaEntrega = (nuevoEstatus == '3'); // COMPLETADO
+        const dropdownButton = $(this).closest('.dropdown').find('.dropdown-toggle');
+
+        // Obtener datos de la fila actual
+        let datosPaso = window.tablaDetalleActiva ? window.tablaDetalleActiva.row($(this).parents('tr')).data() : null;
+        let contenidoMensaje = `
+            <div class="mb-3">
+                <p>¿Estás seguro de cambiar el estatus a <strong>${textoEstatus}</strong>?</p>
+                <div class="row">
+        `;
+        
+        // Agregar campo de fecha solo si el estatus es 3 (COMPLETADO)
+        if (mostrarFechaEntrega) {
+            contenidoMensaje += `
+                    <div class="mb-3 col-3">
+                        <label for="fechaEntrega" class="form-label">Fecha de entrega:</label>
+                        <input type="date" class="form-control" id="fechaEntrega" value="${new Date().toISOString().split('T')[0]}" required>
+                    </div>
+            `;
+        }
+        
+        contenidoMensaje += `
+                    <div class="mb-3 ${mostrarFechaEntrega ? 'col-3' : 'col-3'}">
+                        <label for="comentarioCambio" class="form-label">Comentario:</label>
+                        <textarea class="form-control" id="comentarioCambio" rows="1" placeholder="Agregar un comentario sobre este cambio..."></textarea>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        BMensaje({
+            titulo: "Confirmación",
+            subtitulo: contenidoMensaje,
+            botones: [
+                {
+                    texto: "Sí, continuar",
+                    clase: "btn-primary",
+                    funcion: function() {
+                        const comentario = $('#comentarioCambio').val().trim();
+                        
+                        // Validar fecha si es requerida
+                        if (mostrarFechaEntrega) {
+                            const fechaEntrega = $('#fechaEntrega').val();
+                            if (!fechaEntrega) {
+                                aviso("advertencia", "La fecha de entrega es obligatoria para el estatus COMPLETADO");
+                                return;
+                            }
+                        }
+                        
+                        let log = new RegistroActividad(5, datosPaso.id, "ACTUALIZAR");
+                        log.agregar_actividad({
+                            nombre: "Actualizó",
+                            valor_actual: textoEstatus,
+                            valor_anterior: datosPaso.estatus_paso_texto || 'PENDIENTE',
+                            detalle: `el estatus de: <b>${datosPaso.estatus_paso_texto || 'PENDIENTE'}</b> a: <b>${textoEstatus}</b>, del paso <b>${datosPaso.orden || ''} - ${datosPaso.desc_paso || ''}</b> de la OT: <b>${datosPaso.oficio_ot || ''}</b>`
+                        });
+                        
+                        // Preparar datos para enviar
+                        const datos = {
+                            paso_id: pasoId,
+                            nuevo_estatus: nuevoEstatus,
+                            comentario: comentario,
+                            registro_actividad: JSON.stringify(log.actividad), 
+                            csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val()
+                        };
+
+                        // Agregar fecha de entrega solo si es COMPLETADO
+                        if (mostrarFechaEntrega) {
+                            datos.fecha_entrega = $('#fechaEntrega').val();
+                        }
+
+                        BMAjax(
+                            urlCambiarEstatusPaso,
+                            datos,
+                            "POST"
+                        ).done(function(response) {
+                            if (response.exito) {
+                                // Recargar la tabla de detalles
+                                if (window.tablaDetalleActiva) {
+                                    window.tablaDetalleActiva.ajax.reload(null, false);
+                                }
+                            } else {
+                                aviso("error", response.detalles || "Error al actualizar el estatus");
+                            }
+                        }).fail(function() {
+                            aviso("error", "Error al conectar con el servidor");
+                        });
+                    }
+                },
+                {
+                    texto: "Cancelar", 
+                    clase: "btn-light",
+                    funcion: function() { return }
+                }
+            ]
+        });
+    });
+
+    // Cambio de fechas
+    $(document).on('change', '.fecha-paso-input', function () {
+        const pasoId = $(this).data('id');
+        const fecha = $(this).val();
+        const tipo = $(this).data('tipo'); // 1: Inicio, 2: Termino, 3: Entrega
+        let datosPaso = window.tablaDetalleActiva ? window.tablaDetalleActiva.row($(this).parents('tr')).data() : null;
+
+        let log = new RegistroActividad(5,datosPaso.id,"ACTUALIZAR");
+        log.agregar_actividad({
+            nombre:"Actualizó",
+            valor_actual:fecha,
+            valor_anterior:(tipo=='1')?datosPaso.fecha_inicio:(tipo=='2')?datosPaso.fecha_termino:datosPaso.fecha_entrega,
+            detalle:`la fecha de:<b> ${(tipo=='1')?datosPaso.fecha_inicio:(tipo=='2')?datosPaso.fecha_termino:datosPaso.fecha_entrega}</b> a: <b>${fecha}
+                ${(tipo=='1')?'de inicio':
+                (tipo=='2')?'de término':'de entrega'} </b>
+                del paso <b>${datosPaso.orden}</b> de la OT: <b>${datosPaso.oficio_ot}</b>`}) 
+        
+        BMAjax(
+            urlActualizarFecha,
+            {
+                id_paso: pasoId,
+                fecha: fecha,
+                tipo: tipo,
+                registro_actividad: JSON.stringify(log.actividad),
+
+            },
+            "POST"
+        ).done(function (response) {
+            if (response.exito) {
+
+            } else {
+            }
+        });
+    });
+
+    // Subida de archivos
+    $(document).on('click', '.ver-archivo', function () {
+        const pasoId = $(this).data('id');
+        const input = $(this).closest('div').find('.archivo-input')[0];
+        let datosPaso = window.tablaDetalleActiva ? window.tablaDetalleActiva.row($(this).parents('tr')).data() : null;
+        abrirModalSubirArchivo(datosPaso);
+        
+    });
+
 });
+
+// Funcion para guardar el archivo
+function guardarEnlaceArchivo() {
+    const enlace = $('#enlaceArchivoOt').val().trim();
+    
+    if (!enlace) {
+        aviso("advertencia", "Por favor ingresa un enlace válido");
+        $('#enlaceArchivoOt').focus();
+        return;
+    }
+    
+    // Validación de URL
+    if (!enlace.startsWith('http://') && !enlace.startsWith('https://')) {
+        aviso("advertencia", "La URL debe comenzar con http:// o https://");
+        $('#enlaceArchivoOt').focus();
+        $('#enlaceArchivoOt').select();
+        return;
+    }
+    
+    if (window.pasoActual) {
+        $.ajax({
+            url: urlGuardarArchivo,
+            method: "POST",
+            data: {
+                csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val(),
+                paso_id: window.pasoActual.id,
+                archivo: enlace
+            },
+            success: function(response) {
+                if (response.exito) {
+                    aviso("exito", "Archivo guardado correctamente");
+                    $('#modalSubirArchivo').modal('hide');
+                    window.pasoActual = null;
+                    if (window.tablaDetalleActiva) {
+                        window.tablaDetalleActiva.ajax.reload(null, false);
+                    }
+                } else {
+                    aviso("error", response.message || "Error al guardar el archivo");
+                }
+            },
+            error: function() {
+                aviso("error", "Error al guardar el archivo");
+            }
+        });
+    }
+}
 
 function fnHTMLTablaDetallePTE(otId) {
     if (window.tablaTexto == "OT") {
@@ -562,10 +788,8 @@ function fnHTMLTablaDetallePTE(otId) {
                 </ul>
                 <div class="tab-content p-3 border border-top-0 bg-white" id="myTabContent_${otId}">
                     <div class="tab-pane fade show active" id="detalle_${otId}" role="tabpanel" aria-labelledby="detalle-tab_${otId}">
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle me-2"></i>
-                            Sección de detalles en construcción. Aquí se mostrarán los pasos del proceso.
-                        </div>
+                        <table id="tabla-detalle-ot_${otId}" class="table table-sm table-bordered table-hover w-100">
+                        </table>
                     </div>
                     <div class="tab-pane fade" id="reprogramaciones_${otId}" role="tabpanel" aria-labelledby="reprogramaciones-tab_${otId}">
                         <table id="tabla-reprogramaciones_${otId}" class="table table-sm table-bordered table-hover w-100">
@@ -586,15 +810,202 @@ function fnHTMLTablaDetallePTE(otId) {
                 </ul>
                 <div class="tab-content p-3 border border-top-0 bg-white" id="myTabContent_${otId}">
                     <div class="tab-pane fade show active" id="detalle_${otId}" role="tabpanel" aria-labelledby="detalle-tab_${otId}">
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle me-2"></i>
-                            Sección de detalles en construcción. Aquí se mostrarán los pasos del proceso.
-                        </div>
+                         <table id="tabla-detalle-ot_${otId}" class="table table-sm table-bordered table-hover w-100">
+                        </table>
                     </div>
                 </div>
             </div>
         `;
     }
+}
+
+function initTablaDetalleOT(otId) {
+    window.tablaDetalleActiva = $(`#tabla-detalle-ot_${otId}`).DataTable({
+        processing: true,
+        serverSide: true,
+        responsive: true,
+        searching: false,
+        paging: true,
+        info: true,
+        pageLength: 10,    // 10 registros por página
+        lengthChange: false, // No permitir cambiar cantidad de registros
+        dom: '<"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>', // Solo info y paginación
+        language: {
+            "lengthMenu": "",  // Ocultar texto de length menu
+            "info": "Mostrando _START_ a _END_ de _TOTAL_ registros",
+            "infoEmpty": "No hay registros",
+            "infoFiltered": "",
+            "paginate": {
+                "first": "‹‹",
+                "last": "››",
+                "next": "›",
+                "previous": "‹"
+            }
+        },
+        ajax: {
+            url: urlDatatableDetalleOT,
+            type: "GET",
+            data: {
+                ot_id: otId
+            }
+        },
+        columns: [
+            { 
+                data: "orden", 
+                title: "Paso", 
+                className: "text-center",
+                width: "5%" 
+            },
+            { 
+                data: "desc_paso", 
+                title: "Descripción", 
+                width: "35%" 
+            },
+            {
+                data: "fecha_inicio",
+                title: "Fecha inicio",
+                className:"text-center",
+                width: "5%",
+                render: function (data, type, row) {
+                    // Convertir DD/MM/YYYY a YYYY-MM-DD para el input date
+                    let val = "";
+                    if (data) {
+                        let parts = data.split('/');
+                        if (parts.length === 3) val = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                    }
+                    return `
+                        <div class="fecha-selector-container">
+                            <input type="date" 
+                                class="form-control form-control-sm fecha-paso-input" 
+                                data-id="${row.id}" 
+                                data-tipo="1" 
+                                value="${val}">
+                        </div>
+                    `;
+                }
+            },
+            {
+                data: "fecha_termino",
+                title: "Fecha término",
+                className:"text-center",    
+                width: "5%",
+                render: function (data, type, row) {
+                    let val = "";
+                    if (data) {
+                        let parts = data.split('/');
+                        if (parts.length === 3) val = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                    }
+                    return `
+                        <div class="fecha-selector-container">
+                            <input type="date" 
+                                class="form-control form-control-sm fecha-paso-input" 
+                                data-id="${row.id}" 
+                                data-tipo="2" 
+                                value="${val}">
+                        </div>
+                    `;
+                }
+            },
+            {
+                data: "fecha_entrega",
+                title: "Fecha entrega",
+                className:"text-center",    
+                width: "10%",
+                render: function (data, type, row) {
+                    return data || ''
+                }
+            },
+            {
+                data: "comentario",
+                title: "Comentario",
+                width: "15%",
+                orderable: false
+            },
+            {
+                "data": "estatus_paso",
+                "title": "Estatus", 
+                "orderable": false,
+                "className": "text-center",
+                "width": "10%",
+                "render": function(data, type, row) {
+                    const estatusClasses = {
+                        '1': 'bg-warning',      // PENDIENTE
+                        '2': 'bg-primary',      // PROCESO
+                        '3': 'bg-success',      // COMPLETADO
+                        '4': 'bg-danger',       // CANCELADO
+                        '14': 'bg-secondary'    // NO APLICA
+                    };
+                    
+                    const estatusTextos = {
+                        '1': 'PENDIENTE',
+                        '2': 'PROCESO', 
+                        '3': 'COMPLETADO',
+                        '4': 'CANCELADO',
+                        '14': 'NO APLICA'
+                    };
+                    
+                    const textoActual = estatusTextos[data] || 'PENDIENTE';
+                    const claseActual = estatusClasses[data] || 'bg-warning';
+                    
+                    return `
+                        <div class="dropdown">
+                            <button class="btn btn-sm ${claseActual} dropdown-toggle text-white w-100" 
+                                    type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                ${textoActual}
+                            </button>
+                            <ul class="dropdown-menu w-100">
+                                <li><a class="dropdown-item cambiar-estatus-paso-option" data-estatus="1">PENDIENTE</a></li>
+                                <li><a class="dropdown-item cambiar-estatus-paso-option" data-estatus="2">PROCESO</a></li>
+                                <li><a class="dropdown-item cambiar-estatus-paso-option" data-estatus="3">COMPLETADO</a></li>
+                                <li><a class="dropdown-item cambiar-estatus-paso-option" data-estatus="4">CANCELADO</a></li>
+                                <li><a class="dropdown-item cambiar-estatus-paso-option" data-estatus="14">NO APLICA</a></li>
+                            </ul>
+                            <input type="hidden" class="paso-id" value="${row.id}">
+                        </div>
+                    `;
+                }
+            },
+            {
+                "data": null,
+                "title": "Opciones",
+                "class": "text-center",
+                "width": "120px",
+                "orderable": false,
+                "render": function(data, type, row) {
+                    if (row.archivo && row.archivo.trim() !== '') {
+                        // Codificar la URL para caracteres especiales
+                        const urlCodificada = encodeURI(row.archivo);
+                        const archivoAcortado = row.archivo.length > 30 ? 
+                            row.archivo.substring(0, 30) + '...' : row.archivo;
+                            
+                        return `
+                            <a class="table-icon ver-archivo" 
+                                title="Cambiar archivo" 
+                                data-id="${row.id}"  >
+                                <i class="fas fa-upload text-secondary"></i>
+                            </a>
+                            <a class="table-icon ver-archivo-externo" 
+                                href="${urlCodificada}" 
+                                target="_blank" 
+                                title="Abrir: ${archivoAcortado}"
+                                data-bs-toggle="tooltip"
+                                data-bs-placement="top"
+                                data-id="${row.id}">
+                                    <i class="fas fa-eye text-success"></i>
+                            </a>
+                        `;
+                    } else {
+                        // Si no tiene archivo, mostrar solo ícono de subir
+                        return `
+                            <a class="table-icon ver-archivo" title="Subir archivo" data-id="${row.id}">
+                                <i class="fas fa-upload"></i>
+                            </a>
+                        `;
+                    }
+                }
+            }
+        ]
+    });
 }
 
 function initTablaReprogramaciones(otId) {
@@ -611,6 +1022,12 @@ function initTablaReprogramaciones(otId) {
             data: function (d) {
                 d.tipo = 5; // Reprogramacion
                 d.ot_principal = otId;
+            }
+        },
+        createdRow: function (row, data, dataIndex) {
+            // Si el estatus es -1 aplicar estilo especial
+            if (data.estatus === -1 || data.estatus === 'Por definir') {
+                $(row).addClass('fila-por-definir');
             }
         },
         columns: [
@@ -661,6 +1078,7 @@ function initTablaReprogramaciones(otId) {
                 "title": "Estatus",
                 "orderable": false,
                 "className": "text-center",
+                "width": "10%",
                 "render": function (data, type, row) {
                     const estatusClasses = {
                         'POR DEFINIR': 'bg-secondary',
@@ -673,25 +1091,35 @@ function initTablaReprogramaciones(otId) {
                         'POR CANCELAR': 'bg-danger'
                     };
 
-                    return `
-                        <div class="dropdown">
-                            <button class="btn btn-sm ${estatusClasses[data] || 'bg-secondary'} dropdown-toggle text-white w-100" 
-                                    type="button" data-bs-toggle="dropdown" data-bs-display="static" 
-                                    aria-expanded="false">
-                                ${data}
-                            </button>
-                            <ul class="dropdown-menu w-100" style="max-height: 200px; overflow-y: auto;">
-                                <li><a class="dropdown-item cambiar-estatus-option" data-estatus="5">ASIGNADA</a></li>
-                                <li><a class="dropdown-item cambiar-estatus-option" data-estatus="8">EN EJECUCION</a></li>
-                                <li><a class="dropdown-item cambiar-estatus-option" data-estatus="9">SUSPENDIDA</a></li>
-                                <li><a class="dropdown-item cambiar-estatus-option" data-estatus="7">DIFERIDA</a></li>
-                                <li><a class="dropdown-item cambiar-estatus-option" data-estatus="10">TERMINADA</a></li>
-                                <li><a class="dropdown-item cambiar-estatus-option" data-estatus="11">POR CANCELAR</a></li>
-                                <li><a class="dropdown-item cambiar-estatus-option" data-estatus="6">CANCELADA</a></li>
-                            </ul>
-                            <input type="hidden" class="ot-id" value="${row.id}">
-                        </div>
-                    `;
+                    // Si el estatus es 1 (activo), mostrar dropdown con estatus actual
+                    if (row.estatus_numero === 1) {
+                        return `
+                            <div class="dropdown">
+                                <button class="btn btn-sm ${estatusClasses[data] || 'bg-secondary'} dropdown-toggle text-white w-100" 
+                                        type="button" data-bs-toggle="dropdown" data-bs-display="static" 
+                                        aria-expanded="false">
+                                    ${data}
+                                </button>
+                                <ul class="dropdown-menu w-100">
+                                    <li><a class="dropdown-item cambiar-estatus-option" data-estatus="5">ASIGNADA</a></li>
+                                    <li><a class="dropdown-item cambiar-estatus-option" data-estatus="8">EN EJECUCION</a></li>
+                                    <li><a class="dropdown-item cambiar-estatus-option" data-estatus="9">SUSPENDIDA</a></li>
+                                    <li><a class="dropdown-item cambiar-estatus-option" data-estatus="7">DIFERIDA</a></li>
+                                    <li><a class="dropdown-item cambiar-estatus-option" data-estatus="10">TERMINADA</a></li>
+                                    <li><a class="dropdown-item cambiar-estatus-option" data-estatus="11">POR CANCELAR</a></li>
+                                    <li><a class="dropdown-item cambiar-estatus-option" data-estatus="6">CANCELADA</a></li>
+                                </ul>
+                                <input type="hidden" class="ot-id" value="${row.id}">
+                            </div>
+                        `;
+                    } else {
+                        // Si es -1 (por definir), mostrar solo el badge
+                        return `<button class="btn btn-sm ${estatusClasses[data] || 'bg-secondary'} text-white w-100" 
+                                        type="button" data-bs-toggle="dropdown" data-bs-display="static" 
+                                        aria-expanded="false">
+                                    ${data}
+                                </button>`;
+                    }
                 }
             },
             {
