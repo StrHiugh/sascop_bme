@@ -63,6 +63,11 @@
                         <i class="fas fa-chart-line me-2"></i>Producción
                     </button>
                 </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link text-secondary fw-medium" id="barco-tab" data-bs-toggle="tab" data-bs-target="#barco-content" type="button" role="tab" aria-controls="barco" aria-selected="false">
+                        <i class="fas fa-ship me-2"></i>Tiempos de barco
+                    </button>
+                </li>
             </ul>
         </div>
         <div class="card-body p-1" style="overflow: hidden;">
@@ -86,6 +91,19 @@
                         <iframe 
                             id="powerbi-frame-produccion"
                             src="https://app.powerbi.com/view?r=eyJrIjoiMjY0NTMwOGMtODc0ZS00MGFlLTk5NjAtMzMxMGQ4NTI2Yjg1IiwidCI6IjY1MTZkMzQ2LTIxZWItNDJmYS04MjMzLTJmYjEwYWUzNDNhNiIsImMiOjR9&pageName=9b900b38d4c4ec3c0d78"
+                            width="100%" 
+                            height="100%"
+                            style="transform: scale(0.84); transform-origin: 0 0; width: 119.05%; height: 119.05%;"
+                            allowfullscreen>
+                        </iframe>
+                    </div>
+                </div>
+                <!-- Tab tiempos de barco -->
+                <div class="tab-pane fade" id="barco-content" role="tabpanel" aria-labelledby="barco-tab">
+                    <div class="powerbi-container" style="height: 1080px; overflow: auto;">
+                        <iframe 
+                            id="powerbi-frame-tiempo-barco"
+                            src="https://app.powerbi.com/view?r=eyJrIjoiNDU0ZDAwMTUtYzgxNi00NGNkLTk4MDktZTZiNjU2ZmY0OTQyIiwidCI6IjY1MTZkMzQ2LTIxZWItNDJmYS04MjMzLTJmYjEwYWUzNDNhNiIsImMiOjR9&pageName=13adb9896402d296641d%22"
                             width="100%" 
                             height="100%"
                             style="transform: scale(0.84); transform-origin: 0 0; width: 119.05%; height: 119.05%;"
