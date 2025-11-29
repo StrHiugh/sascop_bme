@@ -3,7 +3,7 @@ $(document).ready(function () {
         processing: true,
         serverSide: true,
         responsive: true,
-        order: [[1, "desc"]],
+        order: [[1, "asc"]],
         lengthMenu: [10, 25, 50, 100],
         dom: '<"row"<"col-sm-12 col-md-6"l>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
         language: {
@@ -26,16 +26,15 @@ $(document).ready(function () {
         columns: [
             {
                 "data": "id",
-                "title": "ID",
-                "visible": false
+                "title": "ID"
             },
             {
                 "data": "descripcion",
                 "title": "Descripcion"
             },
             {
-                "data": "nivel_afectacion",
-                "title": "Afectacion"
+                "data": "tipo",
+                "title": "Tipo"
             },
             {
                 "data": "activo",
@@ -54,10 +53,10 @@ $(document).ready(function () {
                 "class": "text-center",
                 "render": function(fila) {
                     return `
-                        <a class="table-icon editar-tipo" title="Editar paso" data-id="${fila.id}">
+                        <a class="table-icon editar-cliente" title="Editar cliente" data-id="${fila.id}">
                             <i class="fas fa-edit"></i>
                         </a>
-                        <a class="table-icon eliminar_tipo" title="Eliminar" data-id="${fila.id}">
+                        <a class="table-icon eliminar-cliente" title="Eliminar cliente" data-id="${fila.id}">
                             <i class="fas fa-trash"></i>
                         </a>
                     `;
@@ -79,21 +78,23 @@ $(document).ready(function () {
     // Mover select de length
     $("#tabla_length").detach().appendTo("#select-length");
 
-    // Panel de filtros
     $("#btn-panel-filtros").on("click", function () {
-        fn_show_panel("#panel-filtro");
+        var offcanvas = new bootstrap.Offcanvas(document.getElementById('panelFiltros'));
+        offcanvas.show();
     });
 
-    // Aplicar filtros
-    $("#filtrar").on("click", function () {
+    $("#aplicar-filtros").on("click", function () {
         tablaPte.draw();
-        fn_show_panel();
+        var offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('panelFiltros'));
+        offcanvas.hide();
     });
 
-    // Limpiar filtros
-    $("#limpiar").on("click", function () {
-        $("#slc-estado").val("");
+    $("#limpiar-filtros").on("click", function () {
+        $("#filtro-estado").val("");
+        $("#filtro-tipo").val("");
         tablaPte.draw();
+        var offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('panelFiltros'));
+        offcanvas.hide();
     });
 
     // Abrir panel para crear nueva embarcación
@@ -106,49 +107,51 @@ $(document).ready(function () {
     // Función para abrir panel de creación
     function abrirPanelCrear() {
         // Limpiar formulario
-        $("#formulario-tipo")[0].reset();
+        $("#formulario-cliente")[0].reset();
         $("#id").val("");
-        $("#panel-title").text("Crear tipo");
-        
+        $("#panel-title").text("Crear Cliente");
+        $("#id_tipo").val("");
+        $("#activo").prop("checked", true);
+
         // Mostrar panel
         var offcanvas = new bootstrap.Offcanvas(document.getElementById('panelCrearEditar'));
         offcanvas.show();
     }
 
-    $(document).on("click", ".editar-tipo", function () {
-        const id = $(this).data('id');
-        abrirPanelEditar(id);
+    $(document).on("click", ".editar-cliente", function () {
+        const cliente_id = $(this).data('id');
+        abrirPanelEditar(cliente_id);
     });
-    
+
     // Función para abrir panel de edición
     function abrirPanelEditar(id) {
         BMAjax(
-            urlObtenerTipos, {id:id}, "GET")
-            .done(function(data) {
+            urlObtenerCliente, { id: id }, "GET")
+            .done(function (data) {
                 $("#id").val(data.id);
                 $("#descripcion").val(data.descripcion);
-                $("#afectacion").val(data.afectacion);
                 $("#comentario").val(data.comentario);
-                $("#panel-title").text("Editar tipo");
-                
+                $("#id_tipo").val(data.id_tipo);
+                $("#panel-title").text("Editar Cliente");
+
                 // Mostrar panel
                 var offcanvas = new bootstrap.Offcanvas(document.getElementById('panelCrearEditar'));
                 offcanvas.show();
             })
-            .fail(function() {
+            .fail(function () {
                 aviso("error", {
-                    contenido: "Error al cargar los datos del tipo",
+                    contenido: "Error al cargar los datos del cliente",
                 });
             });
     }
 
-    // Guardar embarcación
-    $("#btn-guardar").on("click", function() {
+    // Guardar cliente
+    $("#btn-guardar").on("click", function () {
         const formData = {
             id: $("#id").val(),
             descripcion: $("#descripcion").val(),
-            afectacion: $("#afectacion").val(),
-            comentario: $("#comentario").val()
+            comentario: $("#comentario").val(),
+            id_tipo : $("#id_tipo").val()
         };
 
         // Validación básica
@@ -157,18 +160,20 @@ $(document).ready(function () {
                 contenido: "La descripción es obligatoria",
             });
             return;
-        } else if (!formData.afectacion) {
+        }
+
+        if (!formData.id_tipo) {
             aviso("advertencia", {
-                contenido: "La afectación es obligatoria",
+                contenido: "El tipo es obligatorio",
             });
             return;
         }
 
-        const url = formData.id ? urlEditarTipos : urlCrearTipos;
+        const url = formData.id ? urlEditarCliente : urlCrearCliente;
         const method = "POST";
         BMAjax(
-            url, 
-            formData, 
+            url,
+            formData,
             method
         ).done(function(response) {
             if (response.exito) {
@@ -178,33 +183,33 @@ $(document).ready(function () {
             }
         });
     });
-    
-    $(document).on("click", ".eliminar_tipo", function () {
-        const id = $(this).data('id');
+
+    // Eliminar cliente
+    $(document).on("click", ".eliminar-cliente", function () {
+        const cliente_id = $(this).data('id');
         BMensaje({
             titulo: "Confirmación",
-            subtitulo: "¿Estás seguro de eliminar este tipo y su afectación?",
+            subtitulo: "¿Estás seguro de eliminar este cliente?",
             botones: [
                 {
                     texto: "Sí, continuar",
                     clase: "btn-primary",
-                    funcion: function() {
-                        const url = urlEliminarTipos;
+                    funcion: function () {
+                        const url = urlEliminarCliente;
                         const method = "POST";
                         BMAjax(
-                            url, 
-                            { id: id },
+                            url,
+                            { cliente_id: cliente_id },
                             method
-                        ).done(function(response) {
+                        ).done(function (response) {
                             if (response.exito) {
                                 tablaPte.ajax.reload();
                             }
                         });
-
                     }
                 },
                 {
-                    texto: "Cancelar", 
+                    texto: "Cancelar",
                     clase: "btn-light",
                     funcion: function() { return }
                 }

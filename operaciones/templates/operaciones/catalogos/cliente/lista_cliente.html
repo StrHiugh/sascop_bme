@@ -16,10 +16,10 @@
                             Catálogos
                         </a>
                     </li>
-                    <li class="breadcrumb-item active">Tipos </li>
+                    <li class="breadcrumb-item active">Cliente </li>
                 </ol>
             </nav>
-            <h1 class="h2 fw-bold mb-0">TIPOS</h1>
+            <h1 class="h2 fw-bold mb-0">CLIENTES</h1>
         </div>
         <!-- Lado derecho: botones -->
         <div class="d-flex gap-2 mt-2 mt-md-0">
@@ -27,6 +27,10 @@
                 <i class="fas fa-plus me-2"></i>
                 <span>Crear nuevo</span>
             </a>
+            {% comment %} <button class="btn btn-outline-secondary" id="btn-panel-filtros">
+                <i class="fas fa-filter me-2"></i>
+                Filtros
+            </button> {% endcomment %}
         </div>
     </div>
 </div>
@@ -54,8 +58,7 @@
         </div>
     </div>
 </div>
-
-<!-- Panel de Filtros con Offcanvas de Bootstrap 5 -->
+<!-- Panel de Filtros con Offcanvas-->
 <div class="offcanvas offcanvas-end" tabindex="-1" id="panelFiltros">
     <div class="offcanvas-header">
         <h5 class="offcanvas-title">Filtros</h5>
@@ -90,14 +93,14 @@
         </form>
     </div>
 </div>
-<!-- Panel Crear/Editar Estatus -->
+<!-- Panel Crear/Editar Cliente -->
 <div class="offcanvas offcanvas-end" tabindex="-1" id="panelCrearEditar">
     <div class="offcanvas-header">
-        <h5 class="offcanvas-title" id="panel-title">Crear nuevo tipo</h5>
+        <h5 class="offcanvas-title" id="panel-title">Crear Cliente</h5>
         <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
     </div>
     <div class="offcanvas-body">
-        <form id="formulario-tipo">
+        <form id="formulario-cliente">
             {% csrf_token %}
             <!-- Campo oculto para ID -->
             <input id="id" name="id" type="hidden">
@@ -106,19 +109,15 @@
                     <label class="form-label">Descripción <span class="text-danger">*</span></label>
                     <div class="input-group">
                         <input name="descripcion" class="form-control" id="descripcion" 
-                                type="text" placeholder="Ingrese la descripción del estatus" required>
+                                type="text" placeholder="Ingrese la descripción del cliente" required>
                     </div>
                 </section>
                 <section class="col-12 mb-3">
-                    <label class="form-label">Afectación <span class="text-danger">*</span></label>
+                    <label class="form-label">Tipo <span class="text-danger">*</span></label>
                     <div class="input-group">
-                        <select name="afectacion" class="form-select" id="afectacion" required>
-                            <option value="" selected disabled>Seleccione una opción</option>
-                            <option value="1">PTE</option>
-                            <option value="2">OT</option>
-                            <option value="3">Partida</option>
-                            <option value="4">Produccion</option>
-                            <option value="5">Clientes</option>
+                         <select class="form-select" id="id_tipo">
+                            <option value="15">CONTRATO</option>
+                            <option value="16">INTERCOM</option>
                         </select>
                     </div>
                 </section>
@@ -148,17 +147,16 @@
         </form>
     </div>
 </div>
-
 {% endblock %}
 
 {% block scripts %}
-<script src="{% static 'operaciones/js/modulos/catalogos/lista_tipos.js'%}?v=1.0.0"></script>
+<script src="{% static 'operaciones/js/modulos/catalogos/lista_cliente.js'%}?v=1.0.0"></script>
 
 <script>
-    var urlDatatable = "{% url 'operaciones:datatable_tipos' %}";
-    var urlCrearTipos = "{% url 'operaciones:crear_tipos' %}";
-    var urlEditarTipos = "{% url 'operaciones:editar_tipos' %}";
-    var urlEliminarTipos = "{% url 'operaciones:eliminar_tipos' %}";
-    var urlObtenerTipos = "{% url 'operaciones:obtener_tipos' %}";
+    var urlDatatable = "{% url 'operaciones:datatable_cliente' %}";
+    var urlCrearCliente = "{% url 'operaciones:crear_cliente' %}";
+    var urlEditarCliente = "{% url 'operaciones:editar_cliente' %}";
+    var urlEliminarCliente = "{% url 'operaciones:eliminar_cliente' %}";
+    var urlObtenerCliente = "{% url 'operaciones:obtener_cliente'%}";
 </script>
 {% endblock %}

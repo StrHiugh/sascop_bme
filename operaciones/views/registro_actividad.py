@@ -27,7 +27,7 @@ def datatable_registro_actividad(request):
     evento = request.GET.get('evento')
     afectacion = request.GET.get('afectacion')
     
-    # Consulta base con select_related para optimizar
+    # Consulta
     registros = RegistroActividad.objects.select_related('usuario_id').all()
     
     # Aplicar filtros
@@ -65,7 +65,6 @@ def datatable_registro_actividad(request):
         '3': 'detalle',
         '4': 'fecha',
         '5': 'usuario__first_name',
-        # Agrega más mapeos según tus columnas
     }
     
     order_field = column_map.get(order_column, 'fecha')
@@ -110,7 +109,6 @@ def datatable_registro_actividad(request):
 def obtener_usuarios(request):
     """Obtener todos los usuarios activos"""
     try:
-        # Filtrar por is_active=True (usuarios activos)
         usuarios = User.objects.filter(is_active=True).values(
             'id', 
             'username', 

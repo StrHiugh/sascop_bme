@@ -17,6 +17,7 @@ urlpatterns = [
     path('pte/detalle/datatable/', pte.datatable_pte_detalle, name='datatable_pte_detalle'),
     path('pte/obtener_pasos/', pte.obtener_pasos_pte, name='obtener_pasos_pte'),
     path('pte/obtener_responsables/', pte.obtener_responsables_proyecto, name='obtener_responsables_proyecto'),
+    path('pte/obtener_clientes/', pte.obtener_clientes, name='obtener_clientes'),
     path('pte/crear/', pte.crear_pte, name='crear_pte'),
     path('pte/cambiar_estatus_paso/', pte.cambiar_estatus_paso, name='cambiar_estatus_paso'),
     path('pte/obtener_datos/', pte.obtener_datos_pte, name='obtener_datos_pte'),
@@ -124,6 +125,15 @@ urlpatterns = [
     path('catalogos/responsable/obtener/', catalogos.obtener_responsable, name='obtener_responsable'),
     path('catalogos/responsable/editar/', catalogos.editar_responsable, name='editar_responsable'),
     
+    #URLs para Cliente
+    path('catalogos/cliente/', catalogos.lista_cliente, name='lista_cliente'),
+    path('catalogos/datatable_cliente/', catalogos.datatable_cliente, name='datatable_cliente'),
+    path('catalogos/cliente/crear/', catalogos.crear_cliente, name='crear_cliente'),
+    path('catalogos/cliente/eliminar/', catalogos.eliminar_cliente, name='eliminar_cliente'),
+    path('catalogos/cliente/obtener/', catalogos.obtener_cliente, name='obtener_cliente'),
+    path('catalogos/cliente/editar/', catalogos.editar_cliente, name='editar_cliente'),
+    
+
     # APIs
     path('api/estadisticas/', api.api_estadisticas, name='api_estadisticas'),
     path('api/ptes/', api.api_ptes, name='api_ptes'),

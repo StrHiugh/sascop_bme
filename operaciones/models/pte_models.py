@@ -1,5 +1,5 @@
 from django.db import models
-from .catalogos_models import Estatus, ResponsableProyecto, Tipo, Frente
+from .catalogos_models import Estatus, ResponsableProyecto, Tipo, Frente, Cliente
 
 class Paso(models.Model):
     descripcion = models.CharField(max_length=200)
@@ -8,6 +8,7 @@ class Paso(models.Model):
     importancia = models.FloatField(default=0)
     tipo = models.IntegerField(blank=True, null=True, default=1)
     comentario = models.TextField(blank=True, null=True)
+    id_tipo_cliente = models.ForeignKey(Tipo, on_delete=models.CASCADE, null=True, blank=True)
     class Meta:
         db_table = 'paso'
         ordering = ['orden']
@@ -35,6 +36,7 @@ class PTEHeader(models.Model):
     total_homologado = models.DecimalField(max_digits=15, decimal_places=2, default=0)
     estatus = models.IntegerField(choices=ESTATUS_CHOICES, default=1)
     prioridad = models.IntegerField(blank=True, null=True)
+    id_cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, blank=True, null=True)
     comentario = models.TextField(blank=True, null=True)
 
     class Meta:

@@ -81,3 +81,15 @@ class ResponsableProyecto(models.Model):
 
     def __str__(self):
         return self.descripcion
+
+
+class Cliente(models.Model):
+    descripcion = models.CharField(max_length=100)
+    id_tipo = models.ForeignKey(Tipo, on_delete=models.CASCADE, blank=True, null=True)
+    activo = models.BooleanField(default=True)
+    comentario = models.TextField(blank=True, null=True)
+    class Meta:
+        db_table = 'cliente'
+
+    def __str__(self):
+        return self.descripcion

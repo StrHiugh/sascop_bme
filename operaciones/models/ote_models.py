@@ -1,5 +1,5 @@
 from django.db import models
-from .catalogos_models import Sitio, Estatus, ResponsableProyecto, Tipo
+from .catalogos_models import Sitio, Estatus, ResponsableProyecto, Tipo, Cliente
 from .pte_models import PTEHeader
 
 class OTE(models.Model): 
@@ -27,7 +27,7 @@ class OTE(models.Model):
     id_intercom = models.IntegerField(null=True, blank=True)
     id_patio = models.IntegerField(null=True, blank=True)
     plazo_dias = models.IntegerField(null=True, blank=True)
-
+    id_cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, null=True, blank=True)
     class Meta:
         db_table = 'ot'
 

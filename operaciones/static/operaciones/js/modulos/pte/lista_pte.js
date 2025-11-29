@@ -1031,7 +1031,7 @@ $(document).ready(function () {
     function abrirModalEditarPTE(pteId) {
         $("#formCrearPTE")[0].reset();
         $("#modalCrearPTELabel").text("Editar PTE");
-        // Obtener datos del PTE
+        // Obtener datos de la PTE
         BMAjax(
             urlObtenerDatos, {id:pteId}, "GET")
             .done(function(datos) {
@@ -1051,7 +1051,10 @@ $(document).ready(function () {
                 $("#fecha_entrega").val(pte.fecha_entrega);
                 $("#id_prioridad").val(pte.id_prioridad);
                 cargarResponsablesProyecto().done(function() {
-                    $("#responsable_proyecto").val(pte.id_responsable_proyecto);
+                    $("#responsable_proyecto").val(pte.id_responsable_proyecto).trigger('change');
+                });
+                cargarClientes().done(function() {
+                    $("#id_cliente").val(pte.id_cliente);
                 });
 
                 setTimeout(function() {
@@ -1104,6 +1107,7 @@ $(document).ready(function () {
         
         // Cargar lista de lideres
         cargarResponsablesProyecto();
+        cargarClientes();
         
         const modal = new bootstrap.Modal(document.getElementById('modalCrearPTE'));
         modal.show();
@@ -1124,6 +1128,20 @@ $(document).ready(function () {
                     data.forEach(function(responsable) {
                         select.append(`<option value="${responsable.id}">${responsable.descripcion}</option>`);
                     });
+                    select.select2({
+                        placeholder: "Buscar responsable de proyecto",
+                        allowClear: true,
+                        width: '100%',
+                        dropdownParent: $('#modalCrearPTE .modal-content'),
+                        language: {
+                            noResults: function () {
+                                return "No se encontraron responsables";
+                            },
+                            searching: function () {
+                                return "Buscando...";
+                            }
+                        }
+                    });
                 } else {
                     select.append('<option value="" disabled>No hay responsables disponibles</option>');
                 }
@@ -1131,6 +1149,31 @@ $(document).ready(function () {
             error: function(xhr, status, error) {
                 const select = $('#responsable_proyecto');
                 select.empty().append('<option value="" disabled>Error al cargar responsables</option>');
+            }
+        });
+    }
+
+    function cargarClientes() {
+        return $.ajax({
+            url: urlObtenerClientes,
+            type: 'GET',
+            dataType: 'json',
+            success: function(data) {
+                const select = $('#id_cliente');
+                select.empty();
+                // select.append('<option value="" selected disabled>Seleccione un cliente</option>');
+                
+                if (data && data.length > 0) {
+                    data.forEach(function(responsable) {
+                        select.append(`<option value="${responsable.id}">${responsable.descripcion}</option>`);
+                    });
+                } else {
+                    select.append('<option value="" disabled>No hay clientes disponibles</option>');
+                }
+            },
+            error: function(xhr, status, error) {
+                const select = $('#id_cliente');
+                select.empty().append('<option value="" disabled>Error al cargar clientes</option>');
             }
         });
     }
@@ -1148,6 +1191,20 @@ $(document).ready(function () {
                 if (data && data.length > 0) {
                     data.forEach(function(responsable) {
                         select.append(`<option value="${responsable.id}">${responsable.descripcion}</option>`);
+                    });
+                    select.select2({
+                        placeholder: "Buscar responsable de proyecto",
+                        allowClear: true,
+                        width: '100%',
+                        dropdownParent: $('#form-filtros'),
+                        language: {
+                            noResults: function () {
+                                return "No se encontraron responsables";
+                            },
+                            searching: function () {
+                                return "Buscando...";
+                            }
+                        }
                     });
                 } else {
                     select.append('<option value="" disabled>No hay responsables disponibles</option>');
@@ -1251,7 +1308,7 @@ $(document).ready(function () {
                             nombre:"Eliminó",
                             valor_actual:"",
                             valor_anterior:"",
-                            detalle:`${datos.descripcion_tipo} con folio: ${datos.oficio_pte}`})
+                            detalle:`<b>${datos.descripcion_tipo}</b> con folio: <b>${datos.oficio_pte}</b>`})
 
                         const url = urlEliminarPTE;
                         const method = "POST";

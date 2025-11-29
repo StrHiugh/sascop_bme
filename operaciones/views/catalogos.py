@@ -31,10 +31,11 @@ def datatable_tipos(request):
             When(nivel_afectacion=2, then=Value('OT')),
             When(nivel_afectacion=3, then=Value('Partida')),
             When(nivel_afectacion=4, then=Value('Produccion')),
+            When(nivel_afectacion=5, then=Value('Clientes')),
             default=Value('No definido'),
             output_field=CharField()
         )
-    )
+    ).order_by('nivel_afectacion')
     
     if search_value:
         tipos = tipos.filter(
@@ -1552,5 +1553,168 @@ def editar_responsable(request):
         return JsonResponse({
             'tipo_aviso': 'error',
             'detalles': f'Error al actualizar responsable: {str(e)}',
+            'exito': False
+        })
+
+@login_required(login_url='/accounts/login/')
+def lista_cliente(request):
+    """Lista de todas los sitios"""
+    return render(request, 'operaciones/catalogos/cliente/lista_cliente.html')
+
+def datatable_cliente(request):
+    draw = int(request.GET.get('draw', 1))
+    start = int(request.GET.get('start', 0))
+    length = int(request.GET.get('length', 10))
+    search_value = request.GET.get('filtro', '')
+    
+    clientes = Cliente.objects.filter(activo=1).annotate(
+        estado_texto=Case(
+            When(activo=True, then=Value('Activo')),
+            When(activo=False, then=Value('Inactivo')),
+            default=Value('Desconocido'),
+            output_field=CharField()
+        ),
+        tipo_descripcion=F('id_tipo__descripcion')
+    ).order_by('id')
+    
+    if search_value:
+        clientes = clientes.filter(
+            Q(descripcion__icontains=search_value) |
+            Q(activo__icontains=search_value)
+        )
+    
+    total_records = clientes.count()
+    clientes = clientes[start:start + length]
+    
+    data = []
+    for cliente in clientes:
+        data.append({
+            'id': cliente.id,
+            'descripcion': cliente.descripcion,
+            'activo': cliente.estado_texto, 
+            'activo_bool': cliente.activo, 
+            'tipo': cliente.tipo_descripcion,
+        })
+    
+    return JsonResponse({
+        'draw': draw,
+        'recordsTotal': total_records,
+        'recordsFiltered': total_records,
+        'data': data
+    })
+
+@require_http_methods(["POST"])
+def crear_cliente(request):
+    try:
+        descripcion = request.POST.get('descripcion')
+        comentario = request.POST.get('comentario', '')
+        id_tipo = request.POST.get('id_tipo')
+        activo = True
+        
+        cliente = Cliente.objects.create(
+            descripcion=descripcion,
+            comentario=comentario,
+            id_tipo_id=id_tipo,
+            activo=activo
+        )
+        
+        return JsonResponse({
+            'exito': True,
+            'tipo_aviso': 'exito',
+            'detalles': 'Cliente creada correctamente',
+            'id': cliente.id
+        })
+    except Exception as e:
+        return JsonResponse({
+            'exito': False,
+            'tipo_aviso': 'error',
+            'detalles': f'Error al crear cliente: {str(e)}'
+        })
+        
+@require_http_methods(["POST"])
+def eliminar_cliente(request):
+    try:
+        # Obtener el ID de la cliente
+        cliente_id = request.POST.get('cliente_id')
+        
+        if not cliente_id:
+            return JsonResponse({
+                'tipo_aviso': 'error',
+                'detalles': 'ID de cliente no proporcionado',
+                'exito': False
+            })
+
+        # Eliminación lógica
+        cliente = Cliente.objects.get(id=cliente_id)
+        cliente.activo = False
+        cliente.save()
+
+        return JsonResponse({
+            'tipo_aviso': 'exito',
+            'detalles': 'Cliente desactivada correctamente',
+            'exito': True
+        })
+
+    except Cliente.DoesNotExist:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': 'Cliente no encontrada',
+            'exito': False
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': f'Error al desactivar cliente: {str(e)}',
+            'exito': False
+        })
+
+@require_http_methods(["GET"])
+def obtener_cliente(request):
+    try:
+        cliente_id = request.GET.get('id')
+        cliente = Cliente.objects.get(id=cliente_id)
+        return JsonResponse({
+            'id': cliente.id,
+            'descripcion': cliente.descripcion,
+            'comentario': cliente.comentario,
+            'id_tipo': cliente.id_tipo_id,
+            'activo': cliente.activo
+        })
+    except Cliente.DoesNotExist:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': 'Cliente no encontrada'
+        }, status=404)
+
+@require_http_methods(["POST"])
+def editar_cliente(request):
+    try:
+        cliente_id = request.POST.get('id')
+        descripcion = request.POST.get('descripcion')
+        comentario = request.POST.get('comentario', '')
+        id_tipo = request.POST.get('id_tipo')
+        
+        cliente = Cliente.objects.get(id=cliente_id)
+        cliente.descripcion = descripcion
+        cliente.comentario = comentario
+        cliente.id_tipo_id = id_tipo
+        cliente.save()
+        
+        return JsonResponse({
+            'tipo_aviso': 'exito',
+            'detalles': 'Cliente actualizada correctamente',
+            'exito': True
+        })
+    except Cliente.DoesNotExist:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': 'Cliente no encontrada',
+            'exito': False
+        })
+    except Exception as e:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': f'Error al actualizar cliente: {str(e)}',
             'exito': False
         })

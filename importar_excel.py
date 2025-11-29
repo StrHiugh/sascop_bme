@@ -28,7 +28,6 @@ def importar_productos():
             try:
                 print(f"\n📝 Procesando fila {index + 2}: {row['id_partida'],row['anexo']}")
                 
-                # BUSCAR POR ID (no por descripción) - porque tu Excel tiene IDs
                 sitio = Sitio.objects.get(id=row['id_sitio'])
                 tipo = Tipo.objects.get(id=row['id_tipo_partida'])
                 unidad = UnidadMedida.objects.get(id=row['id_unidad_medida'])

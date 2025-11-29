@@ -6,7 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
 from django.http import JsonResponse
 from django.db.models import Case, When, Value, CharField,Q, ExpressionWrapper, Count,F
-from operaciones.models.catalogos_models import Sitio, Estatus, ResponsableProyecto, Tipo
+from operaciones.models.catalogos_models import Sitio, Estatus, ResponsableProyecto, Tipo, Cliente
 from ..models import PTEHeader, PTEDetalle, OTE, Produccion, Paso, PasoOt, OTDetalle
 from ..registro_actividad import registrar_actividad
 
@@ -126,7 +126,7 @@ def datatable_ptes(request):
         ptes = ptes.filter(id_responsable_proyecto_id=filtro_responsable)
     
     if filtro_anio:
-        # Intentar extraer el año del oficio_pte (formato: BME-3801-025-2024)
+        # extraer el año
         ptes_con_anio_en_oficio = ptes.filter(oficio_pte__regex=r'.*-(\d{4})$')
         ptes_sin_anio_en_oficio = ptes.exclude(oficio_pte__regex=r'.*-(\d{4})$')
         
@@ -171,6 +171,8 @@ def datatable_ptes(request):
             'plazo_dias': pte.plazo_dias or 0,
             'progreso': round(progreso),  # Porcentaje de progreso
             'pasos_completados': pasos_completados,
+            'id_cliente_id': pte.id_cliente_id,
+            'tipo_cliente': pte.id_cliente.id_tipo_id,
             'total_pasos': total_pasos
         })
     
@@ -503,6 +505,16 @@ def obtener_responsables_proyecto(request):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
+
+@login_required(login_url='/accounts/login/')
+def obtener_clientes(request):
+    """Obtener todos los clientes activos"""
+    try:
+        clientes = Cliente.objects.filter(activo=1).values('id', 'descripcion')
+        return JsonResponse(list(clientes), safe=False)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
 @require_http_methods(["POST"])
 @login_required
 @registrar_actividad
@@ -524,7 +536,14 @@ def crear_pte(request):
         total_homologado = get_val('total_homologado', 0.00, float)
         oficio_ot = get_val('oficio_ot', '')
         comentario_general = get_val('comentario_general', '')
+        id_cliente = get_val('id_cliente')
         
+        if not id_cliente:
+            return JsonResponse({
+                'exito': False,
+                'tipo_aviso': 'error',
+                'detalles': 'El cliente es obligatorio'
+            })
         # Validaciones básicas de campos obligatorios
         if not responsable_proyecto:
             return JsonResponse({
@@ -568,11 +587,23 @@ def crear_pte(request):
             id_tipo_id=id_tipo_id,
             id_orden_trabajo=oficio_ot,
             comentario=comentario_general,
+            id_cliente_id=id_cliente,
             estatus=1
         )
         
+        #Buscar el tipo de cliente para crear su respectivos pasos
+        clientes = Cliente.objects.get(id=id_cliente)
+        tipo_cliente = clientes.id_tipo_id
+
         # Obtener todos los pasos activos y crear detalles
-        pasos = Paso.objects.filter(activo=1).order_by('id', 'orden')
+        pasos = Paso.objects.filter(activo=1, id_tipo_cliente_id=tipo_cliente).order_by('id', 'orden')
+
+        if not pasos:
+            return JsonResponse({
+                'exito': False,
+                'tipo_aviso': 'error',
+                'detalles': f'No se encontraron pasos para el tipo de cliente {tipo_cliente}'
+            })
         
         detalles_creados = []
         for paso in pasos:
@@ -738,6 +769,7 @@ def obtener_datos_pte(request):
             'plazo_dias': pte.plazo_dias,
             'id_prioridad': pte.prioridad,
             'id_tipo': pte.id_tipo_id,
+            'id_cliente': pte.id_cliente_id,
             'fecha_entrega': pte.fecha_entrega.strftime('%Y-%m-%d') if pte.fecha_entrega else '',
             'id_responsable_proyecto': pte.id_responsable_proyecto_id,
             'total_homologado': float(pte.total_homologado) if pte.total_homologado else 0,
@@ -779,6 +811,7 @@ def editar_pte(request):
         pte.id_responsable_proyecto_id = request.POST.get('responsable_proyecto', pte.id_responsable_proyecto_id)
         pte.id_tipo_id = request.POST.get('id_tipo', pte.id_tipo_id)
         pte.prioridad = request.POST.get('id_prioridad', pte.prioridad)
+        pte.id_cliente_id = request.POST.get('id_cliente', pte.id_cliente_id)
         
         # Campos con validación
         fecha_solicitud = request.POST.get('fecha_solicitud')
@@ -926,6 +959,9 @@ def crear_ot_desde_pte(request):
         # Obtener la PTE
         pte = PTEHeader.objects.get(id=pte_id)
         
+        #obtener tipo de cliente para validacion en creacion de pasos de ot
+        tipo_cliente = pte.id_cliente.id_tipo_id
+
         # Verificar que el progreso sea 100%
         detalles_pte = PTEDetalle.objects.filter(id_pte_header_id=pte.id)
         total_pasos = detalles_pte.count()
@@ -974,10 +1010,6 @@ def crear_ot_desde_pte(request):
                 'detalles': 'No se encontró un estatus válido para OT'
             })
         
-        # Calcular fechas programadas (puedes ajustar esta lógica)
-        fecha_actual = timezone.now().date()
-        fecha_termino = fecha_actual + timedelta(days=pte.plazo_dias)
-        
         # Crear la OTE
         ote = OTE.objects.create(
             id_tipo=tipo_ote,
@@ -991,14 +1023,17 @@ def crear_ot_desde_pte(request):
             ot_principal=ot_principal if ot_principal else None,
             num_reprogramacion=num_reprogramacion if num_reprogramacion else None,
             estatus=-1,
-            comentario=""
+            comentario="",
+            id_cliente=pte.id_cliente
         )
 
-        #crear pasos de ot dependiendo el tipo de ot
+        #crear pasos de ot dependiendo el tipo de ot y cliente
         tipo_paso_busqueda = 1 
-        if tipo_ote.id == 5:
+        if tipo_ote.id == 5 and tipo_cliente == 15:
             tipo_paso_busqueda = 2
-        
+        elif tipo_ote.id in [4, 5] and tipo_cliente == 16:
+            tipo_paso_busqueda = 3
+
         pasos_a_crear = PasoOt.objects.filter(tipo=tipo_paso_busqueda, activo=True).order_by('id')
         
         if pasos_a_crear:

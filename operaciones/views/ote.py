@@ -25,7 +25,7 @@ def datatable_ot(request):
     # Filtro adicional del input de búsqueda
     filtro_buscar = request.GET.get('filtro', '')
     
-    tipo_id = request.GET.get('tipo', '4') # Default to 4 (INICIAL)
+    tipo_id = request.GET.get('tipo', '4') 
     ot_principal_id = request.GET.get('ot_principal', None)
 
     filters = {'estatus__in': [-1, 1]}
@@ -63,10 +63,6 @@ def datatable_ot(request):
             Q(oficio_ot__icontains=filtro_buscar) |
             Q(orden_trabajo__icontains=filtro_buscar)             
         )
-    
-    filtro_estado = request.GET.get('estado', '')
-    if filtro_estado:
-        ots = ots.filter(estado=filtro_estado)
     
     total_records = ots.count()
     
@@ -177,7 +173,7 @@ def obtener_ots_principales(request):
     """Obtener todas las OTs para el selector de OT principal"""
     try:
         ot_id = request.GET.get('ot_id')
-        
+
         ots = OTE.objects.filter(
             id_tipo=4, 
         ).exclude(
@@ -296,6 +292,7 @@ def editar_ot(request):
         ot.id_intercom = request.POST.get('id_intercom')
         ot.id_patio = request.POST.get('id_patio')
         ot.plazo_dias = request.POST.get('plazo_dias')
+        ot.id_responsable_proyecto_id = request.POST.get('responsable_proyecto', ot.id_responsable_proyecto_id)
         # Actualizar montos
         if request.POST.get('monto_mxn'):
             ot.monto_mxn = request.POST.get('monto_mxn')

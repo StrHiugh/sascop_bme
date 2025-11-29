@@ -62,19 +62,44 @@
     <div class="offcanvas-body">
         <form id="form-filtros">
             <div class="mb-3">
-                <label class="form-label">Estado</label>
-                <select class="form-select" id="filtro-estado">
-                    <option value="">Todos los estados</option>
-                    <option value="disponible">Disponible</option>
-                    <option value="no-disponible">No disponible</option>
+                <label class="form-label">Responsable proyecto</label>
+                <select class="form-select" id="id_responsable_proyecto">
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Cliente</label>
+                <select class="form-select" id="id_cliente">
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Año</label>
+                <select class="form-select" id="anio">
+                    <option value="" selected disabled>Seleccione un año</option>
+                    <option value="2025">2025</option>
+                    <option value="2024">2024</option>
+                    <option value="2023">2023</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Estatus</label>
+                <select class="form-select" id="estatus">
+                    <option value="" selected disabled>Seleccione un estatus</option>
+                    <option value="5">ASIGNADA</option>
+                    <option value="8">EN EJECUCION</option>
+                    <option value="7">DIFERIDA</option>
+                    <option value="9">SUSPENDIDA</option>
+                    <option value="10">TERMINADA</option>
+                    <option value="6">CANCELADA</option>
+                    <option value="11">POR CANCELAR</option>
                 </select>
             </div>
             <div class="mb-3">
                 <label class="form-label">Tipo</label>
-                <select class="form-select" id="filtro-tipo">
-                    <option value="">Todos los tipos</option>
-                    <option value="computadora">Computadora</option>
-                    <option value="servidor">Servidor</option>
+                <select class="form-select" id="tipo">
+                    <option value="" selected disabled>Seleccione un tipo</option>
+                    {% comment %} <option value="1">PTE</option> {% endcomment %}
+                    <option value="4">INICIAL</option>
+                    <option value="5">REPROGRAMACION</option>
                 </select>
             </div>
             <div class="d-grid gap-2">

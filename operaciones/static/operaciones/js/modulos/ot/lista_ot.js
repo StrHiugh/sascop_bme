@@ -21,6 +21,10 @@ $(document).ready(function () {
             data: function (extra) {
                 extra.filtro = $("#filtro-buscar").val();
                 extra.estado = $("#slc-estado").val();
+                extra.estatus = $("#estatus").val();
+                extra.tipo = $("#tipo").val() ? $("#tipo").val() : 4;
+                extra.responsable_proyecto = $("#id_responsable_proyecto").val();
+                extra.anio = $("#anio").val();
             }
         },
         createdRow: function (row, data, dataIndex) {
@@ -264,7 +268,7 @@ $(document).ready(function () {
                 });
 
                 cargarResponsablesProyecto().done(function () {
-                    $("#responsable_proyecto").val(ot.responsable_proyecto);
+                    $("#responsable_proyecto").val(ot.responsable_proyecto).trigger('change');
                 });
 
                 // Verificar si es reprogramación y habilitar campos
@@ -336,6 +340,20 @@ $(document).ready(function () {
                     data.forEach(function (responsable) {
                         select.append(`<option value="${responsable.id}">${responsable.descripcion}</option>`);
                     });
+                    select.select2({
+                        placeholder: "Buscar responsable de proyecto",
+                        allowClear: true,
+                        width: '100%',
+                        dropdownParent: $('#modalCrearOT .modal-content'),
+                        language: {
+                            noResults: function () {
+                                return "No se encontraron responsables";
+                            },
+                            searching: function () {
+                                return "Buscando...";
+                            }
+                        }
+                    });
                 } else {
                     select.append('<option value="" disabled>No hay responsables disponibles</option>');
                 }
@@ -383,6 +401,53 @@ $(document).ready(function () {
                 btn.prop('disabled', false).html(originalText);
             }
         });
+    });
+
+    // Panel de filtros
+    $("#btn-panel-filtros").on("click", function () {
+        // Mostrar el offcanvas de Bootstrap
+        var filtrosOffcanvas = new bootstrap.Offcanvas(document.getElementById('panelFiltros'));
+        filtrosOffcanvas.show();
+        cargarResponsablesProyectoModal();
+    });
+
+    // Aplicar filtros
+    $("#aplicar-filtros").on("click", function () {
+        // Obtener valores de los filtros
+        var estatus = $("#estatus").val();
+        var tipo = $("#tipo").val();
+        var responsable = $("#id_responsable_proyecto").val();
+        
+        // Aplicar filtros a la DataTable
+        tablaPte.draw();
+        
+        // Cerrar el panel
+        var filtrosOffcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('panelFiltros'));
+        filtrosOffcanvas.hide();
+        iniciarLoader();
+        setTimeout(function() {
+            finalizarLoader();
+        }, 1300);
+    });
+
+    // Limpiar filtros
+    $("#limpiar-filtros").on("click", function () {
+        // Limpiar todos los selects
+        $("#estatus").val("");
+        $("#tipo").val("");
+        $("#id_responsable_proyecto").val("");
+        $("#anio").val("");
+        
+        // Redibujar la tabla sin filtros
+        tablaPte.draw();
+        
+        // Cerrar el panel (opcional)
+        var filtrosOffcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('panelFiltros'));
+        filtrosOffcanvas.hide();
+        iniciarLoader();
+        setTimeout(function() {
+            finalizarLoader();
+        }, 1300);
     });
 
     //Funcion para eliminar
@@ -455,6 +520,45 @@ $(document).ready(function () {
             cargarOTsPrincipales(window.ot_actual);
         }
     });
+
+    function cargarResponsablesProyectoModal() {
+        return $.ajax({
+            url: urlObtenerResponsables,
+            type: 'GET',
+            dataType: 'json',
+            success: function(data) {
+                const select = $('#id_responsable_proyecto');
+                select.empty();
+                select.append('<option value="" selected disabled>Seleccione un responsable</option>');
+                
+                if (data && data.length > 0) {
+                    data.forEach(function(responsable) {
+                        select.append(`<option value="${responsable.id}">${responsable.descripcion}</option>`);
+                    });
+                    select.select2({
+                        placeholder: "Buscar responsable de proyecto",
+                        allowClear: true,
+                        width: '100%',
+                        dropdownParent: $('#form-filtros'),
+                        language: {
+                            noResults: function () {
+                                return "No se encontraron responsables";
+                            },
+                            searching: function () {
+                                return "Buscando...";
+                            }
+                        }
+                    });
+                } else {
+                    select.append('<option value="" disabled>No hay responsables disponibles</option>');
+                }
+            },
+            error: function(xhr, status, error) {
+                const select = $('#id_responsable_proyecto');
+                select.empty().append('<option value="" disabled>Error al cargar responsables</option>');
+            }
+        });
+    }
 
     //Carga las ots principales y omite la que esta seleccionada
     function cargarOTsPrincipales(ot_id) {
@@ -879,6 +983,7 @@ function initTablaDetalleOT(otId) {
                                 class="form-control form-control-sm fecha-paso-input" 
                                 data-id="${row.id}" 
                                 data-tipo="1" 
+                                ${[3, 14].includes(row.estatus_paso) ? 'disabled' : ''}
                                 value="${val}">
                         </div>
                     `;
@@ -901,6 +1006,7 @@ function initTablaDetalleOT(otId) {
                                 class="form-control form-control-sm fecha-paso-input" 
                                 data-id="${row.id}" 
                                 data-tipo="2" 
+                                ${[3, 14].includes(row.estatus_paso) ? 'disabled' : ''}
                                 value="${val}">
                         </div>
                     `;

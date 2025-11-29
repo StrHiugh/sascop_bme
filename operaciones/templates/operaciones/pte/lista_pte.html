@@ -99,6 +99,7 @@
                     <option value="12">OBRA</option>
                     <option value="14">MERCADEOS</option>
                     <option value="13">UDC</option>
+                    <option value="17">SERVICIO DE MTTO</option>
                 </select>
             </div>
             <div class="d-grid gap-2">
@@ -138,6 +139,11 @@
                         <!-- Fila dividida en 6 y 6 -->
                         <div class="col-md-6">
                             <div class="mb-3">
+                                <label for="id_cliente" class="form-label">Cliente <span class="text-danger">*</span></label>
+                                <select class="form-select" id="id_cliente" name="id_cliente" required>
+                                </select>
+                            </div>
+                            <div class="mb-3">
                                 <label for="oficio_pte" class="form-label">Folio PTE</label>
                                 <input type="text" class="form-control" id="oficio_pte" name="oficio_pte" required>
                             </div>
@@ -150,14 +156,15 @@
                                 <label for="id_tipo" class="form-label">Tipo <span class="text-danger">*</span></label>
                                 <select class="form-select" id="id_tipo" name="id_tipo" required>
                                     <option value="" selected disabled>Seleccione un tipo</option>
-                                    <option value="1">PTE</option>
+                                    {% comment %} <option value="1">PTE</option> {% endcomment %}
+                                    <option value="12">OBRA</option>
                                     <option value="2">LICITACION</option>
                                     <option value="3">COSTEO CLASE V</option>
                                     <option value="10">COSTEO CLASE IV</option>
                                     <option value="11">COSTEO CLASE III</option>
-                                    <option value="12">OBRA</option>
                                     <option value="14">MERCADEOS</option>
                                     <option value="13">UDC</option>
+                                    <option value="17">SERVICIO DE MTTO</option>
                                 </select>
                             </div>
                             <div class="mb-3">
@@ -170,10 +177,10 @@
                                     <option value="4">TBD</option>
                                 </select>
                             </div>
-                            <div class="mb-3">
+                            {% comment %} <div class="mb-3">
                                 <label for="oficio_ot" class="form-label">Oficio OT</label>
                                 <input type="text" class="form-control" id="oficio_ot" name="oficio_ot" placeholder="SIN OT RELACIONADA" disabled>
-                            </div>
+                            </div> {% endcomment %}
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
@@ -277,6 +284,7 @@
     var urlGuardarArchivo  = "{% url 'operaciones:guardar_archivo_pte' %}";
     const puedeEliminarPte = {{ perms.operaciones.delete_pteheader|yesno:"true,false" }};
     var urlObtenerOTPrincipal = "{% url 'operaciones:obtener_ots_principales' %}";
+    var urlObtenerClientes = "{% url 'operaciones:obtener_clientes' %}";
     
 </script>
 {% endblock %}
