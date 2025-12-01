@@ -246,6 +246,7 @@ def datatable_pte_detalle(request):
             'total_subpasos': getattr(detalle, 'total_subpasos', 0),
             'subpasos_completados': getattr(detalle, 'subpasos_completados', 0),
             'folio_pte': detalle.id_pte_header.oficio_pte,
+            'tipo_cliente': detalle.id_pte_header.id_cliente.id_tipo_id,
             'archivo': detalle.archivo
         })
     
@@ -1028,11 +1029,12 @@ def crear_ot_desde_pte(request):
         )
 
         #crear pasos de ot dependiendo el tipo de ot y cliente
-        tipo_paso_busqueda = 1 
-        if tipo_ote.id == 5 and tipo_cliente == 15:
-            tipo_paso_busqueda = 2
-        elif tipo_ote.id in [4, 5] and tipo_cliente == 16:
-            tipo_paso_busqueda = 3
+        if tipo_ote.id == 5:
+            tipo_paso_busqueda = 5 if tipo_cliente == 15 else 18 if tipo_cliente == 16 else 4
+        elif tipo_ote.id == 4 and tipo_cliente == 16:
+            tipo_paso_busqueda = 18
+        else:
+            tipo_paso_busqueda = 4
 
         pasos_a_crear = PasoOt.objects.filter(tipo=tipo_paso_busqueda, activo=True).order_by('id')
         

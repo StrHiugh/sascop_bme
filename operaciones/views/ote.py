@@ -385,7 +385,7 @@ def datatable_ot_detalle(request):
             'id': detalle.id,
             'orden': detalle.id_paso.orden,
             'desc_paso': detalle.id_paso.descripcion,
-            'tipo_paso': detalle.id_paso.tipo,
+            'tipo_paso': detalle.id_paso.tipo_id,
             'estatus_paso': detalle.estatus_paso_id,
             'estatus_texto': detalle.estatus_texto,
             'fecha_entrega': detalle.fecha_entrega.strftime('%d/%m/%Y') if detalle.fecha_entrega else None,

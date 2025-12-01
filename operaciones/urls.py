@@ -117,6 +117,14 @@ urlpatterns = [
     path('catalogos/pasos/obtener/', catalogos.obtener_paso, name='obtener_paso'),
     path('catalogos/pasos/editar/', catalogos.editar_paso, name='editar_paso'),
     
+    #URLs para Pasos OT
+    path('catalogos/pasos_ot/', catalogos.lista_pasos_ot, name='lista_pasos_ot'),
+    path('catalogos/datatable_pasos_ot/', catalogos.datatable_pasos_ot, name='datatable_pasos_ot'),
+    path('catalogos/pasos_ot/crear/', catalogos.crear_paso_ot, name='crear_paso_ot'),
+    path('catalogos/pasos_ot/eliminar/', catalogos.eliminar_paso_ot, name='eliminar_paso_ot'),
+    path('catalogos/pasos_ot/obtener/', catalogos.obtener_paso_ot, name='obtener_paso_ot'),
+    path('catalogos/pasos_ot/editar/', catalogos.editar_paso_ot, name='editar_paso_ot'),
+
     #URLs para Responsables
     path('catalogos/responsable/', catalogos.lista_responsable, name='lista_responsable'),
     path('catalogos/datatable_responsable/', catalogos.datatable_responsable, name='datatable_responsable'),

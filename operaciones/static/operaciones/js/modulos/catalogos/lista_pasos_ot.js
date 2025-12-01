@@ -38,8 +38,12 @@ $(document).ready(function () {
                 "title": "Descripcion"
             },
             {
+                "data": "tipo",
+                "title": "Tipo"
+            },
+            {
                 "data": "afectacion",
-                "title": "Afectación"
+                "title": "Cliente"
             },
             {
                 "data": "importancia",
@@ -163,7 +167,8 @@ $(document).ready(function () {
             orden: $("#orden").val(),
             importancia: $("#importancia").val(),
             comentario: $("#comentario").val(),
-            afectacion: $("#afectacion").val()
+            afectacion: $("#afectacion").val(),
+            tipo: $("#tipo").val()
         };
         // Validación básica
         if (!formData.descripcion.trim()) {
@@ -181,7 +186,18 @@ $(document).ready(function () {
                 contenido: "La importancia es obligatoria",
             });
             return;
+        } else if (!formData.tipo) {
+            aviso("advertencia", {
+                contenido: "El tipo es obligatorio",
+            });
+            return;
+        } else if (!formData.afectacion) {
+            aviso("advertencia", {
+                contenido: "El cliente es obligatorio",
+            });
+            return;
         } 
+        
 
         const url = formData.id ? urlEditarPaso : urlCrearPaso;
         const method = "POST";

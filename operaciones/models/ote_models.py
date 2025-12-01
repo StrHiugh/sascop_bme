@@ -68,8 +68,10 @@ class PasoOt(models.Model):
     orden = models.CharField(blank=True, null=True, max_length=10)
     activo = models.BooleanField(default=True)
     importancia = models.FloatField(default=0, blank=True, null=True)
-    tipo = models.IntegerField(blank=True, null=True, default=1)
+    tipo = models.ForeignKey(Tipo, on_delete=models.CASCADE, blank=True, null=True, default=1, related_name='tipos_ot')
     comentario = models.TextField(blank=True, null=True)
+    id_tipo_cliente = models.ForeignKey(Tipo, on_delete=models.CASCADE, null=True, blank=True, related_name='tipo_cliente')
+
     class Meta:
         db_table = 'paso_ot'
         ordering = ['orden']

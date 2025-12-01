@@ -348,7 +348,8 @@ $(document).ready(function () {
                         "width": "1%",
                         "render": function (data, type, row) {
                             // Mostrar ícono en paso 4 
-                            if (row.orden==4 ){
+                            console.log(row)
+                            if (row.orden==4 && row.tipo_cliente==15){
                                 let ampliar = "";
                                 ampliar = `<a class="table-icon detalle-subpaso" title="Ver detalles">
                                                 <i class="fas fa-plus-square"></i>
@@ -372,7 +373,7 @@ $(document).ready(function () {
                         "width": "30%",
                         "orderable": false,
                         "render": function(data, type, row) {
-                            if (row.orden == "4.0") {
+                            if (row.orden == 4 && row.tipo_cliente==15) {
                                 return `
                                     <div>
                                         <div class="fw-bold mb-1">${data}</div>

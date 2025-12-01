@@ -351,7 +351,7 @@ def editar_sitio(request):
 
 @login_required(login_url='/accounts/login/')
 def lista_cobro(request):
-    """Lista de todas los estados de cobro"""
+    """Lista de todas los estados"""
     return render(request, 'operaciones/catalogos/estado_cobro/lista_estatus.html')
 
 def datatable_cobro(request):
@@ -865,7 +865,7 @@ def editar_frente(request):
 
 @login_required(login_url='/accounts/login/')
 def lista_pasos(request):
-    """Lista de todas los estados de cobro"""
+    """Lista de todas los pasos y afectaciones"""
     return render(request, 'operaciones/catalogos/pasos/lista_pasos.html')
 
 def datatable_pasos(request):
@@ -874,7 +874,7 @@ def datatable_pasos(request):
     length = int(request.GET.get('length', 10))
     search_value = request.GET.get('filtro', '')
     
-    pasos = Paso.objects.filter(activo=1).annotate(
+    pasos = Paso.objects.filter(activo=1).select_related('id_tipo_cliente').annotate(
         estado_texto=Case(
             When(activo=True, then=Value('Activo')),
             When(activo=False, then=Value('Inactivo')),
@@ -899,6 +899,7 @@ def datatable_pasos(request):
             'descripcion': paso.descripcion,
             'activo': paso.estado_texto, 
             'importancia': paso.importancia,
+            'afectacion': paso.id_tipo_cliente.descripcion,
             'activo_bool': paso.activo,
             'orden':paso.orden
         })
@@ -918,12 +919,15 @@ def crear_paso(request):
         activo = True
         importancia = request.POST.get('importancia')
         comentario = request.POST.get('comentario', '')
+        id_tipo_cliente = request.POST.get('afectacion','')
+        
         paso = Paso.objects.create(
             descripcion=descripcion,
             orden=orden,
             activo=activo,
             importancia=importancia,
             comentario=comentario,
+            id_tipo_cliente_id=id_tipo_cliente,
         )
         return JsonResponse({
             'exito': True,
@@ -987,7 +991,8 @@ def obtener_paso(request):
             'orden': paso.orden,
             'comentario': paso.comentario,
             'activo': paso.activo,
-            'importancia':paso.importancia
+            'importancia':paso.importancia,
+            'afectacion':paso.id_tipo_cliente_id
         })
     except Paso.DoesNotExist:
         return JsonResponse({
@@ -1003,12 +1008,14 @@ def editar_paso(request):
         orden = request.POST.get('orden')
         importancia = request.POST.get('importancia')
         comentario = request.POST.get('comentario', '')
-        
+        id_tipo_cliente = request.POST.get('afectacion','')
+
         paso = Paso.objects.get(id=id)
         paso.descripcion = descripcion
         paso.importancia = importancia
         paso.orden = orden
         paso.comentario = comentario
+        paso.id_tipo_cliente_id = id_tipo_cliente
         paso.save()
         
         return JsonResponse({
@@ -1716,5 +1723,182 @@ def editar_cliente(request):
         return JsonResponse({
             'tipo_aviso': 'error',
             'detalles': f'Error al actualizar cliente: {str(e)}',
+            'exito': False
+        })
+
+@login_required(login_url='/accounts/login/')
+def lista_pasos_ot(request):
+    """Lista de todas los pasos y afectaciones de ots"""
+    return render(request, 'operaciones/catalogos/pasos_ot/lista_pasos_ot.html')
+
+def datatable_pasos_ot(request):
+    draw = int(request.GET.get('draw', 1))
+    start = int(request.GET.get('start', 0))
+    length = int(request.GET.get('length', 10))
+    search_value = request.GET.get('filtro', '')
+    
+    pasos = PasoOt.objects.filter(activo=1).select_related('id_tipo_cliente').annotate(
+        estado_texto=Case(
+            When(activo=True, then=Value('Activo')),
+            When(activo=False, then=Value('Inactivo')),
+            default=Value('Desconocido'),
+            output_field=CharField()
+        ),
+    ).order_by('id')
+    
+    if search_value:
+        pasos = pasos.filter(
+            Q(descripcion__icontains=search_value) |
+            Q(activo__icontains=search_value)
+        )
+    
+    total_records = pasos.count()
+    pasos = pasos[start:start + length]
+    
+    data = []
+    for paso in pasos:
+        data.append({
+            'id': paso.id,
+            'descripcion': paso.descripcion,
+            'activo': paso.estado_texto, 
+            'importancia': paso.importancia,
+            'afectacion': paso.id_tipo_cliente.descripcion,
+            'tipo':paso.tipo.descripcion,
+            'activo_bool': paso.activo,
+            'orden':paso.orden
+        })
+    
+    return JsonResponse({
+        'draw': draw,
+        'recordsTotal': total_records,
+        'recordsFiltered': total_records,
+        'data': data
+    })
+
+@require_http_methods(["POST"])
+def crear_paso_ot(request):
+    try:
+        descripcion = request.POST.get('descripcion')
+        orden = request.POST.get('orden')
+        activo = True
+        importancia = request.POST.get('importancia')
+        comentario = request.POST.get('comentario', '')
+        id_tipo_cliente = request.POST.get('afectacion','')
+        id_tipo = request.POST.get('tipo','')
+        paso = PasoOt.objects.create(
+            descripcion=descripcion,
+            orden=orden,
+            activo=activo,
+            importancia=importancia,
+            comentario=comentario,
+            tipo_id=id_tipo,
+            id_tipo_cliente_id=id_tipo_cliente,
+        )
+        return JsonResponse({
+            'exito': True,
+            'tipo_aviso': 'exito',
+            'detalles': 'Paso creado correctamente',
+            'id': paso.id
+        })
+    except Exception as e:
+        return JsonResponse({
+            'exito': False,
+            'tipo_aviso': 'error',
+            'detalles': f'Error al crear paso: {str(e)}'
+        })
+        
+@require_http_methods(["POST"])
+def eliminar_paso_ot(request):
+    try:
+        # Obtener el ID de la embarcación
+        id = request.POST.get('id')
+        
+        if not id:
+            return JsonResponse({
+                'tipo_aviso': 'error',
+                'detalles': 'ID de paso no proporcionado',
+                'exito': False
+            })
+
+        # Eliminación lógica
+        paso = PasoOt.objects.get(id=id)
+        paso.activo = False
+        paso.save()
+
+        return JsonResponse({
+            'tipo_aviso': 'exito',
+            'detalles': 'Paso desactivado correctamente',
+            'exito': True
+        })
+
+    except PasoOt.DoesNotExist:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': 'Paso no encontrado',
+            'exito': False
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': f'Error al desactivar paso: {str(e)}',
+            'exito': False
+        })
+
+@require_http_methods(["GET"])
+def obtener_paso_ot(request):
+    try:
+        id = request.GET.get('id')
+        paso = PasoOt.objects.get(id=id)
+        return JsonResponse({
+            'id': paso.id,
+            'descripcion': paso.descripcion,
+            'orden': paso.orden,
+            'comentario': paso.comentario,
+            'activo': paso.activo,
+            'importancia':paso.importancia,
+            'afectacion':paso.id_tipo_cliente_id
+        })
+    except PasoOt.DoesNotExist:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': 'Paso no encontrado'
+        }, status=404)
+
+@require_http_methods(["POST"])
+def editar_paso_ot(request):
+    try:
+        id = request.POST.get('id')
+        descripcion = request.POST.get('descripcion')
+        orden = request.POST.get('orden')
+        importancia = request.POST.get('importancia')
+        comentario = request.POST.get('comentario', '')
+        id_tipo_cliente = request.POST.get('afectacion','')
+        id_tipo = request.POST.get('tipo','')
+
+        paso = PasoOt.objects.get(id=id)
+        paso.descripcion = descripcion
+        paso.importancia = importancia
+        paso.orden = orden
+        paso.comentario = comentario
+        paso.id_tipo_cliente_id = id_tipo_cliente
+        paso.tipo_id = id_tipo
+        paso.save()
+        
+        return JsonResponse({
+            'tipo_aviso': 'exito',
+            'detalles': 'Paso actualizado correctamente',
+            'exito': True
+        })
+    except PasoOt.DoesNotExist:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': 'Paso no encontrado',
+            'exito': False
+        })
+    except Exception as e:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': f'Error al actualizar el paso: {str(e)}',
             'exito': False
         })

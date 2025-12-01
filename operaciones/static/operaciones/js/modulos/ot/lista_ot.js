@@ -1191,6 +1191,7 @@ function initTablaReprogramaciones(otId) {
                         'ASIGNADA': 'bg-primary',
                         'CANCELADA': 'bg-danger',
                         'DIFERIDA': 'bg-warning',
+                        'DIFERIDA': 'bg-warning',
                         'EN EJECUCION': 'bg-info',
                         'SUSPENDIDA': 'bg-warning',
                         'TERMINADA': 'bg-success',

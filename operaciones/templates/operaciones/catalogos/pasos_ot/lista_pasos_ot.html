@@ -16,10 +16,10 @@
                             Catálogos
                         </a>
                     </li>
-                    <li class="breadcrumb-item active">Pasos </li>
+                    <li class="breadcrumb-item active">Pasos ot </li>
                 </ol>
             </nav>
-            <h1 class="h2 fw-bold mb-0">PASOS PTE</h1>
+            <h1 class="h2 fw-bold mb-0">PASOS OT</h1>
         </div>
         <!-- Lado derecho: botones -->
         <div class="d-flex gap-2 mt-2 mt-md-0">
@@ -107,6 +107,16 @@
                     </div>
                 </section>
                 <section class="col-12 mb-3">
+                    <label class="form-label">Tipo <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <select name="tipo" class="form-select" id="tipo" required>
+                            <option value="4">INICIAL</option>
+                            <option value="5">REPROGRAMACION</option>
+                            <option value="18">INTERCOM</option>
+                        </select>
+                    </div>
+                </section>
+                <section class="col-12 mb-3">
                     <label class="form-label">Cliente <span class="text-danger">*</span></label>
                     <div class="input-group">
                         <select name="afectacion" class="form-select" id="afectacion" required>
@@ -160,13 +170,13 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{% static 'operaciones/js/modulos/catalogos/lista_pasos.js'%}?v=1.0.0"></script>
+<script src="{% static 'operaciones/js/modulos/catalogos/lista_pasos_ot.js'%}?v=1.0.0"></script>
 
 <script>
-    var urlDatatable = "{% url 'operaciones:datatable_pasos' %}";
-    var urlCrearPaso = "{% url 'operaciones:crear_paso' %}";
-    var urlEditarPaso = "{% url 'operaciones:editar_paso' %}";
-    var urlEliminarPaso = "{% url 'operaciones:eliminar_paso' %}";
-    var urlObtenerPaso = "{% url 'operaciones:obtener_paso' %}";
+    var urlDatatable = "{% url 'operaciones:datatable_pasos_ot' %}";
+    var urlCrearPaso = "{% url 'operaciones:crear_paso_ot' %}";
+    var urlEditarPaso = "{% url 'operaciones:editar_paso_ot' %}";
+    var urlEliminarPaso = "{% url 'operaciones:eliminar_paso_ot' %}";
+    var urlObtenerPaso = "{% url 'operaciones:obtener_paso_ot' %}";
 </script>
 {% endblock %}
