@@ -1478,7 +1478,7 @@ $(document).ready(function () {
                 if (response && response.length > 0) {
                     response.forEach(function (ot) {
                         const id = ot.id || ot.ot_id;
-                        const folio = ot.orden_trabajo || ot.folio || 'Sin folio';
+                        const folio = ot.oficio_ot ||'Sin folio';
                         selectOT.append(`<option value="${id}">${folio}</option>`);
                     });
 
