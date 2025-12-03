@@ -92,8 +92,7 @@ $(document).ready(function () {
                 "render": function(data, type, row) {
                     let color = 'bg-success';
                     if (data < 25) color = 'bg-danger';
-                    else if (data < 50) color = 'bg-warning';
-                    else if (data < 75) color = 'bg-info';
+                    else if (data < 75) color = 'bg-warning';
                     
                     const porcentaje = isNaN(data) ? 0 : Math.max(0, Math.min(100, data));
                     const tooltip = `Tiempo: ${row.progreso_tiempo}% | Pasos: ${row.progreso_pasos}%`;
@@ -1337,8 +1336,9 @@ function initTablaReprogramaciones(otId) {
                 "visible": false
             },
             {
-                "data": "descripcion_tipo",
-                "title": "Tipo"
+                "data": "num_reprogramacion",
+                "title": "No.",
+                "width": "20px"
             },
             {
                 "data": "orden_trabajo",
@@ -1346,11 +1346,8 @@ function initTablaReprogramaciones(otId) {
             },
             {
                 "data": "oficio_ot",
-                "title": "Oficio OT"
-            },
-            {
-                "data": "pte_padre",
-                "title": "PTE proveniente"
+                "title": "Oficio OT",
+                "width": "20%"
             },
             {
                 "data": "fecha_inicio_real",
@@ -1361,11 +1358,43 @@ function initTablaReprogramaciones(otId) {
                 "title": "Fecha término"
             },
             {
+                "data": "progreso_final",
+                "title": "Progreso",
+                "width": "20%",
+                "render": function(data, type, row) {
+                    let color = 'bg-success';
+                    if (data < 25) color = 'bg-danger';
+                    else if (data < 75) color = 'bg-warning';
+                    
+                    const porcentaje = isNaN(data) ? 0 : Math.max(0, Math.min(100, data));
+                    const tooltip = `Tiempo: ${row.progreso_tiempo}% | Pasos: ${row.progreso_pasos}%`;
+                    
+                    return `
+                        <div title="${tooltip}" data-bs-toggle="tooltip">
+                            <div class="progress" style="height: 18px; cursor: pointer;">
+                                <div class="progress-bar ${color}" 
+                                    role="progressbar" 
+                                    style="width: ${porcentaje}%" 
+                                    aria-valuenow="${porcentaje}">
+                                </div>
+                            </div>
+                            <div class="text-center mt-1" style="font-size: 13px;">
+                                <span class="badge bg-success">${row.dias_transcurridos}/${row.plazo_total}dP</span>
+                                <span class="badge bg-secondary">${row.dias_transcurridos_real}/${row.plazo_total_real}dR</span>
+                                <span class="ms-2">${porcentaje}%</span>
+                                <span class="ms-2 text-muted">(${row.pasos_completados}/${row.total_pasos})</span>
+                            </div>
+                        </div>
+                    `;
+                },
+                "orderable": true
+            },
+            {
                 "data": "estatus_ot_texto",
                 "title": "Estatus",
                 "orderable": false,
                 "className": "text-center",
-                "width": "10%",
+                "width": "5%",
                 "render": function (data, type, row) {
                     const estatusClasses = {
                         'POR DEFINIR': 'bg-secondary',
@@ -1414,7 +1443,7 @@ function initTablaReprogramaciones(otId) {
                 "data": null,
                 "title": "Opciones",
                 "class": "text-center",
-                "width": "150px",
+                "width": "4%",
                 "orderable": false,
                 render: function (fila) {
                     let botones = `
