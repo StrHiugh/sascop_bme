@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import timedelta, date, datetime
 from django.http import JsonResponse
 from django.utils import timezone
 from django.shortcuts import render
@@ -8,7 +8,8 @@ from django.shortcuts import render, get_object_or_404
 from ..models import OTE, OTDetalle
 from ..registro_actividad import registrar_actividad
 from operaciones.models.catalogos_models import Sitio, Estatus, ResponsableProyecto, Tipo
-from django.db.models import Case, When, Value, CharField,Q, ExpressionWrapper, Count,F
+from django.db.models import Case, When, Value, CharField,Q, ExpressionWrapper, Count,F, FloatField, IntegerField
+from django.db.models.functions import *
 
 @login_required(login_url='/accounts/login/')
 def lista_ote(request):
@@ -36,9 +37,9 @@ def datatable_ot(request):
     if ot_principal_id:
         filters['ot_principal'] = ot_principal_id
 
-    ots = OTE.objects.filter(**filters).select_related(
-        'id_tipo','id_pte_header','id_estatus_ot'
-        ).annotate(
+    ots = OTE.objects.filter(**filters).prefetch_related('detalles').select_related(
+        'id_tipo', 'id_pte_header', 'id_estatus_ot'
+    ).annotate(
         estado_texto=Case(
             When(estatus=1, then=Value('Activo')),
             When(estatus=0, then=Value('Inactivo')),
@@ -47,7 +48,6 @@ def datatable_ot(request):
             output_field=CharField()
         ),
         estatus_ot_texto=F('id_estatus_ot__descripcion'),
-        estatus_ot_id_db=F('id_estatus_ot_id')
     ).order_by('-id')
 
     if search_value:
@@ -72,15 +72,88 @@ def datatable_ot(request):
         ots = ots[start:start + length]
     
     data = []
+    today = date.today()
+
     for ot in ots:
-        # Si estatus es -1, mostrar "Por definir", sino mostrar el estatus_ot que se tenga
+        # 1. Calcular progreso por pasos
+        detalles = ot.detalles.all()
+        total_pasos = detalles.count()
+        pasos_completados = detalles.filter(estatus_paso_id__in=[3]).count()
+        
+        progreso_pasos = 0
+        if total_pasos > 0:
+            progreso_pasos = int((pasos_completados / total_pasos) * 100)
+        
+        # 2. Calcular progreso por tiempo
+        progreso_tiempo = 0
+        dias_restantes = 0
+        dias_transcurridos = 0
+        plazo_total = 0
+        
+        if ot.fecha_inicio_programado and ot.fecha_termino_programado:
+            fecha_inicio = ot.fecha_inicio_programado
+            fecha_termino = ot.fecha_termino_programado
+            
+            if fecha_inicio and fecha_termino:
+                plazo_total = (fecha_termino - fecha_inicio + timedelta(days=1)).days
+                if plazo_total > 0:
+                    if today < fecha_inicio:
+                        # No ha iniciado
+                        progreso_tiempo = 0
+                        dias_restantes = plazo_total
+                    elif today > fecha_termino:
+                        # Ya terminó
+                        progreso_tiempo = 100
+                        dias_restantes = 0
+                        dias_transcurridos = plazo_total
+                    else:
+                        # En progreso
+                        dias_transcurridos = (today - fecha_inicio).days
+                        progreso_tiempo = int((dias_transcurridos / plazo_total) * 100)
+                        dias_restantes = max(0, plazo_total - dias_transcurridos)
+        
+        #tiempo real
+        # 2. Calcular progreso por tiempo
+        progreso_tiempo_real = 0
+        dias_restantes_real = 0
+        dias_transcurridos_real = 0
+        plazo_total_real = 0
+        
+        if ot.fecha_inicio_real and ot.fecha_termino_programado:
+            fecha_inicio = ot.fecha_inicio_real
+            fecha_termino = ot.fecha_termino_programado
+            
+            if fecha_inicio and fecha_termino:
+                plazo_total_real = (fecha_termino - fecha_inicio + timedelta(days=1)).days
+                if plazo_total_real > 0:
+                    if today < fecha_inicio:
+                        # No ha iniciado
+                        progreso_tiempo_real = 0
+                        dias_restantes_real = plazo_total_real
+                    elif today > fecha_termino:
+                        # Ya terminó
+                        progreso_tiempo_real = 100
+                        dias_restantes_real = 0
+                        dias_transcurridos_real = plazo_total_real
+                    else:
+                        # En progreso
+                        dias_transcurridos_real = (today - fecha_inicio).days
+                        progreso_tiempo_real = int((dias_transcurridos_real / plazo_total_real) * 100)
+                        dias_restantes_real = max(0, plazo_total_real - dias_transcurridos_real)
+        
+
+
+        # 3. Progreso combinado
+        progreso_final = int((progreso_tiempo * 0.7) + (progreso_pasos * 0.3))
+        progreso_final_real = int((progreso_tiempo_real * 0.7) + (progreso_pasos * 0.3))
+        
+        # 4. Estatus
         if ot.estatus == -1:
             estatus_display = 'Por definir'
             estatus_ot_texto = 'POR DEFINIR'
         else:
             estatus_display = ot.estatus_ot_texto or 'ASIGNADA'
             estatus_ot_texto = ot.estatus_ot_texto or 'ASIGNADA'
-        
         
         data.append({
             'id': ot.id,
@@ -90,26 +163,44 @@ def datatable_ot(request):
             'id_plataforma': ot.id_plataforma,
             'id_intercom': ot.id_intercom,
             'id_patio': ot.id_patio,
-            'descripcion_tipo':ot.id_tipo.descripcion,
+            'descripcion_tipo': ot.id_tipo.descripcion,
             'estatus': estatus_display,
-            'estatus_numero': ot.estatus,  # -1 o 1
+            'estatus_numero': ot.estatus,
             'estatus_ot_id': ot.id_estatus_ot_id,
             'estatus_ot_texto': estatus_ot_texto,
             'responsable_proyecto': ot.id_responsable_proyecto_id if ot.id_responsable_proyecto_id else '',
-            'responsable_cliente':ot.responsable_cliente,
+            'responsable_cliente': ot.responsable_cliente,
             'id_pte_id': ot.id_pte_header_id,
-            'pte_padre': ot.id_pte_header.oficio_pte,
+            'pte_padre': ot.id_pte_header.oficio_pte if ot.id_pte_header else '',
             'oficio_ot': ot.oficio_ot,
-            'orden_trabajo':ot.orden_trabajo,
+            'orden_trabajo': ot.orden_trabajo,
             'descripcion_trabajo': ot.descripcion_trabajo,
             'fecha_inicio_programada': ot.fecha_inicio_programado.strftime('%d/%m/%Y') if ot.fecha_inicio_programado else None,
             'fecha_inicio_real': ot.fecha_inicio_real.strftime('%d/%m/%Y') if ot.fecha_inicio_real else None, 
             'fecha_termino_programada': ot.fecha_termino_programado.strftime('%d/%m/%Y') if ot.fecha_termino_programado else None,
             'fecha_termino_real': ot.fecha_termino_real.strftime('%d/%m/%Y') if ot.fecha_termino_real else None,   
-            'comentario':ot.comentario,
+            'comentario': ot.comentario,
             'ot_principal': ot.ot_principal,
             'plazo_dias': ot.plazo_dias,
             'num_reprogramacion': ot.num_reprogramacion,
+            
+            # Campos de progreso
+            'total_pasos': total_pasos,
+            'pasos_completados': pasos_completados,
+            'progreso_pasos': progreso_pasos,
+            'progreso_tiempo': progreso_tiempo,
+            'progreso_final': progreso_final,
+            'dias_restantes': dias_restantes,
+            'dias_transcurridos': dias_transcurridos,
+            'plazo_total': plazo_total,
+
+            # Campos de progreso real
+            'progreso_tiempo_real': progreso_tiempo_real,
+            'progreso_final_real': progreso_final_real,
+            'dias_restantes_real': dias_restantes_real,
+            'dias_transcurridos_real': dias_transcurridos_real,
+            'plazo_total_real': plazo_total_real,
+
         })
     
     return JsonResponse({
@@ -190,6 +281,7 @@ def obtener_ots_principales(request):
 
 @require_http_methods(["POST"])
 @login_required
+@registrar_actividad
 def eliminar_ot(request):
     """Eliminación lógica de OT"""
     try:
@@ -229,12 +321,14 @@ def eliminar_ot(request):
 
 @require_http_methods(["POST"])
 @login_required
+@registrar_actividad
 def cambiar_estatus_ot(request):
     """Cambiar estatus de OT"""
     try:
         ot_id = request.POST.get('ot_id')
         nuevo_estatus_id = request.POST.get('nuevo_estatus_id')
-        
+        comentario = request.POST.get('comentario', '')
+        fecha_entrega = request.POST.get('fecha_entrega', None)
         if not ot_id or not nuevo_estatus_id:
             return JsonResponse({
                 'exito': False,
@@ -243,8 +337,21 @@ def cambiar_estatus_ot(request):
         
         ot = OTE.objects.get(id=ot_id)
 
+        # Guardar el estatus anterior para verificar cambios
+        estatus_anterior = ot.id_estatus_ot_id
+
         # Actualizar el id_estatus_ot
         ot.id_estatus_ot_id = nuevo_estatus_id
+        ot.comentario = comentario
+
+        if int(nuevo_estatus_id) == 10 and int(estatus_anterior) != 10:
+            if fecha_entrega:
+                ot.fecha_termino_real = fecha_entrega
+            else:
+                ot.fecha_termino_real = datetime.now()
+        elif int(nuevo_estatus_id) != 10 and int(estatus_anterior) == 10:
+            ot.fecha_termino_real = None
+        
         ot.save()
         
         return JsonResponse({
@@ -265,6 +372,7 @@ def cambiar_estatus_ot(request):
             
 @require_http_methods(["POST"])
 @login_required
+@registrar_actividad
 def editar_ot(request):
     """Editar OT existente"""
     try:

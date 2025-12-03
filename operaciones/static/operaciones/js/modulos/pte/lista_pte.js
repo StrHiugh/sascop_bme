@@ -205,20 +205,20 @@ $(document).ready(function () {
         // Agregar campo de fecha solo si el estatus es 3
         if (mostrarFechaEntrega) {
             contenidoMensaje += `
-                <div class="mb-3 col-3">
-                    <label for="fechaEntregaPte" class="form-label">Fecha de entrega:</label>
-                    <input type="date" class="form-control" id="fechaEntregaPte" value="${new Date().toISOString().split('T')[0]}" required>
-                </div>
+                    <div class="mb-3 col-3">
+                        <label for="fechaEntregaPte" class="form-label">Fecha de entrega:</label>
+                        <input type="date" class="form-control" id="fechaEntregaPte" value="${new Date().toISOString().split('T')[0]}" required>
+                    </div>
             `;
         }
         
         contenidoMensaje += `
-                <div class="mb-3 col-4">
-                    <label for="comentarioCambioPTE" class="form-label">Comentario:</label>
-                    <textarea class="form-control" id="comentarioCambioPTE" rows="1" placeholder="Agregar un comentario sobre este cambio..."></textarea>
+                    <div class="mb-3 col-4">
+                        <label for="comentarioCambioPTE" class="form-label">Comentario:</label>
+                        <textarea class="form-control" id="comentarioCambioPTE" rows="1" placeholder="Agregar un comentario sobre este cambio..."></textarea>
+                    </div>
                 </div>
             </div>
-        </div>
         `;
 
 
@@ -348,7 +348,6 @@ $(document).ready(function () {
                         "width": "1%",
                         "render": function (data, type, row) {
                             // Mostrar ícono en paso 4 
-                            console.log(row)
                             if (row.orden==4 && row.tipo_cliente==15){
                                 let ampliar = "";
                                 ampliar = `<a class="table-icon detalle-subpaso" title="Ver detalles">
@@ -1078,7 +1077,6 @@ $(document).ready(function () {
     function abrirModalSubirArchivo(datosPaso = null) {
         const modal = new bootstrap.Modal(document.getElementById('modalSubirArchivo'));
         const enlaceInput = document.getElementById('enlaceArchivo');
-        
         if (datosPaso) {
             if (datosPaso.archivo) {
                 enlaceInput.value = datosPaso.archivo;
@@ -1271,7 +1269,7 @@ $(document).ready(function () {
                     aviso(response.tipo_aviso, response.detalles);
                     const modal = bootstrap.Modal.getInstance(document.getElementById('modalCrearPTE'));
                     modal.hide();
-                    tablaPte.ajax.reload();
+                    tablaPte.ajax.reload(null, false);
                 } else {
                     aviso(response.tipo_aviso, response.detalles);
                 }
@@ -1325,7 +1323,6 @@ $(document).ready(function () {
                                 tablaPte.ajax.reload();
                             }
                         });
-
                     }
                 },
                 {
@@ -1532,6 +1529,13 @@ function guardarEnlaceArchivo() {
         return;
     }
     
+    let log = new RegistroActividad(1,window.pasoActual.id,"IMPORTAR");
+    log.agregar_actividad({
+        nombre:"Importó",
+        valor_actual:enlace,
+        valor_anterior:window.pasoActual.archivo,
+        detalle:`un enlace de archivo al paso: <b>${window.pasoActual.orden}-${window.pasoActual.desc_paso}</b> de la PTE: <b>${window.pasoActual.folio_pte}</b>`})   
+
     if (window.pasoActual) {
         $.ajax({
             url: urlGuardarArchivo,
@@ -1539,7 +1543,8 @@ function guardarEnlaceArchivo() {
             data: {
                 csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val(),
                 paso_id: window.pasoActual.id,
-                archivo: enlace
+                archivo: enlace,
+                registro_actividad: JSON.stringify(log.actividad)
             },
             success: function(response) {
                 if (response.exito) {

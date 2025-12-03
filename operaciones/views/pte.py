@@ -315,12 +315,13 @@ def cambiar_estatus_pte(request):
         
         # Obtener la PTE
         pte = PTEHeader.objects.get(id=pte_id)
+
         # Guardar el estatus anterior para verificar cambios
         estatus_anterior = pte.estatus
+
         # Actualizar el estatus
         pte.estatus = nuevo_estatus
-        if comentario:
-            pte.comentario = comentario
+        pte.comentario = comentario
         
             
         if int(nuevo_estatus) == 3 and estatus_anterior != 3:
@@ -899,6 +900,7 @@ def eliminar_pte(request):
 
 @require_http_methods(["POST"])
 @login_required
+@registrar_actividad
 def guardar_archivo_pte(request):
     """Guardar Archivo de entregables de pte"""
     try:

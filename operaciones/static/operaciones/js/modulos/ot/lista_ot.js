@@ -1,5 +1,14 @@
+/*
+ * __filename__   : lista_ot.js
+ * __author__     : ARMANDO PERERA
+ * __description__: JS la view de ordenes de trabajo
+ * __version__    : 1.0.0
+ * __app__        : BME SUBTEC
+ */
+let REGISTRO_ACTIVIDAD = new RegistroActividad(4,null,"REGISTRAR")
+
 $(document).ready(function () {
-    window.tablaPte = $("#tabla").DataTable({
+    window.tablaOt = $("#tabla").DataTable({
         processing: true,
         serverSide: true,
         responsive: true,
@@ -52,10 +61,10 @@ $(document).ready(function () {
                 "title": "ID",
                 "visible": false
             },
-            {
-                "data": "descripcion_tipo",
-                "title": "Tipo"
-            },
+            // {
+            //     "data": "descripcion_tipo",
+            //     "title": "Tipo"
+            // },
             {
                 "data": "orden_trabajo",
                 "title": "Folio OT"
@@ -64,10 +73,10 @@ $(document).ready(function () {
                 "data": "oficio_ot",
                 "title": "Oficio OT"
             },
-            {
-                "data": "pte_padre",
-                "title": "PTE proveniente"
-            },
+            // {
+            //     "data": "pte_padre",
+            //     "title": "PTE proveniente"
+            // },
             {
                 "data": "fecha_inicio_real",
                 "title": "Fecha de inicio"
@@ -75,6 +84,91 @@ $(document).ready(function () {
             {
                 "data": "fecha_termino_real",
                 "title": "Fecha término"
+            },
+            {
+                "data": "progreso_final",
+                "title": "Progreso",
+                "width": "20%",
+                "render": function(data, type, row) {
+                    let color = 'bg-success';
+                    if (data < 25) color = 'bg-danger';
+                    else if (data < 50) color = 'bg-warning';
+                    else if (data < 75) color = 'bg-info';
+                    
+                    const porcentaje = isNaN(data) ? 0 : Math.max(0, Math.min(100, data));
+                    const tooltip = `Tiempo: ${row.progreso_tiempo}% | Pasos: ${row.progreso_pasos}%`;
+                    
+                    return `
+                        <div title="${tooltip}" data-bs-toggle="tooltip">
+                            <div class="progress" style="height: 18px; cursor: pointer;">
+                                <div class="progress-bar ${color}" 
+                                    role="progressbar" 
+                                    style="width: ${porcentaje}%" 
+                                    aria-valuenow="${porcentaje}">
+                                </div>
+                            </div>
+                            <div class="text-center mt-1" style="font-size: 13px;">
+                                <span class="badge bg-success">${row.dias_transcurridos}/${row.plazo_total}dP</span>
+                                <span class="badge bg-secondary">${row.dias_transcurridos_real}/${row.plazo_total_real}dR</span>
+                                <span class="ms-2">${porcentaje}%</span>
+                                <span class="ms-2 text-muted">(${row.pasos_completados}/${row.total_pasos})</span>
+                            </div>
+                        </div>
+                    `;
+                },
+                "orderable": true
+            },
+            {
+                "data": "progreso_tiempo", 
+                "title": "Progreso Tiempo",
+                "visible": false,  // Oculto por defecto
+                "render": function(data, type, row) {
+                    let color = 'bg-primary';
+                    if (row.dias_restantes <= 7 && data < 100) color = 'bg-danger';
+                    else if (row.dias_restantes <= 14) color = 'bg-warning';
+                    
+                    const porcentaje = isNaN(data) ? 0 : Math.max(0, Math.min(100, data));
+                    
+                    return `
+                        <div title="${row.dias_transcurridos} días transcurridos | ${row.dias_restantes} días restantes">
+                            <div class="progress" style="height: 15px;">
+                                <div class="progress-bar ${color}" 
+                                    role="progressbar" 
+                                    style="width: ${porcentaje}%">
+                                </div>
+                            </div>
+                            <div class="text-center" style="font-size: 10px;">
+                                ${porcentaje}% | ${row.dias_restantes}d restantes
+                            </div>
+                        </div>
+                    `;
+                }
+            },
+            {
+                "data": "progreso_pasos",
+                "title": "Progreso Pasos", 
+                "visible": false,  // Oculto por defecto
+                "render": function(data, type, row) {
+                    let color = 'bg-success';
+                    if (data < 25) color = 'bg-danger';
+                    else if (data < 75) color = 'bg-warning';
+                    
+                    const porcentaje = isNaN(data) ? 0 : Math.max(0, Math.min(100, data));
+                    
+                    return `
+                        <div title="${row.pasos_completados} de ${row.total_pasos} pasos completados">
+                            <div class="progress" style="height: 15px;">
+                                <div class="progress-bar ${color}" 
+                                    role="progressbar" 
+                                    style="width: ${porcentaje}%">
+                                </div>
+                            </div>
+                            <div class="text-center" style="font-size: 10px;">
+                                ${porcentaje}% | ${row.pasos_completados}/${row.total_pasos}
+                            </div>
+                        </div>
+                    `;
+                }
             },
             {
                 "data": "estatus_ot_texto",
@@ -151,29 +245,29 @@ $(document).ready(function () {
     // Búsqueda por Enter
     $("#filtro-buscar").keypress(function (event) {
         if (event.which == 13) {
-            tablaPte.draw();
+        tablaOt.draw();
         }
     });
 
     // Mover select de length
     $("#tabla_length").detach().appendTo("#select-length");
 
-    // Evento para editar PTE
+    // Evento para editar ot
     $("#tabla tbody").on("click", ".editar_ot", function () {
         const otID = $(this).data('id');
         abrirModalEditarOT(otID);
-        window.tablaActiva = tablaPte.row($(this).parents('tr')).data() ?
-            tablaPte :
+        window.tablaActiva =tablaOt.row($(this).parents('tr')).data() ?
+            tablaOt :
             tablaReprogramaciones;
         window.ot_actual = otID;
     });
 
     // Evento para expandir detalles del OT y repros
     $(document).on("click", ".detalle-pte", function () {
-        window.tablaActiva = tablaPte.row($(this).parents('tr')).data() ?
-            tablaPte :
+        window.tablaActiva =tablaOt.row($(this).parents('tr')).data() ?
+            tablaOt :
             tablaReprogramaciones;
-        window.tablaTexto = tablaPte.row($(this).parents('tr')).data() ?
+        window.tablaTexto =tablaOt.row($(this).parents('tr')).data() ?
             "OT" :
             "Reprogramacion";
 
@@ -235,7 +329,7 @@ $(document).ready(function () {
             $('#ot_principal').select2('destroy');
         }
 
-        // Obtener datos del PTE
+        // Obtener datos de la ot
         BMAjax(urlObtenerDatos, { id: otID }, "GET")
             .done(function (datos) {
                 iniciarLoader();
@@ -292,6 +386,8 @@ $(document).ready(function () {
                 // Mostrar modal
                 setTimeout(() => {
                     finalizarLoader();
+                    REGISTRO_ACTIVIDAD.registra_actuales("#formCrearOT");
+                    REGISTRO_ACTIVIDAD.actualiza_registro_id(ot.id);
                 }, 2000);
                 const modal = new bootstrap.Modal(document.getElementById('modalCrearOT'));
                 modal.show();
@@ -374,8 +470,15 @@ $(document).ready(function () {
         const originalText = btn.html();
         btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Guardando...');
 
-        const url = otId ? urlEditarOT : urlCrearPTE;
+        const url = otId ? urlEditarOT : urlCrearOT;
         const method = "POST";
+
+        REGISTRO_ACTIVIDAD._evento = otId ? "MODIFICAR" : "CREAR";
+        REGISTRO_ACTIVIDAD.detecta_cambios("#formCrearOT");
+        const agrega_detalle = e => ({...e, detalle: `de la OT: <b>${$("#oficio_ot").val()}</b>`});
+        REGISTRO_ACTIVIDAD.transforma_cambios(agrega_detalle);
+        formData.append('registro_actividad', JSON.stringify(REGISTRO_ACTIVIDAD.actividad));
+
 
         $.ajax({
             url: url,
@@ -419,7 +522,7 @@ $(document).ready(function () {
         var responsable = $("#id_responsable_proyecto").val();
         
         // Aplicar filtros a la DataTable
-        tablaPte.draw();
+        tablaOt.draw();
         
         // Cerrar el panel
         var filtrosOffcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('panelFiltros'));
@@ -439,7 +542,7 @@ $(document).ready(function () {
         $("#anio").val("");
         
         // Redibujar la tabla sin filtros
-        tablaPte.draw();
+        tablaOt.draw();
         
         // Cerrar el panel (opcional)
         var filtrosOffcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('panelFiltros'));
@@ -453,6 +556,9 @@ $(document).ready(function () {
     //Funcion para eliminar
     $(document).on("click", ".eliminar_ot", function () {
         const id = $(this).data('id');
+        let datos = tablaOt.row($(this).parents('tr')).data() ? 
+                    tablaOt.row($(this).parents('tr')).data() : 
+                    tablaReprogramaciones.row($(this).parents('tr')).data();
         BMensaje({
             titulo: "Confirmación",
             subtitulo: "¿Estás seguro de eliminar esta OT?",
@@ -461,15 +567,25 @@ $(document).ready(function () {
                     texto: "Sí, continuar",
                     clase: "btn-primary",
                     funcion: function () {
+                        let log = new RegistroActividad(4,datos.id,"ELIMINAR");
+                        log.agregar_actividad({
+                            nombre:"Eliminó",
+                            valor_actual:"",
+                            valor_anterior:"",
+                            detalle:`<b>una OT</b> con folio: <b>${datos.oficio_ot}</b>`})
+
                         const url = urlEliminarOT;
                         const method = "POST";
                         BMAjax(
                             url,
-                            { id: id },
+                            { 
+                                id: id,
+                                registro_actividad: JSON.stringify(log.actividad),
+                            },
                             method
                         ).done(function (response) {
                             if (response.exito) {
-                                tablaPte.ajax.reload();
+                                tablaOt.ajax.reload();
                             }
                         });
                     }
@@ -617,27 +733,92 @@ $(document).ready(function () {
     // Evento para cambiar estatus de OT
     $(document).on('click', '.cambiar-estatus-option', function (e) {
         e.preventDefault();
-
+        let datos = tablaOt.row($(this).parents('tr')).data() ? 
+                    tablaOt.row($(this).parents('tr')).data() : 
+                    tablaReprogramaciones.row($(this).parents('tr')).data();
+        console.log(datos)
         const nuevoEstatusId = $(this).data('estatus');
         const nuevoEstatusTexto = $(this).text().trim();
         const otId = $(this).closest('.dropdown').find('.ot-id').val();
+        const mostrarFechaEntrega = (nuevoEstatusId == '10');
 
-        BMAjax(
-            urlCambiarEstatusOT,
-            {
-                ot_id: otId,
-                nuevo_estatus_id: nuevoEstatusId
-            },
-            "POST"
-        ).done(function (response) {
-            if (response.exito) {
-                aviso("exito", "Estatus actualizado correctamente");
-                tablaPte.ajax.reload();
-            } else {
-                aviso("error", response.detalles || "Error al cambiar el estatus");
-            }
-        }).fail(function () {
-            aviso("error", "Error al cambiar el estatus");
+        let contenidoMensaje = `
+            <div class="mb-3">
+                <p>¿Estás seguro de cambiar el estatus de la OT a <strong>${nuevoEstatusTexto}</strong>?</p>
+                <div class="row">
+        `;
+
+        // Agregar campo de fecha solo si el estatus es 10(terminado)
+        if (mostrarFechaEntrega) {
+            contenidoMensaje += `
+                    <div class="mb-3 col-3">
+                        <label for="fechaEntregaOt" class="form-label">Fecha de entrega:</label>
+                        <input type="date" class="form-control" id="fechaEntregaOt" value="${new Date().toISOString().split('T')[0]}" required>
+                    </div>
+            `;
+        }
+        
+        contenidoMensaje += `
+                    <div class="mb-3 col-4">
+                        <label for="comentarioCambioOt" class="form-label">Comentario:</label>
+                        <textarea class="form-control" id="comentarioCambioOt" rows="1" placeholder="Agregar un comentario sobre este cambio..."></textarea>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        BMensaje({
+            titulo: "Confirmación",
+            subtitulo: contenidoMensaje,
+            botones: [
+                {
+                    texto: "Sí, continuar",
+                    clase: "btn-primary",
+                    funcion: function() {
+                        const comentario = $('#comentarioCambioOt').val().trim();
+                        let fechaEntrega = null;
+                        if (mostrarFechaEntrega) {
+                            fechaEntrega = $('#fechaEntregaOt').val();
+                            if (!fechaEntrega) {
+                                aviso("advertencia", "La fecha de entrega es obligatoria para el estatus TERMINADA");
+                                return;
+                            }
+                        }
+                        let log = new RegistroActividad(4,datos.id,"ACTUALIZAR");
+                        log.agregar_actividad({
+                            nombre:"Actualizó",
+                            valor_actual:nuevoEstatusTexto,
+                            valor_anterior:datos.estatus,
+                            detalle:`el estatus de: <b>${datos.estatus}</b> a: <b>${nuevoEstatusTexto}</b>, de la OT: <b>${datos.oficio_ot}</b>`})   
+                        
+                        BMAjax(
+                            urlCambiarEstatusOT,
+                            {
+                                ot_id: otId,
+                                nuevo_estatus_id: nuevoEstatusId,
+                                registro_actividad: JSON.stringify(log.actividad),
+                                comentario: comentario, 
+                                fecha_entrega: fechaEntrega,
+                            },
+                            "POST"
+                        ).done(function (response) {
+                            if (response.exito) {
+                                aviso("exito", "Estatus actualizado correctamente");
+                                tablaOt.ajax.reload();
+                            } else {
+                                aviso("error", response.detalles || "Error al cambiar el estatus");
+                            }
+                        }).fail(function() {
+                            aviso("error", "Error al cambiar el estatus");
+                        });
+                    }
+                },
+                {
+                    texto: "Cancelar", 
+                    clase: "btn-light",
+                    funcion: function() { return }
+                }
+            ]
         });
     });
 
