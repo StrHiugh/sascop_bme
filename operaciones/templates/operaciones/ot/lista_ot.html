@@ -180,8 +180,8 @@
                                 <label for="id_frente" class="form-label">Frente <span class="text-danger">*</span></label>
                                 <select class="form-select" id="id_frente" name="id_frente" required>
                                     <option value="" selected disabled>Seleccione un frente de trabajo</option>
-                                    <option value="1">BARCO</option>
-                                    <option value="2">TIERRA</option>
+                                    <option value="2">BARCO</option>
+                                    <option value="1">TIERRA</option>
                                     <option value="4">CP / PS</option>
                                 </select>
                             </div>
@@ -321,6 +321,8 @@
     var urlCambiarEstatusPaso = "{% url 'operaciones:cambiar_estatus_paso_ot' %}";
     var urlActualizarFecha="{% url 'operaciones:actualizar_fecha_ot' %}";
     var urlGuardarArchivo  = "{% url 'operaciones:guardar_archivo_ot' %}";
+    var urlObtenerClientes = "{% url 'operaciones:obtener_clientes' %}";
+
 
 </script>
 {% endblock %}

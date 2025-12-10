@@ -60,6 +60,30 @@ class OTE(models.Model):
 
         return ots
 
+    @property
+    def tiene_reprogramaciones(self):
+        """Retorna True si esta OT tiene reprogramaciones asociadas"""
+        if self.id_tipo_id != 4:  # Solo para OTs iniciales
+            return False
+        
+        return OTE.objects.filter(
+            ot_principal=self.id,
+            id_tipo_id=5,
+            estatus__in=[-1, 1]
+        ).exists()
+    
+    @property
+    def count_reprogramaciones(self):
+        """Retorna el número de reprogramaciones asociadas"""
+        if self.id_tipo_id != 4:
+            return 0
+        
+        return OTE.objects.filter(
+            ot_principal=self.id,
+            id_tipo_id=5,
+            estatus__in=[-1, 1]
+        ).count()
+
     def __str__(self):
         return self.orden_trabajo
 

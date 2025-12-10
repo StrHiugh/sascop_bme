@@ -26,9 +26,31 @@ def datatable_ot(request):
     # Filtro adicional del input de búsqueda
     filtro_buscar = request.GET.get('filtro', '')
     
+    order_column_index = request.GET.get('order[0][column]', '1')
+    order_direction = request.GET.get('order[0][dir]', 'asc')
+
+    # Mapeo de índices de DataTable a campos del modelo OTE
+    column_mapping = {
+        '0': None,                    # Columna 0: Botón de detalles/ampliar
+        '1': 'id',                    # Columna 1: ID (oculta)
+        '2': 'orden_trabajo',         # Columna 2: Folio OT
+        '3': 'oficio_ot',             # Columna 3: Oficio OT  
+        '4': 'fecha_inicio_real',     # Columna 4: Fecha de inicio
+        '5': 'fecha_termino_real',    # Columna 5: Fecha término
+        '6': 'id',                    # Columna 6: Progreso
+        '7': 'id',                    # Columna 7: Progreso Tiempo
+        '8': 'id',                    # Columna 8: Progreso Pasos
+        '9': 'id_estatus_ot__descripcion',  # Columna 9: Estatus
+        '10': None                    # Columna 10: Opciones
+    }   
+
     tipo_id = request.GET.get('tipo', '4') 
     ot_principal_id = request.GET.get('ot_principal', None)
-
+    estatus_id = request.GET.get('estatus', '')
+    responsable_proyecto_id = request.GET.get('responsable_proyecto', '')
+    cliente_id = request.GET.get('id_cliente', '')
+    anio = request.GET.get('anio', '')
+    
     filters = {'estatus__in': [-1, 1]}
     
     if tipo_id:
@@ -36,7 +58,16 @@ def datatable_ot(request):
         
     if ot_principal_id:
         filters['ot_principal'] = ot_principal_id
-
+    
+    if estatus_id:
+        filters['id_estatus_ot_id'] = estatus_id
+    
+    if responsable_proyecto_id:
+        filters['id_responsable_proyecto_id'] = responsable_proyecto_id
+    
+    if cliente_id:
+        filters['id_cliente_id'] = cliente_id
+    
     ots = OTE.objects.filter(**filters).prefetch_related('detalles').select_related(
         'id_tipo', 'id_pte_header', 'id_estatus_ot'
     ).annotate(
@@ -48,7 +79,22 @@ def datatable_ot(request):
             output_field=CharField()
         ),
         estatus_ot_texto=F('id_estatus_ot__descripcion'),
-    ).order_by('-id')
+    )
+
+    if anio:
+        # extraer el año
+        ots_con_anio_en_oficio = ots.filter(oficio_ot__regex=r'.*-(\d{4})$')
+        ots_sin_anio_en_oficio = ots.exclude(oficio_ot__regex=r'.*-(\d{4})$')
+        
+        ots_con_anio = ots_con_anio_en_oficio.filter(
+            oficio_ot__endswith=f"-{anio}"
+        )
+        
+        ots_sin_anio = ots_sin_anio_en_oficio.filter(
+            fecha_inicio_programado__year=anio
+        )
+        
+        ots = ots_con_anio | ots_sin_anio
 
     if search_value:
         ots = ots.filter(
@@ -64,6 +110,23 @@ def datatable_ot(request):
             Q(orden_trabajo__icontains=filtro_buscar)             
         )
     
+    field_name = column_mapping.get(order_column_index)
+    
+    # Solo ordenar si field_name no es None y no es una columna no ordenable
+    if field_name is not None:
+        # Determinar dirección
+        if order_direction == 'desc':
+            order_by_field = f'-{field_name}'
+        else:
+            order_by_field = field_name
+        
+        # Aplicar ordenamiento a nivel de base de datos
+        ots = ots.order_by(order_by_field)
+    else:
+        # Si es None (columna no ordenable), usar orden por defecto
+        # O si es columna de progreso (6, 7, 8), también usar orden por defecto
+        ots = ots.order_by('-id')
+
     total_records = ots.count()
     
     if length == -1:
@@ -200,6 +263,10 @@ def datatable_ot(request):
             'dias_restantes_real': dias_restantes_real,
             'dias_transcurridos_real': dias_transcurridos_real,
             'plazo_total_real': plazo_total_real,
+
+            # Campos de reprogramaciones
+            'tiene_reprogramaciones': ot.tiene_reprogramaciones,
+            'count_reprogramaciones': ot.count_reprogramaciones,
 
         })
     

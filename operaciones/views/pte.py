@@ -73,7 +73,7 @@ def datatable_ptes(request):
         '4': 'descripcion_trabajo',  # Columna 4 (Descripción)
         '5': 'fecha_entrega',  # Columna 5 (Fecha entrega)
         '6': 'estatus',  # Columna 6 (Estatus) 
-        '7': 'id',  # Columna 7 (Progreso) - se ordena por ID como fallback
+        '7': 'id',  # Columna 7 (Progreso)
         '8': 'id'  # Columna 8 (Opciones)
     }
     
@@ -125,23 +125,6 @@ def datatable_ptes(request):
     if filtro_responsable:
         ptes = ptes.filter(id_responsable_proyecto_id=filtro_responsable)
     
-    if filtro_anio:
-        # extraer el año
-        ptes_con_anio_en_oficio = ptes.filter(oficio_pte__regex=r'.*-(\d{4})$')
-        ptes_sin_anio_en_oficio = ptes.exclude(oficio_pte__regex=r'.*-(\d{4})$')
-        
-        # Filtrar los que tienen año en oficio_pte
-        ptes_con_anio = ptes_con_anio_en_oficio.filter(
-            oficio_pte__endswith=f"-{filtro_anio}"
-        )
-        
-        # Filtrar los que NO tienen año en oficio_pte por fecha_solicitud
-        ptes_sin_anio = ptes_sin_anio_en_oficio.filter(
-            fecha_solicitud__year=filtro_anio
-        )
-        
-        # Combinar ambos resultados
-        ptes = ptes_con_anio | ptes_sin_anio
         
     total_records = ptes.count()
     ptes = ptes[start:start + length]
@@ -201,6 +184,7 @@ def datatable_pte_detalle(request):
             When(estatus_paso=3, then=Value('COMPLETADO')),
             When(estatus_paso=4, then=Value('CANCELADO')),
             When(estatus_paso=14, then=Value('NO APLICA')),
+            When(estatus_paso=15, then=Value('SUSPENDIDA')),
             default=Value('DESCONOCIDO'),
             output_field=CharField()
         )

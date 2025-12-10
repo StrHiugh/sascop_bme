@@ -49,9 +49,27 @@ $(document).ready(function () {
                 "width": "1%",
                 "render": function (data, type, row) {
                     let ampliar = "";
-                    ampliar = `<a class="table-icon detalle-pte" title="Ver detalles">
+                    
+                    if (row.tiene_reprogramaciones) {
+                        ampliar = `
+                            <div class="position-relative">
+                                <a class="table-icon detalle-pte position-relative" title="Ver detalles (${row.count_reprogramaciones} reprogramaciones)">
                                     <i class="fas fa-plus-square"></i>
-                                </a>`;
+                                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-circle bg-warning text-white"
+                                        style="font-size: 10px; width: 14px; height: 14px; padding: 0; line-height: 14px;">
+                                        ${row.count_reprogramaciones}
+                                    </span>
+                                </a>
+                            </div>
+                        `;
+                    } else {
+                        ampliar = `
+                            <a class="table-icon detalle-pte" title="Ver detalles">
+                                <i class="fas fa-plus-square"></i>
+                            </a>
+                        `;
+                    }
+                    
                     return ampliar;
                 },
                 "orderable": false
@@ -61,29 +79,27 @@ $(document).ready(function () {
                 "title": "ID",
                 "visible": false
             },
-            // {
-            //     "data": "descripcion_tipo",
-            //     "title": "Tipo"
-            // },
             {
                 "data": "orden_trabajo",
-                "title": "Folio OT"
+                "title": "Folio OT",
+                "orderable": true,
             },
             {
                 "data": "oficio_ot",
-                "title": "Oficio OT"
+                "title": "Oficio OT",
+                "orderable": true,
             },
-            // {
-            //     "data": "pte_padre",
-            //     "title": "PTE proveniente"
-            // },
             {
                 "data": "fecha_inicio_real",
-                "title": "Fecha de inicio"
+                "title": "Fecha de inicio",
+                "orderable": true,
+                "type": "date",
             },
             {
                 "data": "fecha_termino_real",
-                "title": "Fecha término"
+                "title": "Fecha término",
+                "orderable": true,
+                "type": "date",
             },
             {
                 "data": "progreso_final",
@@ -221,7 +237,7 @@ $(document).ready(function () {
                 "data": null,
                 "title": "Opciones",
                 "class": "text-center",
-                "width": "150px",
+                "width": "70px",
                 "orderable": false,
                 render: function (fila) {
                     let botones = `
@@ -398,6 +414,31 @@ $(document).ready(function () {
             });
     }
 
+    function cargarClientes() {
+        return $.ajax({
+            url: urlObtenerClientes,
+            type: 'GET',
+            dataType: 'json',
+            success: function(data) {
+                const select = $('#id_cliente');
+                select.empty();
+                select.append('<option value="" selected disabled>Seleccione un cliente</option>');
+                
+                if (data && data.length > 0) {
+                    data.forEach(function(cliente) {
+                        select.append(`<option value="${cliente.id}">${cliente.descripcion}</option>`);
+                    });
+                } else {
+                    select.append('<option value="" disabled>No hay clientes disponibles</option>');
+                }
+            },
+            error: function(xhr, status, error) {
+                const select = $('#id_cliente');
+                select.empty().append('<option value="" disabled>Error al cargar clientes</option>');
+            }
+        });
+    }
+
     function abrirModalSubirArchivo(datosPaso = null) {
         const modal = new bootstrap.Modal(document.getElementById('modalSubirArchivo'));
         const enlaceInput = document.getElementById('enlaceArchivoOt');
@@ -508,6 +549,7 @@ $(document).ready(function () {
     // Panel de filtros
     $("#btn-panel-filtros").on("click", function () {
         // Mostrar el offcanvas de Bootstrap
+        cargarClientes();
         var filtrosOffcanvas = new bootstrap.Offcanvas(document.getElementById('panelFiltros'));
         filtrosOffcanvas.show();
         cargarResponsablesProyectoModal();
@@ -537,7 +579,8 @@ $(document).ready(function () {
         // Limpiar todos los selects
         $("#estatus").val("");
         $("#tipo").val("");
-        $("#id_responsable_proyecto").val("");
+        $("#id_responsable_proyecto").val("").trigger('change');
+        $("#id_cliente").val("").trigger('change');
         $("#anio").val("");
         
         // Redibujar la tabla sin filtros
@@ -1443,7 +1486,7 @@ function initTablaReprogramaciones(otId) {
                 "data": null,
                 "title": "Opciones",
                 "class": "text-center",
-                "width": "4%",
+                "width": "70px",
                 "orderable": false,
                 render: function (fila) {
                     let botones = `
@@ -1483,7 +1526,7 @@ function toggleFrenteFields() {
 
     let promises = [];
 
-    if (frenteId == '1') { // BARCO
+    if (frenteId == '2') { // BARCO
         $divEmbarcacion.removeAttr('hidden');
         $divPlataforma.removeAttr('hidden');
         $divIntercom.removeAttr('hidden');
@@ -1491,7 +1534,7 @@ function toggleFrenteFields() {
         promises.push(cargarSitios(7, '#id_plataforma'));
         promises.push(cargarSitios(5, '#id_intercom'));
 
-    } else if (frenteId == '2') { // TIERRA
+    } else if (frenteId == '1') { // TIERRA
         $divPatio.removeAttr('hidden');
         $divPlataforma.removeAttr('hidden');
         $divIntercom.removeAttr('hidden');
@@ -1499,7 +1542,7 @@ function toggleFrenteFields() {
         promises.push(cargarSitios(7, '#id_plataforma'));
         promises.push(cargarSitios(5, '#id_intercom'));
 
-    } else if (frenteId == '3') { // CP / PS
+    } else if (frenteId == '4') { // CP / PS
         $divPlataforma.removeAttr('hidden');
         promises.push(cargarSitios(7, '#id_plataforma'));
     }
