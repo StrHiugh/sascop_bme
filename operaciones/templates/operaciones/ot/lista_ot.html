@@ -62,6 +62,11 @@
     <div class="offcanvas-body">
         <form id="form-filtros">
             <div class="mb-3">
+                <label class="form-label">Sitio</label>
+                <select class="form-select" id="sitio">
+                </select>
+            </div>
+            <div class="mb-3">
                 <label class="form-label">Responsable proyecto</label>
                 <select class="form-select" id="id_responsable_proyecto">
                 </select>
@@ -322,7 +327,7 @@
     var urlActualizarFecha="{% url 'operaciones:actualizar_fecha_ot' %}";
     var urlGuardarArchivo  = "{% url 'operaciones:guardar_archivo_ot' %}";
     var urlObtenerClientes = "{% url 'operaciones:obtener_clientes' %}";
-
+    var urlObtenerSitios = "{% url 'operaciones:obtener_sitios' %}";
 
 </script>
 {% endblock %}

@@ -1744,7 +1744,7 @@ def datatable_pasos_ot(request):
             default=Value('Desconocido'),
             output_field=CharField()
         ),
-    ).order_by('id')
+    ).order_by('tipo_id', 'id')
     
     if search_value:
         pasos = pasos.filter(

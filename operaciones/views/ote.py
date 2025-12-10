@@ -50,7 +50,7 @@ def datatable_ot(request):
     responsable_proyecto_id = request.GET.get('responsable_proyecto', '')
     cliente_id = request.GET.get('id_cliente', '')
     anio = request.GET.get('anio', '')
-    
+    id_sitio = request.GET.get('sitio', '')
     filters = {'estatus__in': [-1, 1]}
     
     if tipo_id:
@@ -67,8 +67,20 @@ def datatable_ot(request):
     
     if cliente_id:
         filters['id_cliente_id'] = cliente_id
-    
-    ots = OTE.objects.filter(**filters).prefetch_related('detalles').select_related(
+
+    if id_sitio:
+        sitio_q = Q(
+            Q(id_embarcacion=id_sitio) |
+            Q(id_plataforma=id_sitio) |
+            Q(id_intercom=id_sitio) |
+            Q(id_patio=id_sitio)
+        )
+        ots = OTE.objects.filter(**filters).filter(sitio_q)
+
+    else:
+        ots = OTE.objects.filter(**filters)
+
+    ots = ots.prefetch_related('detalles').select_related(
         'id_tipo', 'id_pte_header', 'id_estatus_ot'
     ).annotate(
         estado_texto=Case(
@@ -114,17 +126,13 @@ def datatable_ot(request):
     
     # Solo ordenar si field_name no es None y no es una columna no ordenable
     if field_name is not None:
-        # Determinar dirección
         if order_direction == 'desc':
             order_by_field = f'-{field_name}'
         else:
             order_by_field = field_name
         
-        # Aplicar ordenamiento a nivel de base de datos
         ots = ots.order_by(order_by_field)
     else:
-        # Si es None (columna no ordenable), usar orden por defecto
-        # O si es columna de progreso (6, 7, 8), también usar orden por defecto
         ots = ots.order_by('-id')
 
     total_records = ots.count()
@@ -718,3 +726,12 @@ def guardar_archivo_ot(request):
             'detalles': f'Error al asignar url: {str(e)}',
             'exito': False
         })
+
+@login_required(login_url='/accounts/login/')
+def obtener_sitios(request):
+    """Obtener todos los sitios activos"""
+    try:
+        sitios = Sitio.objects.filter(activo=1).values('id', 'descripcion').order_by('id')
+        return JsonResponse(list(sitios), safe=False)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

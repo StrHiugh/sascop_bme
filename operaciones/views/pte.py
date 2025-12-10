@@ -116,6 +116,7 @@ def datatable_ptes(request):
     filtro_tipo = request.GET.get('tipo', '')
     filtro_responsable = request.GET.get('responsable_proyecto', '')
     filtro_anio = request.GET.get('anio', '')
+    filtro_cliente = request.GET.get('cliente', '')
     if filtro_estatus:
         ptes = ptes.filter(estatus=filtro_estatus)
     
@@ -124,8 +125,17 @@ def datatable_ptes(request):
     
     if filtro_responsable:
         ptes = ptes.filter(id_responsable_proyecto_id=filtro_responsable)
-    
+    if filtro_anio:
+        # extraer el año
+        ptes_con_anio_en_oficio = ptes.filter(oficio_pte__regex=r'.*-(\d{4})$')
         
+        ptes_con_anio = ptes_con_anio_en_oficio.filter(
+            oficio_pte__endswith=f"-{filtro_anio}"
+        )
+        ptes = ptes_con_anio
+
+    if filtro_cliente:
+        ptes = ptes.filter(id_cliente_id=filtro_cliente)
     total_records = ptes.count()
     ptes = ptes[start:start + length]
     

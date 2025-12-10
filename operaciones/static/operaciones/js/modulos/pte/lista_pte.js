@@ -34,6 +34,7 @@ $(document).ready(function () {
                 extra.tipo = $("#tipo").val();
                 extra.responsable_proyecto = $("#id_responsable_proyecto").val();
                 extra.anio = $("#anio").val();
+                extra.cliente = $("#cliente").val();
             }
         },
         columns: [
@@ -975,6 +976,7 @@ $(document).ready(function () {
         var filtrosOffcanvas = new bootstrap.Offcanvas(document.getElementById('panelFiltros'));
         filtrosOffcanvas.show();
         cargarResponsablesProyectoModal();
+        cargarClientesModal();
     });
 
     // Aplicar filtros
@@ -983,7 +985,7 @@ $(document).ready(function () {
         var estatus = $("#estatus").val();
         var tipo = $("#tipo").val();
         var responsable = $("#id_responsable_proyecto").val();
-        
+        var cliente = $("#cliente").val();
         // Aplicar filtros a la DataTable
         tablaPte.draw();
         
@@ -1003,7 +1005,7 @@ $(document).ready(function () {
         $("#tipo").val("");
         $("#id_responsable_proyecto").val("");
         $("#anio").val("");
-        
+        $("#cliente").val("");
         // Redibujar la tabla sin filtros
         tablaPte.draw();
         
@@ -1212,6 +1214,31 @@ $(document).ready(function () {
             error: function(xhr, status, error) {
                 const select = $('#id_responsable_proyecto');
                 select.empty().append('<option value="" disabled>Error al cargar responsables</option>');
+            }
+        });
+    }
+
+    function cargarClientesModal() {
+        return $.ajax({
+            url: urlObtenerClientes,
+            type: 'GET',
+            dataType: 'json',
+            success: function(data) {
+                const select = $('#cliente');
+                select.empty();
+                // select.append('<option value="" selected disabled>Seleccione un cliente</option>');
+                
+                if (data && data.length > 0) {
+                    data.forEach(function(responsable) {
+                        select.append(`<option value="${responsable.id}">${responsable.descripcion}</option>`);
+                    });
+                } else {
+                    select.append('<option value="" disabled>No hay clientes disponibles</option>');
+                }
+            },
+            error: function(xhr, status, error) {
+                const select = $('#cliente');
+                select.empty().append('<option value="" disabled>Error al cargar clientes</option>');
             }
         });
     }

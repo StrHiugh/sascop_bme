@@ -34,6 +34,7 @@ $(document).ready(function () {
                 extra.tipo = $("#tipo").val() ? $("#tipo").val() : 4;
                 extra.responsable_proyecto = $("#id_responsable_proyecto").val();
                 extra.anio = $("#anio").val();
+                extra.sitio = $("#sitio").val();
             }
         },
         createdRow: function (row, data, dataIndex) {
@@ -553,6 +554,7 @@ $(document).ready(function () {
         var filtrosOffcanvas = new bootstrap.Offcanvas(document.getElementById('panelFiltros'));
         filtrosOffcanvas.show();
         cargarResponsablesProyectoModal();
+        obtenerSitios();
     });
 
     // Aplicar filtros
@@ -582,7 +584,7 @@ $(document).ready(function () {
         $("#id_responsable_proyecto").val("").trigger('change');
         $("#id_cliente").val("").trigger('change');
         $("#anio").val("");
-        
+        $("#cliente").val("");
         // Redibujar la tabla sin filtros
         tablaOt.draw();
         
@@ -714,6 +716,45 @@ $(document).ready(function () {
             error: function(xhr, status, error) {
                 const select = $('#id_responsable_proyecto');
                 select.empty().append('<option value="" disabled>Error al cargar responsables</option>');
+            }
+        });
+    }
+    
+    function obtenerSitios() {
+        $.ajax({
+            url: urlObtenerSitios,
+            type: 'GET',
+            dataType: 'json',
+            success: function (data) {
+                const select = $('#sitio');
+                select.empty();
+                select.append('<option value="" selected disabled>Seleccione un sitio</option>');
+
+                if (data && data.length > 0) {
+                    data.forEach(function (sitio) {
+                        select.append(`<option value="${sitio.id}">${sitio.descripcion}</option>`);
+                    });
+                    select.select2({
+                        placeholder: "Buscar sitio",
+                        allowClear: true,
+                        width: '100%',
+                        dropdownParent: $('#form-filtros'),
+                        language: {
+                            noResults: function () {
+                                return "No se encontraron sitios";
+                            },
+                            searching: function () {
+                                return "Buscando...";
+                            }
+                        }
+                    });
+                } else {
+                    select.append('<option value="" disabled>No hay sitios disponibles</option>');
+                }
+            },
+            error: function (xhr, status, error) {
+                const select = $('#sitio');
+                select.empty().append('<option value="" disabled>Error al cargar sitios</option>');
             }
         });
     }
