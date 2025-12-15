@@ -206,6 +206,8 @@
 .main-nav {
     padding: 1rem 0;
     flex: 1;
+    overflow-y: auto;
+    scrollbar-width: thin;
 }
 
 .nav-link {
@@ -1062,7 +1064,9 @@ tr.shown {
 }
 
 .nav-item.has-submenu.active .submenu {
-    max-height: 500px; /* Ajusta según la cantidad de items */
+    max-height: 100vh; /* Ajusta según la cantidad de items */
+    overflow-y: auto;
+    scrollbar-width: thin;
 }
 
 .submenu .nav-item {
