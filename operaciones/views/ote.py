@@ -229,7 +229,7 @@ def datatable_ot(request):
         data.append({
             'id': ot.id,
             'id_tipo_id': ot.id_tipo_id,
-            'id_frente': ot.id_frente,
+            'id_frente': ot.id_frente_id,
             'id_embarcacion': ot.id_embarcacion,
             'id_plataforma': ot.id_plataforma,
             'id_intercom': ot.id_intercom,
@@ -295,7 +295,7 @@ def obtener_datos_ot(request):
         datos_ot = {
             'id': ot.id,
             'id_tipo_id': ot.id_tipo_id,
-            'id_frente': ot.id_frente,
+            'id_frente': ot.id_frente_id,
             'id_embarcacion': ot.id_embarcacion,
             'id_plataforma': ot.id_plataforma,
             'id_intercom': ot.id_intercom,
@@ -469,7 +469,7 @@ def editar_ot(request):
         ot.oficio_ot = request.POST.get('oficio_ot', ot.oficio_ot)
         ot.id_tipo_id = request.POST.get('id_tipo', ot.id_tipo_id)
         ot.comentario = request.POST.get('comentario_general')
-        ot.id_frente = request.POST.get('id_frente')
+        ot.id_frente_id = request.POST.get('id_frente')
         ot.id_embarcacion = request.POST.get('id_embarcacion')
         ot.id_plataforma = request.POST.get('id_plataforma')
         ot.id_intercom = request.POST.get('id_intercom')

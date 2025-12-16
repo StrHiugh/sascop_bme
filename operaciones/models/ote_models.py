@@ -1,5 +1,5 @@
 from django.db import models
-from .catalogos_models import Sitio, Estatus, ResponsableProyecto, Tipo, Cliente
+from .catalogos_models import Sitio, Estatus, ResponsableProyecto, Tipo, Cliente, Frente
 from .pte_models import PTEHeader
 
 class OTE(models.Model): 
@@ -21,7 +21,7 @@ class OTE(models.Model):
     comentario = models.TextField(blank=True) 
     monto_mxn = models.DecimalField(decimal_places=6, max_digits=25, null=True, blank=True, default=0)
     monto_usd = models.DecimalField(decimal_places=6, max_digits=25, null=True, blank=True, default=0)
-    id_frente = models.IntegerField(null=True, blank=True)
+    id_frente = models.ForeignKey(Frente, on_delete=models.SET_NULL, null=True, blank=True)
     id_embarcacion = models.IntegerField(null=True, blank=True)
     id_plataforma = models.IntegerField(null=True, blank=True)
     id_intercom = models.IntegerField(null=True, blank=True)

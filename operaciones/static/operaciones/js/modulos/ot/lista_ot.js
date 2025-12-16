@@ -328,7 +328,6 @@ $(document).ready(function () {
 
     // Función para abrir modal de edición
     function abrirModalEditarOT(otID) {
-
         $("#formCrearOT")[0].reset();
         $("#modalCrearOTLabel").text("Editar OT");
 
@@ -819,7 +818,6 @@ $(document).ready(function () {
         let datos = tablaOt.row($(this).parents('tr')).data() ? 
                     tablaOt.row($(this).parents('tr')).data() : 
                     tablaReprogramaciones.row($(this).parents('tr')).data();
-        console.log(datos)
         const nuevoEstatusId = $(this).data('estatus');
         const nuevoEstatusTexto = $(this).text().trim();
         const otId = $(this).closest('.dropdown').find('.ot-id').val();
