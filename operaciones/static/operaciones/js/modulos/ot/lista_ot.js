@@ -197,6 +197,7 @@ $(document).ready(function () {
                         'ASIGNADA': 'bg-primary',
                         'CANCELADA': 'bg-danger',
                         'DIFERIDA': 'bg-warning',
+                        'DIFERIDA(SIN INICIAR)': 'bg-warning',
                         'EN EJECUCION': 'bg-info',
                         'SUSPENDIDA': 'bg-warning',
                         'TERMINADA': 'bg-success',
@@ -217,6 +218,7 @@ $(document).ready(function () {
                                     <li><a class="dropdown-item cambiar-estatus-option" data-estatus="8">EN EJECUCION</a></li>
                                     <li><a class="dropdown-item cambiar-estatus-option" data-estatus="9">SUSPENDIDA</a></li>
                                     <li><a class="dropdown-item cambiar-estatus-option" data-estatus="7">DIFERIDA</a></li>
+                                    <li><a class="dropdown-item cambiar-estatus-option" data-estatus="16">DIFERIDA(SIN INICIAR)</a></li>
                                     <li><a class="dropdown-item cambiar-estatus-option" data-estatus="10">TERMINADA</a></li>
                                     <li><a class="dropdown-item cambiar-estatus-option" data-estatus="11">POR CANCELAR</a></li>
                                     <li><a class="dropdown-item cambiar-estatus-option" data-estatus="6">CANCELADA</a></li>
@@ -1483,7 +1485,7 @@ function initTablaReprogramaciones(otId) {
                         'ASIGNADA': 'bg-primary',
                         'CANCELADA': 'bg-danger',
                         'DIFERIDA': 'bg-warning',
-                        'DIFERIDA': 'bg-warning',
+                        'DIFERIDA(SIN INICIAR)': 'bg-warning',
                         'EN EJECUCION': 'bg-info',
                         'SUSPENDIDA': 'bg-warning',
                         'TERMINADA': 'bg-success',
@@ -1504,6 +1506,7 @@ function initTablaReprogramaciones(otId) {
                                     <li><a class="dropdown-item cambiar-estatus-option" data-estatus="8">EN EJECUCION</a></li>
                                     <li><a class="dropdown-item cambiar-estatus-option" data-estatus="9">SUSPENDIDA</a></li>
                                     <li><a class="dropdown-item cambiar-estatus-option" data-estatus="7">DIFERIDA</a></li>
+                                    <li><a class="dropdown-item cambiar-estatus-option" data-estatus="16">DIFERIDA(SIN INICIAR)</a></li>
                                     <li><a class="dropdown-item cambiar-estatus-option" data-estatus="10">TERMINADA</a></li>
                                     <li><a class="dropdown-item cambiar-estatus-option" data-estatus="11">POR CANCELAR</a></li>
                                     <li><a class="dropdown-item cambiar-estatus-option" data-estatus="6">CANCELADA</a></li>
