@@ -50,8 +50,9 @@ $(document).ready(function () {
                 "width": "1%",
                 "render": function (data, type, row) {
                     let ampliar = "";
-                    
-                    if (row.tiene_reprogramaciones) {
+                    if (row.estatus_numero === -1){
+                        ampliar = "";
+                    } else if (row.tiene_reprogramaciones) {
                         ampliar = `
                             <div class="position-relative">
                                 <a class="table-icon detalle-pte position-relative" title="Ver detalles (${row.count_reprogramaciones} reprogramaciones)">
