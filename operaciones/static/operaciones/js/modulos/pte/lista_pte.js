@@ -8,6 +8,13 @@
 let REGISTRO_ACTIVIDAD = new RegistroActividad(0,null,"REGISTRAR")
 let tablaSubpasosGlobal = null;
 $(document).ready(function () {
+
+    $('#tipo').select2({
+        placeholder: 'Seleccione un tipo',
+        allowClear: true,
+        width: '100%'
+    });
+    
     window.tablaPte = $("#tabla").DataTable({
         processing: true,
         serverSide: true,
@@ -109,7 +116,7 @@ $(document).ready(function () {
                                 <li><a class="dropdown-item cambiar-estatus-pte" data-estatus="2">PROCESO</a></li>
                                 <li><a class="dropdown-item cambiar-estatus-pte" data-estatus="3">ENTREGADA</a></li>
                                 <li><a class="dropdown-item cambiar-estatus-pte" data-estatus="4">CANCELADA</a></li>
-                                <li><a class="dropdown-item cambiar-estatus-pte" data-estatus="9">SUSPENDIDA</a></li>
+                                <li><a class="dropdown-item cambiar-estatus-pte" data-estatus="15">SUSPENDIDA</a></li>
                             </ul>
                         </div>
                     `;
@@ -1002,7 +1009,7 @@ $(document).ready(function () {
     $("#limpiar-filtros").on("click", function () {
         // Limpiar todos los selects
         $("#estatus").val("");
-        $("#tipo").val("");
+        $('#tipo').val(null).trigger('change');
         $("#id_responsable_proyecto").val("");
         $("#anio").val("");
         $("#cliente").val("");
