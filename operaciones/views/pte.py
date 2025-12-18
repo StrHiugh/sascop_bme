@@ -113,7 +113,7 @@ def datatable_ptes(request):
     
     #FILTROS DEL PANEL
     filtro_estatus = request.GET.get('estatus', '')
-    filtro_tipo = request.GET.get('tipo', '')
+    filtro_tipo = request.GET.getlist('tipo[]', '')
     filtro_responsable = request.GET.get('responsable_proyecto', '')
     filtro_anio = request.GET.get('anio', '')
     filtro_cliente = request.GET.get('cliente', '')
@@ -121,7 +121,7 @@ def datatable_ptes(request):
         ptes = ptes.filter(estatus=filtro_estatus)
     
     if filtro_tipo:
-        ptes = ptes.filter(id_tipo_id=filtro_tipo)
+        ptes = ptes.filter(id_tipo_id__in=filtro_tipo)
     
     if filtro_responsable:
         ptes = ptes.filter(id_responsable_proyecto_id=filtro_responsable)
