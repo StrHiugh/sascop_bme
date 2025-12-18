@@ -344,7 +344,7 @@ def obtener_ots_principales(request):
             id_tipo=4, 
         ).exclude(
             estatus=0,
-        ).values('id', 'orden_trabajo', 'descripcion_trabajo', 'oficio_ot')
+        ).values('id', 'orden_trabajo', 'descripcion_trabajo', 'oficio_ot').order_by('-id')
         
         if ot_id:
             ots = ots.exclude(id=ot_id)

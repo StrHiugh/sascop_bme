@@ -1368,7 +1368,7 @@ $(document).ready(function () {
         });
     });
 
-    // Evento para crear OTE desde PTE
+    // Evento para crear OT desde PTE
     $(document).on("click", ".crear-ot", function () {
         const pteId = $(this).data('id');
         let datos = tablaPte.row($(this).parents('tr')).data();
@@ -1510,7 +1510,7 @@ $(document).ready(function () {
                 if (response && response.length > 0) {
                     response.forEach(function (ot) {
                         const id = ot.id || ot.ot_id;
-                        const folio = ot.oficio_ot ||'Sin folio';
+                        const folio = ot.orden_trabajo ||'Sin folio';
                         selectOT.append(`<option value="${id}">${folio}</option>`);
                     });
 
