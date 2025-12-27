@@ -248,10 +248,21 @@ $(document).ready(function () {
                         <a class="table-icon editar_ot" title="Editar" data-id="${fila.id}">
                             <i class="fas fa-edit"></i>
                         </a>
-                        <a class="table-icon eliminar_ot" title="Eliminar" data-id="${fila.id}">
-                            <i class="fas fa-trash"></i>
-                        </a>
                     `;
+                    if (puedeEliminarOT) {
+                        botones += `
+                            <a class="table-icon eliminar_ot" title="Eliminar" data-id="${fila.id}">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        `;
+                    } else {
+                        botones += `
+                            <a class="table-icon disabled" title="Sin permisos para eliminar" 
+                            style="opacity: 0.5; cursor: not-allowed; color: #6c757d;">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        `;
+                    }
                     return botones;
                 }
             }

@@ -329,6 +329,8 @@
     var urlGuardarArchivo  = "{% url 'operaciones:guardar_archivo_ot' %}";
     var urlObtenerClientes = "{% url 'operaciones:obtener_clientes' %}";
     var urlObtenerSitios = "{% url 'operaciones:obtener_sitios' %}";
+    const puedeEliminarOT = {{ perms.operaciones.delete_ote|yesno:"true,false" }};
+
 
 </script>
 {% endblock %}
