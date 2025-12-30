@@ -962,7 +962,7 @@ def crear_ot_desde_pte(request):
         # Verificar que el progreso sea 100%
         detalles_pte = PTEDetalle.objects.filter(id_pte_header_id=pte.id)
         total_pasos = detalles_pte.count()
-        pasos_completados = detalles_pte.filter(estatus_paso=3).count()
+        pasos_completados = detalles_pte.filter(estatus_paso_id__in=[3, 4, 14]).count()
         
         progreso = (pasos_completados / total_pasos) * 100 if total_pasos > 0 else 0
         
