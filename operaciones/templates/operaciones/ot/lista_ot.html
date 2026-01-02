@@ -16,10 +16,16 @@
             </nav>
             <h1 class="h2 fw-bold mb-0">ORDEN DE TRABAJO</h1>
         </div>
+        <div class="header-buttons-section">
+            <a href="#" class="btn btn-primary crear-ot">
+                <i class="fas fa-plus me-2"></i>
+                <span>Crear nuevo</span>
+            </a>
             <button class="btn btn-outline-secondary" id="btn-panel-filtros">
                 <i class="fas fa-filter me-2"></i>
                 Filtros
             </button>
+        </div>
     </div>
 </div>
 {%endblock%}
@@ -315,7 +321,7 @@
     var urlObtenerPasos = "{% url 'operaciones:obtener_pasos_pte' %}";
     var urlObtenerOTPrincipal = "{% url 'operaciones:obtener_ots_principales' %}";
     var urlCambiarEstatusOT = "{% url 'operaciones:cambiar_estatus_ot' %}";
-    var urlCrearPTE = "{% url 'operaciones:crear_pte' %}";
+    var urlCrearOTRepro = "{% url 'operaciones:crear_ot' %}";
     var urlEditarOT = "{% url 'operaciones:editar_ot' %}";
     var urlObtenerResponsables = "{% url 'operaciones:obtener_responsables_proyecto' %}";
     var urlCambiarEstatusPaso = "{% url 'operaciones:cambiar_estatus_paso' %}";

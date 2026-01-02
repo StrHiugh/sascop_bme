@@ -304,8 +304,8 @@ def obtener_datos_ot(request):
             'estatus_ot':ot.id_estatus_ot_id,
             'responsable_proyecto': ot.id_responsable_proyecto_id if ot.id_responsable_proyecto_id else '',
             'responsable_cliente':ot.responsable_cliente,
-            'id_pte_id': ot.id_pte_header_id,
-            'pte_padre': ot.id_pte_header.oficio_pte,
+            'id_pte_id': ot.id_pte_header_id if ot.id_pte_header_id else '',
+            'pte_padre': ot.id_pte_header.oficio_pte if ot.id_pte_header else '',
             'oficio_ot': ot.oficio_ot,
             'estatus':ot.estatus,
             'orden_trabajo':ot.orden_trabajo,
@@ -445,6 +445,91 @@ def cambiar_estatus_ot(request):
             'detalles': f'Error al cambiar estatus: {str(e)}'
         })
             
+@require_http_methods(["POST"])
+@login_required
+def crear_ot(request):
+    """Crear nueva OT"""
+    try:
+        orden_trabajo = request.POST.get('orden_trabajo')
+        if not orden_trabajo:
+            return JsonResponse({
+                'exito': False, 
+                'tipo_aviso': 'error', 
+                'detalles': 'El Folio de la OT es obligatorio'
+            })
+
+        ot = OTE()
+        ot.orden_trabajo = orden_trabajo
+        ot.oficio_ot = request.POST.get('oficio_ot')
+        ot.id_tipo_id = request.POST.get('id_tipo')
+        ot.descripcion_trabajo = request.POST.get('descripcion_trabajo')
+        ot.comentario = request.POST.get('comentario_general')
+        ot.responsable_cliente = request.POST.get('responsable_cliente')
+        ot.plazo_dias = request.POST.get('plazo_dias') or 0
+
+        # Relaciones (Foreign Keys)
+        ot.id_cliente_id = request.POST.get('id_cliente') or None
+        ot.id_frente_id = request.POST.get('id_frente') or None
+        ot.id_responsable_proyecto_id = request.POST.get('responsable_proyecto') or None
+        
+        # Ubicaciones
+        ot.id_embarcacion = request.POST.get('id_embarcacion') or None
+        ot.id_plataforma = request.POST.get('id_plataforma') or None
+        ot.id_intercom = request.POST.get('id_intercom') or None
+        ot.id_patio = request.POST.get('id_patio') or None
+
+        # Montos (Limpieza básica por si vienen vacíos)
+        ot.monto_mxn = request.POST.get('monto_mxn') or 0
+        ot.monto_usd = request.POST.get('monto_usd') or 0
+
+        # --- Fechas ---
+        if request.POST.get('fecha_inicio_programado'):
+            ot.fecha_inicio_programado = request.POST['fecha_inicio_programado']
+            
+        if request.POST.get('fecha_termino_programado'):
+            ot.fecha_termino_programado = request.POST['fecha_termino_programado']
+            
+        if request.POST.get('fecha_inicio_real'):
+            ot.fecha_inicio_real = request.POST['fecha_inicio_real']
+            
+        if request.POST.get('fecha_termino_real'):
+            ot.fecha_termino_real = request.POST['fecha_termino_real']
+
+        if str(ot.id_tipo_id) == '5':
+            ot_principal_id = request.POST.get('ot_principal')
+            num_reprogramacion = request.POST.get('num_reprogramacion')
+
+            if not ot_principal_id:
+                return JsonResponse({
+                    'exito': False, 
+                    'tipo_aviso': 'advertencia', 
+                    'detalles': 'Para una reprogramación, debe seleccionar la OT Inicial.'
+                })
+            
+            ot.ot_principal = ot_principal_id
+            ot.num_reprogramacion = num_reprogramacion
+        else:
+            ot.ot_principal = None
+            ot.num_reprogramacion = None
+
+        ot.estatus = 1 
+        ot.id_estatus_ot_id = 5
+        ot.save()
+
+        return JsonResponse({
+            'exito': True,
+            'tipo_aviso': 'exito',
+            'detalles': 'OT creada correctamente',
+            'id_nuevo': ot.id
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            'exito': False,
+            'tipo_aviso': 'error',
+            'detalles': f'Error al crear OT: {str(e)}'
+        })
+
 @require_http_methods(["POST"])
 @login_required
 @registrar_actividad

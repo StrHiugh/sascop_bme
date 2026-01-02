@@ -282,6 +282,12 @@ $(document).ready(function () {
     // Mover select de length
     $("#tabla_length").detach().appendTo("#select-length");
 
+    // Abrir modal para crear PTE
+    $(document).on("click", ".crear-ot", function() {
+        abrirModalCrearOT();
+    });
+
+
     // Evento para editar ot
     $("#tabla tbody").on("click", ".editar_ot", function () {
         const otID = $(this).data('id');
@@ -344,7 +350,8 @@ $(document).ready(function () {
     function abrirModalEditarOT(otID) {
         $("#formCrearOT")[0].reset();
         $("#modalCrearOTLabel").text("Editar OT");
-
+        $('#id_tipo option').prop('disabled', false);
+        $('#id_tipo').removeClass('pe-none bg-light');
         const $divOTPrincipal = $('#ot_principal').closest('.mb-3');
         const $divNumReprogramacion = $('#num_reprogramacion').closest('.mb-3');
 
@@ -361,6 +368,7 @@ $(document).ready(function () {
         // Obtener datos de la ot
         BMAjax(urlObtenerDatos, { id: otID }, "GET")
             .done(function (datos) {
+                console.log(datos);
                 iniciarLoader();
                 const ot = datos.datos;
 
@@ -426,6 +434,30 @@ $(document).ready(function () {
                     contenido: "Error al cargar los datos de la OT",
                 });
             });
+    }
+
+    function abrirModalCrearOT() {
+        $("#formCrearOT")[0].reset();
+        $("#ot_id").val(""); 
+        $("#modalCrearOTLabel").text("Crear reprogramación");
+        const $divOTPrincipal = $('#ot_principal').closest('.mb-3');
+        const $divNumReprogramacion = $('#num_reprogramacion').closest('.mb-3');
+
+        $divOTPrincipal.hide().attr('hidden', 'hidden');
+        $divNumReprogramacion.hide().attr('hidden', 'hidden');
+        $('#num_reprogramacion').val('').prop('disabled', true);
+        $('#ot_principal').val('').prop('disabled', true).empty();
+        $('#id_tipo option').prop('disabled', false); 
+        $('#id_tipo').val('5').trigger('change'); 
+        $('#id_tipo option[value="4"]').prop('disabled', true);
+        $('#id_tipo').addClass('pe-none bg-light');
+        $('#id_frente').val('').trigger('change'); 
+        $('#id_embarcacion, #id_plataforma, #id_intercom, #id_patio').empty();
+        cargarClientes();
+        cargarResponsablesProyecto();
+        const modalElement = document.getElementById('modalCrearOT');
+        const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+        modal.show();
     }
 
     function cargarClientes() {
@@ -524,14 +556,25 @@ $(document).ready(function () {
         const originalText = btn.html();
         btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Guardando...');
 
-        const url = otId ? urlEditarOT : urlCrearOT;
+        const url = otId ? urlEditarOT : urlCrearOTRepro;
         const method = "POST";
 
         REGISTRO_ACTIVIDAD._evento = otId ? "MODIFICAR" : "CREAR";
-        REGISTRO_ACTIVIDAD.detecta_cambios("#formCrearOT");
-        const agrega_detalle = e => ({...e, detalle: `de la OT: <b>${$("#oficio_ot").val()}</b>`});
-        REGISTRO_ACTIVIDAD.transforma_cambios(agrega_detalle);
-        formData.append('registro_actividad', JSON.stringify(REGISTRO_ACTIVIDAD.actividad));
+        if (REGISTRO_ACTIVIDAD._evento=="MODIFICAR"){
+            REGISTRO_ACTIVIDAD.detecta_cambios("#formCrearOT");
+            const agrega_detalle = e => ({...e, detalle: `de la OT: <b>${$("#oficio_ot").val()}</b>`});
+            REGISTRO_ACTIVIDAD.transforma_cambios(agrega_detalle);
+            formData.append('registro_actividad', JSON.stringify(REGISTRO_ACTIVIDAD.actividad));
+        }else{
+            REGISTRO_ACTIVIDAD._cambios = [];
+            REGISTRO_ACTIVIDAD.agregar_actividad({
+                nombre:"Creó",
+                valor_actual:"",
+                valor_anterior:"",
+                detalle:` ${$("#id_tipo option:selected").text()} con folio: ${$("#oficio_ot").val()}`
+            })
+            formData.append('registro_actividad', JSON.stringify(REGISTRO_ACTIVIDAD.actividad));
+        }   
 
 
         $.ajax({
@@ -792,7 +835,7 @@ $(document).ready(function () {
                 if (response && response.length > 0) {
                     response.forEach(function (ot) {
                         const id = ot.id || ot.ot_id;
-                        const folio = ot.oficio_ot || 'Sin folio';
+                        const folio = ot.orden_trabajo || 'Sin folio';
                         selectOT.append(`<option value="${id}">${folio}</option>`);
                     });
 

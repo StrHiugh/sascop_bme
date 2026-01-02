@@ -19,22 +19,33 @@ class Producto(models.Model):
     def __str__(self):
         return f"{self.id_partida} - {self.descripcion_concepto}"
 
+class PartidaAnexo(models.Model):
+    """
+    Tabla de partida anexo.
+    """
+    id_ot = models.ForeignKey(OTE, on_delete=models.CASCADE, related_name='presupuesto_partidas')
+    id_producto = models.ForeignKey(Producto, on_delete=models.PROTECT)
+    volumen_autorizado = models.DecimalField(max_digits=15, decimal_places=4)
+
+    class Meta:
+        db_table = 'partida_anexo_ot'
+        unique_together = ['id_ot', 'id_producto']
+
+    def __str__(self):
+        return f"OT {self.id_ot.orden_trabajo} - {self.id_producto.id_partida}: {self.volumen_autorizado}"
+
+
+
 class ReporteMensual(models.Model):
     """
     Representa la 'Carpeta Mensual' de una OT.
     Agrupa todos los reportes diarios y de producción de un mes específico.
     """
-    ESTATUS_REPORTE = [
-        ('ABIERTO', 'Abierto'),
-        ('CERRADO', 'Cerrado'),  # Bloquea edición completa
-        ('FIRMADO', 'Firmado'),  # Validado administrativa y operativamente
-    ]
-
     id_ot = models.ForeignKey(OTE, on_delete=models.CASCADE, related_name='reportes_mensuales', blank=True, null=True)
     mes = models.IntegerField(help_text="Mes numérico (1-12)")
     anio = models.IntegerField(help_text="Año (Ej. 2025)")
     archivo = models.URLField(blank=True, null=True, verbose_name="Link Evidencia (Drive)")
-    estatus_cierre = models.CharField(max_length=20, choices=ESTATUS_REPORTE, default='ABIERTO')
+    id_estatus = models.ForeignKey(Estatus, on_delete=models.CASCADE, limit_choices_to={'nivel_afectacion': 5}, default=1, verbose_name="Estatus Cierre")
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
 
@@ -52,21 +63,10 @@ class ReporteDiario(models.Model):
     Controla el estatus operativo del día para una OT.
     Alimenta el Grid de Asistencia.
     """
-    ESTATUS_CHOICES = [
-        ('OK', 'Completo (OK)'),
-        ('FFP', 'Falta Firma PEP (FFP)'),
-        ('FFC', 'Falta Firma CIA (FFC)'),
-        ('S', 'Suspendida (S)'),
-        ('BAJA', 'Baja por Equipo/Personal'),
-        ('NA', 'No Aplica / Inactivo'),
-        ('ELABORADO', 'Elaborado (Pendiente Firma)'),
-    ]
-
     id_reporte_mensual = models.ForeignKey(ReporteMensual, on_delete=models.CASCADE, related_name='dias_estatus', blank=True, null=True)
     fecha = models.DateField()
-    estatus = models.CharField(max_length=20, choices=ESTATUS_CHOICES, default='ELABORADO')
+    id_estatus = models.ForeignKey(Estatus, on_delete=models.CASCADE, limit_choices_to={'nivel_afectacion': 6}, default=1, verbose_name="Estatus Operativo")
     comentario = models.CharField(max_length=255, blank=True, null=True, help_text="Observación breve del día")
-    # Bloqueo individual por día (para evitar re-edición tras firma)
     bloqueado = models.BooleanField(default=False)
 
     class Meta:
@@ -75,25 +75,24 @@ class ReporteDiario(models.Model):
         indexes = [models.Index(fields=['fecha'])]
 
     def __str__(self):
-        return f"{self.fecha} - {self.estatus}"
+        return f"{self.fecha} - {self.id_estatus}"
 
 class Produccion(models.Model):
     TIPO_TIEMPO_CHOICES = [
         ('TE', 'Tiempo Efectivo'),
         ('CMA', 'Costo Mínimo/Muerto'),
     ]
-
-    id_ot = models.ForeignKey(OTE, on_delete=models.CASCADE)
-    id_producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
+    id_partida_anexo = models.ForeignKey(PartidaAnexo, on_delete=models.PROTECT, related_name='registros_produccion', blank=True, null=True)
+    id_reporte_mensual = models.ForeignKey(ReporteMensual, on_delete=models.CASCADE, related_name='producciones', blank=True, null=True)
     fecha_produccion = models.DateField()
     volumen_produccion = models.DecimalField(max_digits=15, decimal_places=2)
     volumen_actual = models.DecimalField(max_digits=15, decimal_places=2)
+    tipo_tiempo = models.CharField(max_length=3, choices=TIPO_TIEMPO_CHOICES, blank=True, null=True)
+    es_excedente = models.BooleanField(default=False)
     importe_mn = models.DecimalField(max_digits=15, decimal_places=2)
     importe_usd = models.DecimalField(max_digits=15, decimal_places=2)
     id_estatus_cobro = models.ForeignKey(Estatus, on_delete=models.CASCADE, limit_choices_to={'nivel_afectacion': 3})
-    id_tipo_produccion = models.ForeignKey(Tipo, on_delete=models.CASCADE, limit_choices_to={'tipo': 4},
-                                        related_name='producciones_tipo')
-    id_reporte_mensual = models.ForeignKey(ReporteMensual, on_delete=models.CASCADE, related_name='producciones', blank=True, null=True)
+    id_tipo_produccion = models.ForeignKey(Tipo, on_delete=models.CASCADE, limit_choices_to={'tipo': 4}, related_name='producciones_tipo')
     comentario = models.TextField(blank=True)
 
     class Meta:
@@ -101,7 +100,21 @@ class Produccion(models.Model):
 
     def __str__(self):
         return f"Producción {self.id} - OT {self.id_ot.orden_trabajo}"
-    
+
+class RegistroGPU(models.Model):
+    """
+    pro_registro_gpu (Espejo Administrativo y Evidencias).
+    Solo se crea para C-2 y C-3.
+    """
+    id_produccion = models.OneToOneField(Produccion, on_delete=models.CASCADE, related_name='gpu')
+    id_estatus = models.ForeignKey(Estatus, on_delete=models.CASCADE, limit_choices_to={'nivel_afectacion': 6}, verbose_name="Estatus GPU")
+    archivo = models.URLField(max_length=500, blank=True, null=True, verbose_name="Link Evidencia Fotográfica")
+    nota_bloqueo = models.TextField(blank=True, verbose_name="Alerta por Excedente/No Considerado")
+    id_estimacion_detalle = models.ForeignKey('EstimacionDetalle', on_delete=models.SET_NULL, null=True, blank=True)
+
+    class Meta:
+        db_table = 'registro_generadores_pu'
+
 
 class EstimacionHeader(models.Model):
     id_ot = models.ForeignKey(OTE, on_delete=models.CASCADE)

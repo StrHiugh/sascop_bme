@@ -38,6 +38,7 @@ urlpatterns = [
     path('ot/obtener_ot_iniciales/', ote.obtener_ots_principales, name='obtener_ots_principales'),
     path('ot/eliminar/', ote.eliminar_ot, name='eliminar_ot'),
     path('ot/editar/', ote.editar_ot, name='editar_ot'),
+    path('ot/crear-ot-reprogramacion/', ote.crear_ot, name='crear_ot'),
     path('ot/cambiar_estatus_ot/', ote.cambiar_estatus_ot, name='cambiar_estatus_ot'),
     path('ot/obtener_sitios_frente/', ote.obtener_sitios_por_frente, name='obtener_sitios_por_frente'),
     path('ot/detalle/datatable/', ote.datatable_ot_detalle, name='datatable_ot_detalle'),
@@ -53,6 +54,8 @@ urlpatterns = [
     
     # URLs para Producción
     path('produccion/', produccion.lista_produccion, name='lista_produccion'),
+    path('produccion/obtener_sitios_con_ots_ejecutadas/', produccion.obtener_sitios_con_ots_ejecutadas, name='obtener_sitios_con_ots_ejecutadas'),
+    path('produccion/ots_por_sitio_grid/', produccion.ots_por_sitio_grid, name='ots_por_sitio_grid'),
     
     #URLs para PRODUCTOS
     path('catalogos/producto/', catalogos.lista_producto, name='lista_producto'),

@@ -4,7 +4,7 @@ from .pte_models import PTEHeader
 
 class OTE(models.Model): 
     id_tipo = models.ForeignKey(Tipo, on_delete=models.CASCADE, limit_choices_to={'nivel_afectacion': 2})
-    id_pte_header = models.ForeignKey(PTEHeader, on_delete=models.CASCADE)
+    id_pte_header = models.ForeignKey(PTEHeader, on_delete=models.CASCADE, null=True, blank=True)
     orden_trabajo = models.CharField(max_length=100)
     descripcion_trabajo = models.TextField()
     id_responsable_proyecto = models.ForeignKey(ResponsableProyecto, on_delete=models.CASCADE)
@@ -19,8 +19,8 @@ class OTE(models.Model):
     num_reprogramacion = models.IntegerField(null=True, blank=True)
     ot_principal = models.IntegerField(null=True, blank=True)
     comentario = models.TextField(blank=True) 
-    monto_mxn = models.DecimalField(decimal_places=6, max_digits=25, null=True, blank=True, default=0)
-    monto_usd = models.DecimalField(decimal_places=6, max_digits=25, null=True, blank=True, default=0)
+    monto_mxn = models.DecimalField(decimal_places=2, max_digits=25, null=True, blank=True, default=0)
+    monto_usd = models.DecimalField(decimal_places=2, max_digits=25, null=True, blank=True, default=0)
     id_frente = models.ForeignKey(Frente, on_delete=models.SET_NULL, null=True, blank=True)
     id_embarcacion = models.IntegerField(null=True, blank=True)
     id_plataforma = models.IntegerField(null=True, blank=True)
