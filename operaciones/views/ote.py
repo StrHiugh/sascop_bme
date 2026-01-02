@@ -514,6 +514,7 @@ def crear_ot(request):
 
         ot.estatus = 1 
         ot.id_estatus_ot_id = 5
+        ot.id_cliente_id = 1
         ot.save()
 
         return JsonResponse({
