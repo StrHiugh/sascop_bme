@@ -6,5 +6,6 @@ from .registro_actividad_models import RegistroActividad
 __all__ = [
     'PTEHeader', 'PTEDetalle', 'Paso', 'Tipo',
     'OTE', 'PasoOt', 'OTDetalle', 'Sitio', 'Estatus', 'Frente', 
-    'UnidadMedida', 'Produccion', 'Producto', 'ResponsableProyecto', 'RegistroActividad','Cliente', 'ReporteMensual', 'ReporteDiario', 'EstimacionHeader', 'EstimacionDetalle'
+    'UnidadMedida', 'Produccion', 'Producto', 'ResponsableProyecto', 'RegistroActividad','Cliente', 
+    'ReporteMensual', 'ReporteDiario', 'EstimacionHeader', 'EstimacionDetalle'
 ]

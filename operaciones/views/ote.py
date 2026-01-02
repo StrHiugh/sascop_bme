@@ -5,7 +5,7 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
 from django.shortcuts import render, get_object_or_404
-from ..models import OTE, OTDetalle
+from ..models import OTE, OTDetalle, PasoOt
 from ..registro_actividad import registrar_actividad
 from operaciones.models.catalogos_models import Sitio, Estatus, ResponsableProyecto, Tipo
 from django.db.models import Case, When, Value, CharField,Q, ExpressionWrapper, Count,F, FloatField, IntegerField
@@ -516,6 +516,26 @@ def crear_ot(request):
         ot.id_estatus_ot_id = 5
         ot.id_cliente_id = 1
         ot.save()
+
+        #crear pasos de ot dependiendo el tipo de ot y cliente
+        if ot.id_tipo_id == 5:
+            tipo_paso_busqueda = 5 if ot.id_cliente_id == 1 else 18 if ot.id_cliente_id in [2, 3, 4] else 5
+        else:
+            tipo_paso_busqueda = 5
+
+        pasos_a_crear = PasoOt.objects.filter(tipo=tipo_paso_busqueda, activo=True).order_by('id')
+
+        if pasos_a_crear:
+            detalles_a_crear = []
+            for paso in pasos_a_crear:
+                detalles_a_crear.append(OTDetalle(
+                    id_ot_id=ot.id,
+                    estatus_paso_id=1, 
+                    id_paso_id=paso.id,
+                    comentario=""
+                ))
+            
+            OTDetalle.objects.bulk_create(detalles_a_crear)
 
         return JsonResponse({
             'exito': True,
