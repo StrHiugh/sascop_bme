@@ -682,7 +682,8 @@ def datatable_ot_detalle(request):
             'fecha_termino': detalle.fecha_termino.strftime('%d/%m/%Y') if detalle.fecha_termino else None,
             'comentario': detalle.comentario or '',
             'archivo': detalle.archivo,
-            'oficio_ot': detalle.id_ot.oficio_ot,
+            'oficio_ot': detalle.id_ot.orden_trabajo,
+            'id_ot': detalle.id_ot.id,
         })
     
     return JsonResponse({
@@ -841,3 +842,117 @@ def obtener_sitios(request):
         return JsonResponse(list(sitios), safe=False)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+@require_http_methods(["GET"])
+@login_required
+def obtener_progreso_general_ot(request):
+    """
+    Obtener progreso general actualizado de una OT.
+    """
+    try:
+        ot_id = request.GET.get('ot_id')
+        
+        if not ot_id:
+            return JsonResponse({
+                'exito': False,
+                'detalles': 'ID de OT no proporcionado'
+            })
+        
+        try:
+            ot = OTE.objects.get(pk=ot_id) 
+        except OTE.DoesNotExist:
+            return JsonResponse({'exito': False, 'detalles': 'OT no encontrada'})
+
+        detalles = ot.detalles.all() 
+        total_pasos = detalles.count()
+        pasos_completados = detalles.filter(estatus_paso=3).count() 
+        
+        progreso_pasos = 0
+        if total_pasos > 0:
+            progreso_pasos = int((pasos_completados / total_pasos) * 100)
+
+        progreso_tiempo = 0
+        dias_restantes = 0
+        dias_transcurridos = 0
+        plazo_total = 0
+        today = date.today()
+
+        if ot.fecha_inicio_programado and ot.fecha_termino_programado:
+            fecha_inicio = ot.fecha_inicio_programado
+            fecha_termino = ot.fecha_termino_programado
+            
+            plazo_total = (fecha_termino - fecha_inicio).days + 1
+            
+            if plazo_total > 0:
+                if today < fecha_inicio:
+                    # No ha iniciado
+                    progreso_tiempo = 0
+                    dias_restantes = plazo_total
+                    dias_transcurridos = 0
+                elif today > fecha_termino:
+                    # Ya terminó el plazo
+                    progreso_tiempo = 100
+                    dias_restantes = 0
+                    dias_transcurridos = plazo_total
+                else:
+                    # En progreso
+                    dias_transcurridos = (today - fecha_inicio).days
+                    # Cálculo de porcentaje
+                    progreso_tiempo = int((dias_transcurridos / plazo_total) * 100)
+                    dias_restantes = max(0, plazo_total - dias_transcurridos)
+
+        progreso_tiempo_real = 0
+        dias_restantes_real = 0
+        dias_transcurridos_real = 0
+        plazo_total_real = 0
+
+        if ot.fecha_inicio_real and ot.fecha_termino_programado:
+            fecha_inicio_r = ot.fecha_inicio_real
+            fecha_termino_r = ot.fecha_termino_programado # Se compara contra el término planeado habitualmente
+
+            plazo_total_real = (fecha_termino_r - fecha_inicio_r).days + 1
+            
+            if plazo_total_real > 0:
+                if today < fecha_inicio_r:
+                    progreso_tiempo_real = 0
+                    dias_restantes_real = plazo_total_real
+                    dias_transcurridos_real = 0
+                elif today > fecha_termino_r:
+                    progreso_tiempo_real = 100
+                    dias_restantes_real = 0
+                    dias_transcurridos_real = plazo_total_real
+                else:
+                    dias_transcurridos_real = (today - fecha_inicio_r).days
+                    progreso_tiempo_real = int((dias_transcurridos_real / plazo_total_real) * 100)
+                    dias_restantes_real = max(0, plazo_total_real - dias_transcurridos_real)
+
+        progreso_final = int((progreso_tiempo * 0.7) + (progreso_pasos * 0.3))
+        progreso_final = min(100, max(0, progreso_final))
+
+        # Retornar respuesta
+        return JsonResponse({
+            'exito': True,
+            'ot_id': ot_id,
+            
+            # Datos principales
+            'progreso': progreso_final,
+            'progreso_pasos': progreso_pasos,
+            'pasos_completados': pasos_completados,
+            'total_pasos': total_pasos,
+            
+            # Datos de tiempo (para los badges visuales)
+            'dias_transcurridos': dias_transcurridos,
+            'plazo_total': plazo_total,
+            'dias_transcurridos_real': dias_transcurridos_real,
+            'plazo_total_real': plazo_total_real,
+            
+            # Datos extra si los necesitas en el frontend
+            'progreso_tiempo': progreso_tiempo,
+            'dias_restantes': dias_restantes
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'exito': False,
+            'detalles': f'Error al obtener progreso general: {str(e)}'
+        })

@@ -46,6 +46,7 @@ urlpatterns = [
     path('ot/actualizar-fecha/', ote.actualizar_fecha_ot, name='actualizar_fecha_ot'),
     path('ot/guardar_archivo_ot/', ote.guardar_archivo_ot, name='guardar_archivo_ot'),
     path('ot/obtener_sitios/', ote.obtener_sitios, name='obtener_sitios'),
+    path('ot/obtener_progreso_general_ot/', ote.obtener_progreso_general_ot, name='obtener_progreso_general_ot'),
     
     #URLs para registro de actividad
     path('registro_actividad/', registro_actividad.registro_actividad, name='registro_actividad'),

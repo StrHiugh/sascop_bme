@@ -368,7 +368,6 @@ $(document).ready(function () {
         // Obtener datos de la ot
         BMAjax(urlObtenerDatos, { id: otID }, "GET")
             .done(function (datos) {
-                console.log(datos);
                 iniciarLoader();
                 const ot = datos.datos;
 
@@ -872,6 +871,9 @@ $(document).ready(function () {
     // Evento para cambiar estatus de OT
     $(document).on('click', '.cambiar-estatus-option', function (e) {
         e.preventDefault();
+        const $opcionClickeada = $(this);
+        const $dropdownContainer = $opcionClickeada.closest('.dropdown');
+        const $botonDropdown = $dropdownContainer.find('.dropdown-toggle');
         let datos = tablaOt.row($(this).parents('tr')).data() ? 
                     tablaOt.row($(this).parents('tr')).data() : 
                     tablaReprogramaciones.row($(this).parents('tr')).data();
@@ -906,8 +908,8 @@ $(document).ready(function () {
         `;
 
         BMensaje({
-            titulo: "Confirmación",
-            subtitulo: contenidoMensaje,
+            titulo: "Confirmar Cambio de Estatus",
+            subtitulo: htmlContent,
             botones: [
                 {
                     texto: "Sí, continuar",
@@ -918,8 +920,8 @@ $(document).ready(function () {
                         if (mostrarFechaEntrega) {
                             fechaEntrega = $('#fechaEntregaOt').val();
                             if (!fechaEntrega) {
-                                aviso("advertencia", "La fecha de entrega es obligatoria para el estatus TERMINADA");
-                                return;
+                                aviso("advertencia", "La fecha de entrega es obligatoria.");
+                                return false;
                             }
                         }
                         let log = new RegistroActividad(4,datos.id,"ACTUALIZAR");
@@ -942,20 +944,15 @@ $(document).ready(function () {
                         ).done(function (response) {
                             if (response.exito) {
                                 aviso("exito", "Estatus actualizado correctamente");
-                                tablaOt.ajax.reload();
+                                actualizarEstatusOTEnTiempoReal($botonDropdown, nuevoEstatusTexto, nuevoEstatusId, fechaEntrega);
+                                //tablaOt.ajax.reload(null, false);
                             } else {
-                                aviso("error", response.detalles || "Error al cambiar el estatus");
+                                aviso("error", res.detalles);
                             }
-                        }).fail(function() {
-                            aviso("error", "Error al cambiar el estatus");
                         });
                     }
                 },
-                {
-                    texto: "Cancelar", 
-                    clase: "btn-light",
-                    funcion: function() { return }
-                }
+                { texto: "Cancelar", clase: "btn-secondary", funcion: () => {} }
             ]
         });
     });
@@ -999,7 +996,10 @@ $(document).ready(function () {
 
     $(document).on('click', '.cambiar-estatus-paso-option', function(e) {
         e.preventDefault();
-        
+        const $opcionClickeada = $(this);
+        const $dropdownContainer = $opcionClickeada.closest('.dropdown');
+        const $botonDropdown = $dropdownContainer.find('.dropdown-toggle');
+
         const pasoId = $(this).closest('.dropdown').find('.paso-id').val();
         const nuevoEstatus = $(this).data('estatus');
         const textoEstatus = $(this).text().trim();
@@ -1042,10 +1042,10 @@ $(document).ready(function () {
                     clase: "btn-primary",
                     funcion: function() {
                         const comentario = $('#comentarioCambio').val().trim();
-                        
+                        let fechaEntrega = null;
                         // Validar fecha si es requerida
                         if (mostrarFechaEntrega) {
-                            const fechaEntrega = $('#fechaEntrega').val();
+                            fechaEntrega = $('#fechaEntrega').val();
                             if (!fechaEntrega) {
                                 aviso("advertencia", "La fecha de entrega es obligatoria para el estatus COMPLETADO");
                                 return;
@@ -1082,7 +1082,10 @@ $(document).ready(function () {
                             if (response.exito) {
                                 // Recargar la tabla de detalles
                                 if (window.tablaDetalleActiva) {
-                                    window.tablaDetalleActiva.ajax.reload(null, false);
+                                    //window.tablaDetalleActiva.ajax.reload(null, false);
+                                    actualizarEstatusPasoEnTiempoReal($botonDropdown, textoEstatus, nuevoEstatus, fechaEntrega, comentario);
+                                    actualizarProgresoGeneralOT(datosPaso.id_ot)
+                                    //tablaOt.ajax.reload(null, false);
                                 }
                             } else {
                                 aviso("error", response.detalles || "Error al actualizar el estatus");
@@ -1688,5 +1691,141 @@ function cargarSitios(frenteId, selectorId) {
             select.empty().append('<option value="">Error al cargar</option>');
             aviso("error", "Error al cargar opciones del sitio");
         }
+    });
+}
+
+function actualizarEstatusOTEnTiempoReal(dropdownButton, nuevoTexto, nuevoEstatusId, fechaEntrega = null) {
+    const estatusClasses = {
+        'POR DEFINIR': 'bg-secondary',
+        'ASIGNADA': 'bg-primary',
+        'CANCELADA': 'bg-danger',
+        'DIFERIDA': 'bg-warning',
+        'DIFERIDA(SIN INICIAR)': 'bg-warning',
+        'EN EJECUCION': 'bg-info',
+        'SUSPENDIDA': 'bg-warning',
+        'TERMINADA': 'bg-success',
+        'POR CANCELAR': 'bg-danger'
+    };
+    
+    dropdownButton.removeClass(function (index, className) {
+        return (className.match(/(^|\s)bg-\S+/g) || []).join(' ');
+    })
+    .addClass(estatusClasses[nuevoTexto] || 'bg-secondary')
+    .text(nuevoTexto);
+    const tr = dropdownButton.closest('tr');
+    const tableApi = window.tablaOt; 
+    const row = tableApi.row(tr);
+    
+    if(row.length){
+        let rowData = row.data();
+        rowData.estatus_ot_texto = nuevoTexto;
+        if (nuevoEstatusId == '10' && fechaEntrega) { 
+            rowData.fecha_termino_real = fechaEntrega;
+            const parts = fechaEntrega.split('-');
+        }
+        row.data(rowData).invalidate().draw(false);
+    }
+}
+
+function actualizarEstatusPasoEnTiempoReal(dropdownButton, nuevoTexto, nuevoEstatus, fechaInputVal, comentarioInputVal) {
+    const estatusClasses = {
+        'PENDIENTE': 'bg-warning',
+        'PROCESO': 'bg-primary', 
+        'COMPLETADO': 'bg-success',
+        'CANCELADO': 'bg-danger',
+        'NO APLICA': 'bg-secondary'
+    };
+    
+    dropdownButton.removeClass('bg-warning bg-primary bg-success bg-danger bg-secondary')
+                    .addClass(estatusClasses[nuevoTexto] || 'bg-secondary')
+                    .text(nuevoTexto);
+
+    const tr = dropdownButton.closest('tr');
+    if (window.tablaDetalleActiva) {
+        const row = window.tablaDetalleActiva.row(tr);
+        if(row.length) {
+            let d = row.data();
+            d.estatus_paso = nuevoEstatus;
+            if (nuevoEstatus == '3' && fechaInputVal) {
+                const parts = fechaInputVal.split('-');
+                if (parts.length === 3) {
+                    d.fecha_entrega = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                } else {
+                    d.fecha_entrega = fechaInputVal;
+                }
+            }
+            if(comentarioInputVal){
+                 d.comentario = comentarioInputVal;
+            }
+            row.data(d).invalidate().draw(false);
+        }
+    } else {
+        const table = tr.closest('table');
+        const headers = table.find('thead > tr > th'); 
+        const tds = tr.find('td'); 
+        let fechaEntregaCell = null;
+        fechaEntregaCell = tds.eq(4); 
+        let inputsFecha = tr.find('.fecha-paso-input');
+        if (nuevoEstatus == '3' && fechaEntregaCell && fechaInputVal) {
+            const parts = fechaInputVal.split('-');
+            const fechaFormateada = (parts.length === 3) ? `${parts[2]}/${parts[1]}/${parts[0]}` : fechaInputVal;
+            fechaEntregaCell.text(fechaFormateada);
+        }
+        if (inputsFecha.length) {
+            if (['3', '14', 3, 14].includes(nuevoEstatus)) { 
+                inputsFecha.prop('disabled', true);
+            } else {
+                inputsFecha.prop('disabled', false);
+            }
+        }
+    }
+}
+
+function actualizarProgresoGeneralOT(otId) {
+    BMAjax(
+        urlObtenerProgresoGeneralOT,
+        { ot_id: otId },
+        "GET"
+    ).done(function(response) {
+        if (response.exito) {
+            tablaOt.rows().every(function() {
+                const rowData = this.data();
+                if (rowData.id == otId) {
+                    rowData.progreso_final = response.progreso;
+                    rowData.pasos_completados = response.pasos_completados;
+                    rowData.total_pasos = response.total_pasos;
+                    rowData.progreso_tiempo = response.progreso_tiempo;
+                    rowData.progreso_pasos = response.progreso_pasos;
+                    rowData.dias_transcurridos = response.dias_transcurridos;
+                    rowData.plazo_total = response.plazo_total;
+                    rowData.dias_transcurridos_real = response.dias_transcurridos_real;
+                    rowData.plazo_total_real = response.plazo_total_real;
+                    this.data(rowData).invalidate();
+                    return false;
+                }
+            });
+
+            if (typeof tablaReprogramaciones !== 'undefined' && tablaReprogramaciones) {
+                tablaReprogramaciones.rows().every(function() {
+                    const rowData = this.data();
+                    if (rowData.id == otId) {
+                        rowData.progreso_final = response.progreso;
+                        rowData.pasos_completados = response.pasos_completados;
+                        rowData.total_pasos = response.total_pasos;
+                        rowData.progreso_tiempo = response.progreso_tiempo;
+                        rowData.progreso_pasos = response.progreso_pasos;
+                        rowData.dias_transcurridos = response.dias_transcurridos;
+                        rowData.plazo_total = response.plazo_total;
+                        rowData.dias_transcurridos_real = response.dias_transcurridos_real;
+                        rowData.plazo_total_real = response.plazo_total_real;
+                        this.data(rowData).invalidate();
+                        return false;
+                    }
+                });
+            }
+        }
+    }).fail(function() {
+        console.error("Error al actualizar el progreso de la OT");
+        return false;
     });
 }
