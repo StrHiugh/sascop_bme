@@ -1,7 +1,7 @@
 from django.db import models
-from .catalogos_models import Sitio, Estatus, ResponsableProyecto, Tipo, Cliente, Frente
+from .catalogos_models import Sitio, Estatus, ResponsableProyecto, Tipo, Cliente, Frente, UnidadMedida
 from .pte_models import PTEHeader
-
+import os
 class OTE(models.Model): 
     id_tipo = models.ForeignKey(Tipo, on_delete=models.CASCADE, limit_choices_to={'nivel_afectacion': 2})
     id_pte_header = models.ForeignKey(PTEHeader, on_delete=models.CASCADE, null=True, blank=True)
@@ -139,3 +139,49 @@ class PartidaProyectada(models.Model):
 
     def __str__(self):
         return f"{self.id_ot.orden_trabajo} - {self.id_partida}"
+
+def generar_ruta_anexo(instance, filename):
+    """
+    Genera una ruta dinámica: anexos_ot/OT_<id>/<filename>
+    """
+    clean_filename = filename.replace(" ", "_")
+    return os.path.join('operaciones','anexos_ot', f'{instance.ot.orden_trabajo}', clean_filename)
+
+class ImportacionAnexo(models.Model):
+    """
+    Header de la importación de anexo C.
+    """
+    ot = models.ForeignKey(OTE, on_delete=models.CASCADE, related_name='importaciones_anexo')
+    archivo_excel = models.FileField(upload_to=generar_ruta_anexo)
+    fecha_carga = models.DateTimeField(auto_now_add=True)
+    usuario_carga = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True)
+    total_registros = models.IntegerField(default=0)
+    es_activo = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = 'importacion_anexo'
+        ordering = ['id']
+
+    def __str__(self):
+        return f"Importación {self.id} - OT: {self.ot}"
+
+class PartidaAnexoImportada(models.Model):
+    """
+    Detalle de la importación de anexo C.
+    """
+    importacion_anexo = models.ForeignKey(ImportacionAnexo, on_delete=models.CASCADE, related_name='partidas')
+    id_partida = models.CharField(max_length=10)
+    descripcion_concepto = models.TextField()
+    unidad_medida = models.ForeignKey(UnidadMedida, on_delete=models.CASCADE)
+    volumen_proyectado = models.DecimalField(max_digits=18, decimal_places=4)
+    precio_unitario_mn = models.DecimalField(max_digits=15, decimal_places=2)
+    precio_unitario_usd = models.DecimalField(max_digits=15, decimal_places=2)
+    orden_fila = models.IntegerField()
+    
+    class Meta:
+        db_table = 'partida_anexo_importada'
+        ordering = ['id']
+
+    def __str__(self):
+        return f"{self.id_partida} - {self.descripcion_concepto[:30]}"
+

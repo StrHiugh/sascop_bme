@@ -337,6 +337,8 @@
     var urlObtenerSitios = "{% url 'operaciones:obtener_sitios' %}";
     var urlObtenerProgresoGeneralOT = "{% url 'operaciones:obtener_progreso_general_ot' %}";
     const puedeEliminarOT = {{ perms.operaciones.delete_ote|yesno:"true,false" }};
+    var urlDataTableImportaciones = "{% url 'operaciones:datatable_importaciones' %}";
+    var urlImportarAnexo = "{% url 'operaciones:importar_anexo_ot' %}";
 
 
 </script>

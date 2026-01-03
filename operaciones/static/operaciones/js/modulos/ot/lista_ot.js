@@ -340,6 +340,7 @@ $(document).ready(function () {
             if (window.tablaTexto === "OT") {
                 initTablaReprogramaciones(otId);
                 initTablaDetalleOT(otId);
+                initTablaImportaciones(otId);
             } else if (window.tablaTexto === "Reprogramacion") {
                 initTablaDetalleOT(otId);
             }
@@ -1148,6 +1149,98 @@ $(document).ready(function () {
         
     });
 
+    $(document).on('click', '.btn-importar-excel', function() {
+        const otId = $(this).data('ot');
+        abrirModalImportarAnexo(otId);
+    });
+
+    // 2. Crear Modal Dinámico si no existe
+    function abrirModalImportarAnexo(otId) {
+        // Si el modal no existe en el DOM, crearlo
+        if ($('#modalImportarAnexo').length === 0) {
+            const modalHTML = `
+                <div class="modal fade" id="modalImportarAnexo" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title"><i class="fas fa-file-excel text-success me-2"></i>Importar Anexo C</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="formImportarAnexo">
+                                    <input type="hidden" name="ot_id" id="import_ot_id">
+                                    <div class="mb-3">
+                                        <label for="archivoAnexo" class="form-label">Seleccione el archivo Excel (.xlsx)</label>
+                                        <input class="form-control" type="file" id="archivoAnexo" name="archivo" accept=".xlsx, .xls, .xlsm">
+                                        <div class="form-text text-muted" style="font-size: 12px;">
+                                            Asegúrese que el archivo contenga las columnas: PARTIDA, CONCEPTO, UNIDAD, VOLUMEN PTE, P.U.M.N., P.U.USD
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                <button type="button" class="btn btn-primary" id="btnGuardarImportacion">Importar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            $('body').append(modalHTML);
+        }
+
+        $('#import_ot_id').val(otId);
+        $('#archivoAnexo').val(''); // Limpiar input
+        const modal = new bootstrap.Modal(document.getElementById('modalImportarAnexo'));
+        modal.show();
+    }
+
+    // 3. Enviar Archivo al Backend
+    $(document).on('click', '#btnGuardarImportacion', function() {
+        const formData = new FormData($('#formImportarAnexo')[0]);
+        const otId = $('#import_ot_id').val();
+        const fileInput = $('#archivoAnexo')[0];
+
+        if (fileInput.files.length === 0) {
+            aviso("advertencia", "Debe seleccionar un archivo");
+            return;
+        }
+
+        // Bloquear botón
+        const btn = $(this);
+        const originalText = btn.html();
+        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Subiendo...');
+
+        // Agregar CSRF Token si no está en el form
+        formData.append('csrfmiddlewaretoken', $('input[name="csrfmiddlewaretoken"]').val());
+
+        $.ajax({
+            url: urlImportarAnexo,
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                if (response.exito) {
+                    aviso("exito", response.mensaje || "Importación exitosa");
+                    $('#modalImportarAnexo').modal('hide');
+                    
+                    // Recargar la tabla de importaciones si existe
+                    const tablaId = `#tabla-importaciones_${otId}`;
+                    if ($.fn.DataTable.isDataTable(tablaId)) {
+                        $(tablaId).DataTable().ajax.reload();
+                    }
+                } else {
+                    aviso("error", response.mensaje || "Error en la importación");
+                }
+            },
+            error: function() {
+                aviso("error", "Error de comunicación con el servidor");
+            },
+            complete: function() {
+                btn.prop('disabled', false).html(originalText);
+            }
+        });
+    });
 });
 
 // Funcion para guardar el archivo
@@ -1211,6 +1304,11 @@ function fnHTMLTablaDetallePTE(otId) {
                             <span class="text-secondary">Reprogramaciones</span>
                         </button>
                     </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link text-secondary" id="importaciones-tab_${otId}" data-bs-toggle="tab" data-bs-target="#importaciones_${otId}" type="button" role="tab" aria-controls="importaciones" aria-selected="false">
+                            <span class="text-secondary">Importaciones</span>
+                        </button>
+                    </li>
                 </ul>
                 <div class="tab-content p-3 border border-top-0 bg-white" id="myTabContent_${otId}">
                     <div class="tab-pane fade show active" id="detalle_${otId}" role="tabpanel" aria-labelledby="detalle-tab_${otId}">
@@ -1219,6 +1317,15 @@ function fnHTMLTablaDetallePTE(otId) {
                     </div>
                     <div class="tab-pane fade" id="reprogramaciones_${otId}" role="tabpanel" aria-labelledby="reprogramaciones-tab_${otId}">
                         <table id="tabla-reprogramaciones_${otId}" class="table table-sm table-bordered table-hover w-100">
+                        </table>
+                    </div>
+                    <div class="tab-pane fade" id="importaciones_${otId}" role="tabpanel" aria-labelledby="importaciones-tab_${otId}">
+                        <div class="actions-toolbar mb-2 d-flex justify-content-end">
+                            <button class="btn btn-sm btn-success btn-importar-excel shadow-sm" data-ot="${otId}">
+                                <i class="fas fa-file-upload me-2"></i>Importar Anexo C
+                            </button>
+                        </div>
+                        <table id="tabla-importaciones_${otId}" class="table table-sm table-bordered table-hover w-100">
                         </table>
                     </div>
                 </div>
@@ -1236,7 +1343,7 @@ function fnHTMLTablaDetallePTE(otId) {
                 </ul>
                 <div class="tab-content p-3 border border-top-0 bg-white" id="myTabContent_${otId}">
                     <div class="tab-pane fade show active" id="detalle_${otId}" role="tabpanel" aria-labelledby="detalle-tab_${otId}">
-                         <table id="tabla-detalle-ot_${otId}" class="table table-sm table-bordered table-hover w-100">
+                        <table id="tabla-detalle-ot_${otId}" class="table table-sm table-bordered table-hover w-100">
                         </table>
                     </div>
                 </div>
@@ -1604,6 +1711,84 @@ function initTablaReprogramaciones(otId) {
         language: {
             emptyTable: "No hay reprogramaciones registradas"
         }
+    });
+}
+
+function initTablaImportaciones(otId) {
+    $(`#tabla-importaciones_${otId}`).DataTable({
+        processing: true,
+        serverSide: true,
+        responsive: true,
+        searching: true,
+        paging: true,
+        info: true,
+        pageLength: 25,
+        lengthChange: false,
+        dom: '<"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
+        language: {
+            "info": "Mostrando _START_ a _END_ de _TOTAL_ partidas",
+            "infoEmpty": "No hay partidas importadas",
+            "infoFiltered": "",
+            "paginate": {
+                "first": "‹‹",
+                "last": "››",
+                "next": "›",
+                "previous": "‹"
+            },
+            "emptyTable": "No se han importado partidas para esta OT"
+        },
+        ajax: {
+            url: urlDataTableImportaciones,
+            type: "GET",
+            data: {
+                ot_id: otId
+            }
+        },
+        columns: [
+            { 
+                data: "codigo_concepto", 
+                title: "Partida",
+                width: "10%"
+            },
+            { 
+                data: "descripcion", 
+                title: "Descripción" 
+            },
+            { 
+                data: "unidad", 
+                title: "Unidad",
+                width: "8%",
+                className: "text-center"
+            },
+            { 
+                data: "cantidad", 
+                title: "Cantidad",
+                width: "10%",
+                className: "text-end",
+                render: $.fn.dataTable.render.number(',', '.', 2)
+            },
+            { 
+                data: "precio_unitario_mn", 
+                title: "MXN",
+                width: "12%",
+                className: "text-end",
+                render: $.fn.dataTable.render.number(',', '.', 2, '$ ')
+            },
+            { 
+                data: "precio_unitario_usd", 
+                title: "USD",
+                width: "12%",
+                className: "text-end",
+                render: $.fn.dataTable.render.number(',', '.', 2, '$ ')
+            },
+            { 
+                data: "importe", 
+                title: "Importe",
+                width: "12%",
+                className: "text-end",
+                render: $.fn.dataTable.render.number(',', '.', 2, '$ ')
+            }
+        ]
     });
 }
 

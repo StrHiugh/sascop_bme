@@ -5,11 +5,16 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
 from django.shortcuts import render, get_object_or_404
-from ..models import OTE, OTDetalle, PasoOt
+from ..models import OTE, OTDetalle, PasoOt, ImportacionAnexo, PartidaAnexoImportada, UnidadMedida
 from ..registro_actividad import registrar_actividad
 from operaciones.models.catalogos_models import Sitio, Estatus, ResponsableProyecto, Tipo
 from django.db.models import Case, When, Value, CharField,Q, ExpressionWrapper, Count,F, FloatField, IntegerField
 from django.db.models.functions import *
+from django.views.decorators.csrf import csrf_exempt
+from django.db import transaction
+from decimal import Decimal
+import pandas as pd
+import os
 
 @login_required(login_url='/accounts/login/')
 def lista_ote(request):
@@ -933,7 +938,7 @@ def obtener_progreso_general_ot(request):
         return JsonResponse({
             'exito': True,
             'ot_id': ot_id,
-            
+
             # Datos principales
             'progreso': progreso_final,
             'progreso_pasos': progreso_pasos,
@@ -956,3 +961,213 @@ def obtener_progreso_general_ot(request):
             'exito': False,
             'detalles': f'Error al obtener progreso general: {str(e)}'
         })
+
+def datatable_importaciones(request):
+    """
+    DATATABLE para las partidas importadas.
+    """
+    ot_id = request.GET.get('ot_id')
+    
+    try:
+        importacion = ImportacionAnexo.objects.get(ot_id=ot_id, es_activo=True)
+        queryset = PartidaAnexoImportada.objects.filter(
+            importacion_anexo=importacion
+        ).select_related('unidad_medida')
+        
+    except ImportacionAnexo.DoesNotExist:
+        return JsonResponse({
+            "draw": int(request.GET.get('draw', 1)),
+            "recordsTotal": 0,
+            "recordsFiltered": 0,
+            "data": []
+        })
+
+    search_value = request.GET.get('search[value]', '')
+    if search_value:
+        queryset = queryset.filter(
+            Q(id_partida__icontains=search_value) |
+            Q(descripcion_concepto__icontains=search_value)
+        )
+
+    columns_mapping = {
+        0: 'id_partida',
+        1: 'descripcion_concepto',
+        2: 'unidad_medida__clave',
+        3: 'volumen_proyectado',    
+        4: 'precio_unitario_mn',    
+        5: 'precio_unitario_usd'    
+    }
+    
+    order_column_index = int(request.GET.get('order[0][column]', 0))
+    order_dir = request.GET.get('order[0][dir]', 'asc')
+    order_column = columns_mapping.get(order_column_index, 'orden_fila')
+    
+    if order_dir == 'desc':
+        order_column = f'-{order_column}'
+        
+    queryset = queryset.order_by(order_column)
+
+    start = int(request.GET.get('start', 0))
+    length = int(request.GET.get('length', 25))
+    total_filtered = queryset.count()
+    data_page = queryset[start:start + length]
+    TIPO_CAMBIO = Decimal('20.5') 
+    data = []
+    for row in data_page:
+        importe_visual = row.volumen_proyectado * (row.precio_unitario_mn + row.precio_unitario_usd * TIPO_CAMBIO)
+
+        data.append({
+            "codigo_concepto": row.id_partida,
+            "descripcion": row.descripcion_concepto,
+            "unidad": row.unidad_medida.clave if row.unidad_medida else "N/A",
+            "cantidad": row.volumen_proyectado,
+            "precio_unitario_mn": row.precio_unitario_mn,
+            "precio_unitario_usd": row.precio_unitario_usd,
+            "importe": importe_visual
+        })
+
+    return JsonResponse({
+        "draw": int(request.GET.get('draw', 1)),
+        "recordsTotal": importacion.total_registros,
+        "recordsFiltered": total_filtered,
+        "data": data
+    })
+
+@csrf_exempt
+def importar_anexo_ot(request):
+    """
+    Procesa el archivo Excel (.xlsx o .xlsm).
+    """
+    if request.method == "POST":
+        ot_id = request.POST.get('ot_id')
+        archivo = request.FILES.get('archivo')
+        
+        if not ot_id or not archivo:
+            return JsonResponse({'exito': False, 'mensaje': 'Faltan datos (OT o Archivo)'})
+
+        try:
+            ot = OTE.objects.get(id=ot_id)
+            try:
+                xls = pd.ExcelFile(archivo, engine='openpyxl')
+            except Exception as e:
+                return JsonResponse({'exito': False, 'mensaje': f'Error técnico al abrir Excel: {str(e)}'})
+
+            target_sheet = None
+            header_row_index = -1
+            sheet_names = sorted(xls.sheet_names, key=lambda x: 0 if 'ANEXO C' in x.upper() else 1)
+            logs_busqueda = []
+
+            for sheet in sheet_names:
+                try:
+                    df_temp = pd.read_excel(xls, sheet_name=sheet, header=None, nrows=100)
+                    found = False
+                    for idx, row in df_temp.iterrows():
+                        row_str = [str(x).strip().upper() for x in row.values]
+                        match_partida = 'PARTIDA' in row_str
+                        match_concepto = 'CONCEPTO' in row_str
+                        match_unidad = 'UNIDAD' in row_str
+                        match_volumen = 'VOLUMEN PTE' in row_str
+                        match_precio_mn = 'P.U. M.N.' in row_str or 'P.U.M.N.' in row_str 
+                        match_precio_usd = 'P.U. USD' in row_str
+
+                        if match_partida and match_concepto and match_unidad and match_volumen and match_precio_mn and match_precio_usd:
+                            header_row_index = idx
+                            target_sheet = sheet
+                            found = True
+                            break 
+                    if found:
+                        break 
+                    else:
+                        logs_busqueda.append(f"[{sheet}]: Se escanearon filas pero no se hallaron cabeceras completas (PARTIDA+CONCEPTO+PRECIOS).")
+                        
+                except Exception as ex_sheet:
+                    logs_busqueda.append(f"[{sheet}]: Error lectura ({str(ex_sheet)})")
+                    continue
+
+            if target_sheet is None:
+                msg_error = f"No se encontró la tabla de presupuesto válida. Se requiere 'PARTIDA', 'CONCEPTO' y 'P.U. M.N.' en la misma fila. Revisado: {', '.join(logs_busqueda)}"
+                return JsonResponse({'exito': False, 'mensaje': msg_error})
+
+            df = pd.read_excel(xls, sheet_name=target_sheet, header=header_row_index)
+            df.columns = [str(c).strip().upper() for c in df.columns]
+            
+            cols_req = ['PARTIDA', 'CONCEPTO', 'UNIDAD', 'VOLUMEN PTE', 'P.U. M.N.', 'P.U. USD']
+            
+            missing_cols = [col for col in cols_req if col not in df.columns]
+            if missing_cols:
+                return JsonResponse({
+                    'exito': False, 
+                    'mensaje': f'En la hoja "{target_sheet}" (Fila {header_row_index+1}) faltan las columnas: {", ".join(missing_cols)}'
+                })
+
+            def limpiar_moneda(valor):
+                if pd.isna(valor): return 0.0
+                s = str(valor).strip().replace('$', '').replace(',', '').replace(' ', '')
+                if s in ['-', '', 'nan', 'NAN']: return 0.0
+                try:
+                    return float(s)
+                except ValueError:
+                    return 0.0
+
+            with transaction.atomic():
+                ImportacionAnexo.objects.filter(ot=ot, es_activo=True).update(es_activo=False)
+                
+                nueva_importacion = ImportacionAnexo.objects.create(
+                    ot=ot,
+                    archivo_excel=archivo,
+                    usuario_carga=request.user if request.user.is_authenticated else None,
+                    total_registros=0,
+                    es_activo=True
+                )
+                
+                partidas_batch = []
+                unidades_db = {u.clave.strip().upper(): u for u in UnidadMedida.objects.all()}
+                unidad_default = UnidadMedida.objects.first()
+
+                for index, row in df.iterrows():
+                    codigo = str(row['PARTIDA']).strip()
+                    concepto = str(row['CONCEPTO']).strip()
+                    unidad_str = str(row['UNIDAD']).strip().upper()
+
+                    if (not codigo or codigo.lower() == 'nan' or codigo.upper() == 'NONE' or
+                        not concepto or concepto.lower() == 'nan' or 
+                        not unidad_str or unidad_str.lower() == 'nan'): 
+                        continue 
+
+                    try:
+                        volumen = limpiar_moneda(row.get('VOLUMEN PTE'))
+                        pu_mn = limpiar_moneda(row.get('P.U. M.N.'))
+                        pu_usd = limpiar_moneda(row.get('P.U. USD'))
+                    except Exception:
+                        continue 
+
+                    unidad_obj = unidades_db.get(unidad_str, unidad_default)
+                    
+                    partidas_batch.append(PartidaAnexoImportada(
+                        importacion_anexo=nueva_importacion,
+                        id_partida=codigo,
+                        descripcion_concepto=concepto,
+                        unidad_medida=unidad_obj,
+                        volumen_proyectado=volumen,
+                        precio_unitario_mn=pu_mn,
+                        precio_unitario_usd=pu_usd,
+                        orden_fila=index + 1
+                    ))
+
+                if not partidas_batch:
+                    return JsonResponse({'exito': False, 'mensaje': f'La hoja "{target_sheet}" se leyó pero no contenía datos válidos.'})
+
+                PartidaAnexoImportada.objects.bulk_create(partidas_batch, batch_size=500)
+                
+                nueva_importacion.total_registros = len(partidas_batch)
+                nueva_importacion.save()
+
+            return JsonResponse({
+                'exito': True, 
+                'mensaje': f'Importación exitosa desde hoja "{target_sheet}". {len(partidas_batch)} partidas cargadas.',
+            })
+
+        except Exception as e:
+            return JsonResponse({'exito': False, 'mensaje': f'Error interno: {str(e)}'})
+
+    return JsonResponse({'exito': False, 'mensaje': 'Método no permitido'})
