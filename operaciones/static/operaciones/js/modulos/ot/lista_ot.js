@@ -1187,58 +1187,82 @@ $(document).ready(function () {
                 </div>`;
             $('body').append(modalHTML);
         }
-
         $('#import_ot_id').val(otId);
         $('#archivoAnexo').val(''); // Limpiar input
         const modal = new bootstrap.Modal(document.getElementById('modalImportarAnexo'));
         modal.show();
     }
 
-    // 3. Enviar Archivo al Backend
-    $(document).on('click', '#btnGuardarImportacion', function() {
+    $(document).on('click', '#btnGuardarImportacion', function(e) {
+        e.preventDefault();
         const formData = new FormData($('#formImportarAnexo')[0]);
         const otId = $('#import_ot_id').val();
         const fileInput = $('#archivoAnexo')[0];
+        formData.append('csrfmiddlewaretoken', $('input[name="csrfmiddlewaretoken"]').val());
 
         if (fileInput.files.length === 0) {
             aviso("advertencia", "Debe seleccionar un archivo");
             return;
         }
 
-        // Bloquear botón
         const btn = $(this);
         const originalText = btn.html();
-        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Subiendo...');
-
-        // Agregar CSRF Token si no está en el form
-        formData.append('csrfmiddlewaretoken', $('input[name="csrfmiddlewaretoken"]').val());
-
-        $.ajax({
-            url: urlImportarAnexo,
-            type: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            success: function(response) {
-                if (response.exito) {
-                    aviso("exito", response.mensaje || "Importación exitosa");
+        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Verificando...');
+        fetch(urlImportarAnexo, {
+            method: 'POST',
+            body: formData
+        })
+        .then(async response => {
+            const contentType = response.headers.get('content-type') || '';
+            const disposition = response.headers.get('content-disposition') || '';
+            if (contentType.includes('application/json')) {
+                const data = await response.json();
+                return { tipo: 'json', data: data };
+            } 
+            else {
+                const blob = await response.blob();
+                return { tipo: 'file', blob: blob, disposition: disposition };
+            }
+        })
+        .then(resultado => {
+            if (resultado.tipo === 'json') {
+                const res = resultado.data;
+                if (res.exito) {
+                    aviso(res.tipo_aviso || 'exito', res.detalles || "Importación completada");
                     $('#modalImportarAnexo').modal('hide');
-                    
-                    // Recargar la tabla de importaciones si existe
                     const tablaId = `#tabla-importaciones_${otId}`;
                     if ($.fn.DataTable.isDataTable(tablaId)) {
                         $(tablaId).DataTable().ajax.reload();
                     }
                 } else {
-                    aviso("error", response.mensaje || "Error en la importación");
+                    aviso(res.tipo_aviso || 'advertencia', res.detalles || "Error en la importación");
                 }
-            },
-            error: function() {
-                aviso("error", "Error de comunicación con el servidor");
-            },
-            complete: function() {
-                btn.prop('disabled', false).html(originalText);
+            } 
+            else if (resultado.tipo === 'file') {
+                let filename = "Errores_Importacion.xlsx";
+                if (resultado.disposition && resultado.disposition.indexOf('attachment') !== -1) {
+                    const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+                    const matches = filenameRegex.exec(resultado.disposition);
+                    if (matches != null && matches[1]) { 
+                        filename = matches[1].replace(/['"]/g, '');
+                    }
+                }
+                const url = window.URL.createObjectURL(resultado.blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(url); 
+                aviso("advertencia", "Se encontraron inconsistencias. Se descargó el reporte de errores.");
             }
+        })
+        .catch(error => {
+            aviso("error", "Error de comunicación con el servidor");
+        })
+        .finally(() => {
+            btn.prop('disabled', false).html(originalText);
         });
     });
 });
@@ -1783,9 +1807,9 @@ function initTablaImportaciones(otId) {
             },
             { 
                 data: "importe", 
-                title: "Importe",
+                title: "Importe homologado",
                 width: "12%",
-                className: "text-end",
+                className: "text-center",
                 render: $.fn.dataTable.render.number(',', '.', 2, '$ ')
             }
         ]

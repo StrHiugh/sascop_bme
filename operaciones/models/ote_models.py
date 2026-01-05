@@ -142,7 +142,7 @@ class PartidaProyectada(models.Model):
 
 def generar_ruta_anexo(instance, filename):
     """
-    Genera una ruta dinámica: anexos_ot/OT_<id>/<filename>
+    Genera una ruta dinámica: operaciones/anexos_ot/OT_<id>/<filename>
     """
     clean_filename = filename.replace(" ", "_")
     return os.path.join('operaciones','anexos_ot', f'{instance.ot.orden_trabajo}', clean_filename)
