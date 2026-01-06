@@ -1789,7 +1789,7 @@ function initTablaImportaciones(otId) {
                 title: "Cantidad",
                 width: "10%",
                 className: "text-end",
-                render: $.fn.dataTable.render.number(',', '.', 2)
+                render: $.fn.dataTable.render.number(',', '.', 4)
             },
             { 
                 data: "precio_unitario_mn", 
