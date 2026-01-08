@@ -208,16 +208,16 @@ $(document).ready(function() {
                 scrollY: true,
                 bodyHeight: 350,
                 rowHeaders: ['rowNum'],
-                columnOptions: { resizable: true, frozenCount: 2 },
+                columnOptions: { resizable: true, frozenCount: 4 },
                 columns: [
                     { header: 'Partida', name: 'codigo', width: 90, align: 'center' },
-                    { header: 'Concepto / Descripción', name: 'concepto', width: 350, align: 'left' },
+                    { header: 'Concepto', name: 'concepto', width: 150, align: 'left' },
                     { header: 'Unidad', name: 'unidad', width: 70, align: 'center' },
                     { 
-                        header: 'Vol. Proyectado', 
+                        header: 'Vol. PTE', 
                         name: 'vol_total_proyectado', 
                         width: 110, 
-                        align: 'right', 
+                        align: 'center', 
                         formatter: formatearNumero 
                     },
                     ...columnasDiasProduccion,
