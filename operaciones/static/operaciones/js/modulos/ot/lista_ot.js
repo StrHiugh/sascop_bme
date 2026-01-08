@@ -318,17 +318,23 @@ $(document).ready(function () {
             $(this).find('i').removeClass('fa-minus-square').addClass('fa-plus-square');
 
             // Si al cerrar hay tabla hija, destruirla
+            const tablaImportacionesId = `#tabla-importaciones_${otId}`;
+            if ($.fn.DataTable.isDataTable(tablaImportacionesId)) {
+                $(tablaImportacionesId).DataTable().destroy();
+                $(tablaImportacionesId).empty();
+            }
+
+            // Destruir Detalles (sea OT o Repro)
+            const tablaDetalleId = `#tabla-detalle-ot_${otId}`;
+            if ($.fn.DataTable.isDataTable(tablaDetalleId)) {
+                $(tablaDetalleId).DataTable().destroy();
+                $(tablaDetalleId).empty();
+            }
             if (window.tablaTexto === "OT") {
                 const tablaReprogramacionesId = `#tabla-reprogramaciones_${otId}`;
                 if ($.fn.DataTable.isDataTable(tablaReprogramacionesId)) {
                     $(tablaReprogramacionesId).DataTable().destroy();
                     $(tablaReprogramacionesId).empty();
-                }
-
-                const tablaDetalleId = `#tabla-detalle-ot_${otId}`;
-                if ($.fn.DataTable.isDataTable(tablaDetalleId)) {
-                    $(tablaDetalleId).DataTable().destroy();
-                    $(tablaDetalleId).empty();
                 }
             }
         } else {
@@ -343,6 +349,7 @@ $(document).ready(function () {
                 initTablaImportaciones(otId);
             } else if (window.tablaTexto === "Reprogramacion") {
                 initTablaDetalleOT(otId);
+                initTablaImportaciones(otId);
             }
         }
     });
@@ -910,7 +917,7 @@ $(document).ready(function () {
 
         BMensaje({
             titulo: "Confirmar Cambio de Estatus",
-            subtitulo: htmlContent,
+            subtitulo: contenidoMensaje,
             botones: [
                 {
                     texto: "Sí, continuar",
@@ -1330,7 +1337,7 @@ function fnHTMLTablaDetallePTE(otId) {
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link text-secondary" id="importaciones-tab_${otId}" data-bs-toggle="tab" data-bs-target="#importaciones_${otId}" type="button" role="tab" aria-controls="importaciones" aria-selected="false">
-                            <span class="text-secondary">Importaciones</span>
+                            <span class="text-secondary">Importacion anexo C inicial</span>
                         </button>
                     </li>
                 </ul>
@@ -1346,7 +1353,7 @@ function fnHTMLTablaDetallePTE(otId) {
                     <div class="tab-pane fade" id="importaciones_${otId}" role="tabpanel" aria-labelledby="importaciones-tab_${otId}">
                         <div class="actions-toolbar mb-2 d-flex justify-content-end">
                             <button class="btn btn-sm btn-success btn-importar-excel shadow-sm" data-ot="${otId}">
-                                <i class="fas fa-file-upload me-2"></i>Importar Anexo C
+                                <i class="fas fa-file-upload me-2"></i>Importar Anexo C inicial
                             </button>
                         </div>
                         <table id="tabla-importaciones_${otId}" class="table table-sm table-bordered table-hover w-100">
@@ -1364,10 +1371,24 @@ function fnHTMLTablaDetallePTE(otId) {
                             <span class="text-dark">Detalle</span>
                         </button>
                     </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link text-secondary" id="importaciones-tab_${otId}" data-bs-toggle="tab" data-bs-target="#importaciones_${otId}" type="button" role="tab" aria-controls="importaciones" aria-selected="false">
+                            <span class="text-secondary">Importacion anexo C modificado</span>
+                        </button>
+                    </li>
                 </ul>
                 <div class="tab-content p-3 border border-top-0 bg-white" id="myTabContent_${otId}">
                     <div class="tab-pane fade show active" id="detalle_${otId}" role="tabpanel" aria-labelledby="detalle-tab_${otId}">
                         <table id="tabla-detalle-ot_${otId}" class="table table-sm table-bordered table-hover w-100">
+                        </table>
+                    </div>
+                    <div class="tab-pane fade" id="importaciones_${otId}" role="tabpanel" aria-labelledby="importaciones-tab_${otId}">
+                        <div class="actions-toolbar mb-2 d-flex justify-content-end">
+                            <button class="btn btn-sm btn-success btn-importar-excel shadow-sm" data-ot="${otId}">
+                                <i class="fas fa-file-upload me-2"></i>Importar Anexo C modificado
+                            </button>
+                        </div>
+                        <table id="tabla-importaciones_${otId}" class="table table-sm table-bordered table-hover w-100">
                         </table>
                     </div>
                 </div>
