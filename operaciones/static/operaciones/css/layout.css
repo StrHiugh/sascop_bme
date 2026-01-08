@@ -1,4 +1,8 @@
 /* Layout Principal */
+html, body {
+    max-width: 100%;
+    overflow-x: hidden;
+}
 .layout-sidebar {
     font-family: 'Roboto', sans-serif;
     background-color: #f5f7fa;
@@ -603,9 +607,35 @@
 
 /* ////////////////////// HEADER MODULO SECCION ACTUALIZADO //////////////////////////////// */
 
+/* 1. ARREGLO PARA FLEXBOX: Obliga a los contenedores a NO estirarse más allá del viewport */
+.layout-container,
+.main-content-area,
+.main-content,
+.container-fluid,
+.bm-content,
+.bm-cont-elementos {
+    min-width: 0 !important; /* <--- ESTO ES LO QUE FALTA */
+    flex-shrink: 1 !important;
+}
+
 .bm-content {
     padding: 4rem 1.25rem 2.5rem 1.25rem; /* Todo en padding */
     display: block;
+    width: 100%; 
+    max-width: 100%; 
+}
+
+.tab-content, .tab-pane {
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden; /* Esto obliga al grid a usar su propio scroll */
+}
+.grid-wrapper { 
+    height: 500px; 
+    width: 100%; 
+    max-width: 100%;
+    position: relative; 
+    overflow: hidden;
 }
 
 .sidebar-collapsed .bm-content {

@@ -15,14 +15,13 @@
             <h1 class="h2 fw-bold mb-0">Producción</h1>
         </div>
         
-        <!-- SELECTOR DE VERSIÓN (CRÍTICO PARA SPRINT 7) -->
         <div class="header-buttons-section d-flex align-items-center gap-3">
-            <div class="d-flex align-items-center bg-white p-2 rounded">
+            <div class="d-flex align-items-center bg-white p-2 rounded" id="contenedor-sitio">
                 <i class="fas fa-ship me-2 text-secondary"></i>
                 <select class="form-select form-select-sm border-0 fw-bold" id="select-sitio" style="width: 250px;">
                 </select>
             </div>
-            <div class="d-flex align-items-center bg-white p-1 ps-2">
+            <div class="d-flex align-items-center bg-white p-1 ps-2" id="contenedor-mes">
                 <i class="far fa-calendar-alt me-2 text-secondary"></i>
                 <select class="form-select form-select-sm border-0 fw-bold" id="filtro-mes" style="width: 130px;">
                     <option value="" disabled selected>Mes</option>
@@ -41,8 +40,7 @@
                 </select>
             </div>
 
-            <!-- Selector de Año -->
-            <div class="d-flex align-items-center bg-white p-1 ps-2">
+            <div class="d-flex align-items-center bg-white p-1 ps-2" id="contenedor-anio">
                 <select class="form-select form-select-sm border-0 fw-bold" id="filtro-anio" style="width: 90px;">
                     
                 </select>
@@ -58,70 +56,105 @@
 
 {% block content %}
 <style>
-    /* Ajustes para contenedor del Grid */
-    .grid-wrapper { height: 500px; width: 100%; position: relative; }
+    /* 1. RESTRICCIÓN TOTAL DEL VIEWPORT */
+    html, body {
+        max-width: 100vw !important;
+        overflow-x: hidden !important;
+    }
+
+    /* 2. CONTENEDORES RÍGIDOS */
+    .bm-content, .bm-cont-elementos, .bm-cont-elementos-body {
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+        display: block !important;
+    }
+
+    /* 3. RESTRICCIÓN DE TABS: La clave para TUI Grid */
+    .tab-content > .tab-pane {
+        display: none;
+    }
     
-    /* Estilos Personalizados para Celdas (Renderers) */
+    .tab-pane.active {
+        display: block !important;
+        width: 100% !important;
+        min-width: 0; /* Clave para flexbox */
+    }
+    
+    .tab-content > .active {
+        display: block !important;
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    /* 4. WRAPPER DEL GRID: Debe obligar al Grid a activar su scroll interno */
+    .grid-wrapper {
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow: hidden !important; 
+        position: relative;
+        display: block;
+    }
+
+    /* 5. ESTILOS DE CELDA Y COMPONENTES */
     .tui-grid-cell-content { width: 100%; height: 100%; display: flex; align-items: left; justify-content: left; }
     
-    /* Colores Estatus Operativo (RD) */
     .cell-ok { background-color: #2ecc71; color: white; font-weight: bold; }
     .cell-ffp { background-color: #f1c40f; color: black; font-weight: bold; }
     .cell-s { background-color: #e74c3c; color: white; font-weight: bold; }
 
-    /* Badges para GPU */
     .gpu-badge { padding: 4px 4px; border-radius: 4px; font-size: 0.85em; font-weight: bold; width: 100%; text-align: center; }
     .gpu-pendiente { background-color: #3498db; color: white; }
     .gpu-bloqueado { background-color: #e74c3c; color: white; border: 2px solid #c0392b; }
     
-    /* KPIs */
     .kpi-box { background: #fff; padding: 15px; border-radius: 8px; border-left: 5px solid #ccc; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-top: 20px; }
     .kpi-box.normal { border-left-color: #2ecc71; }
     .kpi-box.alert { border-left-color: #e74c3c; }
 
-    /* Ajuste pestañas */
-    .nav-tabs .nav-link { color: #495057; }
-    .nav-tabs .nav-link.active { font-weight: bold; color: #0d6efd; }
+    .nav-tabs .nav-link {
+        color: #6c757d !important;
+        font-weight: 500;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        background: transparent;
+    }
+    .nav-tabs .nav-link.active {
+        color: #000 !important;
+        font-weight: 600;
+        border-bottom: 3px solid #007bff;
+    }
 </style>
+
 <div class="bm-content">
     <div class="bm-cont-elementos">
-        <div class="bm-cont-elementos-body">
+        <div class="bm-cont-elementos-body pt-2">
 
-            <!-- PESTAÑAS DE NAVEGACIÓN -->
             <ul class="nav nav-tabs mb-3" id="tabProcesos" role="tablist">
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="asistencia-tab" data-bs-toggle="tab" data-bs-target="#panel-asistencia" type="button" role="tab">
-                        <i class="fas fa-clipboard-check me-2"></i>Reportes Diarios
+                    <button class="nav-link active text-dark fw-semibold" id="produccion-tab" data-bs-toggle="tab" data-bs-target="#panel-produccion" type="button" role="tab" aria-controls="panel-produccion" aria-selected="true">
+                        <i class="fas fa-hard-hat me-2"></i>Producción y GPU
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="produccion-tab" data-bs-toggle="tab" data-bs-target="#panel-produccion" type="button" role="tab">
-                        <i class="fas fa-hard-hat me-2"></i>Producción y GPU
+                    <button class="nav-link text-secondary fw-medium" id="asistencia-tab" data-bs-toggle="tab" data-bs-target="#panel-asistencia" type="button" role="tab" aria-controls="panel-asistencia" aria-selected="false">
+                        <i class="fas fa-clipboard-check me-2"></i>Reportes Diarios
                     </button>
                 </li>
             </ul>
 
             <div class="tab-content" id="tabProcesosContent">
                 
-                <!-- TAB 1: ASISTENCIA -->
-                <div class="tab-pane fade show active" id="panel-asistencia" role="tabpanel">
-                    <div id="grid-asistencia" class="grid-wrapper"></div>
-                </div>
-
-                <!-- TAB 2: PRODUCCIÓN -->
-                <div class="tab-pane fade" id="panel-produccion" role="tabpanel">
+                <div class="tab-pane fade show active" id="panel-produccion" role="tabpanel" aria-labelledby="produccion-tab">
                     <div class="row">
                         <div class="col-12 mb-2">
-                            <div class="alert alert-light border d-flex justify-content-between align-items-center">
+                            <div class=" d-flex justify-content-end">
                                 <button class="btn btn-sm btn-success" id="btn-guardar-prod"><i class="fas fa-save"></i> Guardar Cambios</button>
                             </div>
                         </div>
                     </div>
 
-                    <!-- GRID DE TOAST UI -->
                     <div id="grid-produccion" class="grid-wrapper"></div>
 
-                    <!-- KPIs DE CONTROL FINANCIERO -->
                     <div class="row mt-2">
                         <div class="col-md-4">
                             <div class="kpi-box normal">
@@ -143,30 +176,37 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="tab-pane fade" id="panel-asistencia" role="tabpanel" aria-labelledby="asistencia-tab">
+                    <div id="grid-asistencia" class="grid-wrapper"></div>
+                </div>
+
             </div>
         </div>
     </div>
 </div>
 
-<!-- TOAST NOTIFICACIÓN -->
-<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1100">
     <div id="toastExcedente" class="toast text-white bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
         <div class="d-flex">
-        <div class="toast-body">
-            <i class="fas fa-exclamation-triangle me-2"></i>
-            <b>¡ALERTA DE EXCEDENTE!</b><br>
-            El volumen supera el tope autorizado. El GPU ha sido bloqueado.
-        </div>
-        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            <div class="toast-body">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <b>¡ALERTA DE EXCEDENTE!</b><br>
+                El volumen supera el tope autorizado. El GPU ha sido bloqueado.
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
         </div>
     </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
-<script src="{% static 'operaciones/js/modulos/produccion/lista_produccion.js' %}"></script>
+<script src="{% static 'operaciones/js/modulos/produccion/lista_produccion.js' %}?v=1.0.1"></script>
 <script>
     var urlSitiosOtsProceso = "{% url 'operaciones:obtener_sitios_con_ots_ejecutadas' %}";
     var urlOtsPorSitioGrid = "{% url 'operaciones:ots_por_sitio_grid' %}";
+    var urlObtenerPartidasProduccion = "{% url 'operaciones:obtener_partidas_produccion' %}";
+    
+    
 </script>
 {% endblock %}
