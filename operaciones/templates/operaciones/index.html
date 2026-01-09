@@ -138,26 +138,20 @@
 
 {% block scripts %}
 <script>
-// URL para la API de actividad reciente
 const urlActividadReciente = '{% url "operaciones:datatable_registro_actividad" %}';
 
 $(document).ready(function() {
-    // Manejar cambio de tabs de Power BI
     $('#powerbiTabs button').on('click', function (e) {
-        // Remover active de todos los tabs
         $('#powerbiTabs .nav-link').removeClass('active text-dark').addClass('text-secondary');
         $('#powerbiTabs .nav-link').removeClass('fw-semibold').addClass('fw-medium');
         
-        // Agregar active al tab clickeado
         $(this).removeClass('text-secondary').addClass('active text-dark fw-semibold');
         
-        // Mostrar el contenido correspondiente
         const target = $(this).data('bs-target');
         $('.tab-pane').removeClass('show active');
         $(target).addClass('show active');
     });
 
-    // Cargar estadísticas adicionales
     function cargarEstadisticas() {
         $.ajax({
             url: '{% url "operaciones:api_estadisticas" %}',
@@ -170,7 +164,6 @@ $(document).ready(function() {
         });
     }
     
-    // Función para cargar actividad reciente
     function cargarActividadReciente() {
         $.ajax({
             url: urlActividadReciente,
@@ -244,17 +237,14 @@ $(document).ready(function() {
         });
     }
     
-    // Inicializar
     cargarEstadisticas();
     cargarActividadReciente();
     
-    // Actualizar actividad cada 60 segundos
     setInterval(function() {
         cargarActividadReciente();
     }, 60000);
 });
 
-// Función para recargar actividad manualmente
 function cargarActividadReciente() {
     const spinner = $('#actividad-reciente');
     spinner.html(`
@@ -330,7 +320,6 @@ function cargarActividadReciente() {
     });
 }
 
-// Redimensionar el gráfico cuando cambie el tamaño de la ventana
 window.addEventListener('resize', function() {
     if (window.myChart) {
         window.myChart.resize();

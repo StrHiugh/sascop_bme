@@ -19,7 +19,6 @@ $(document).ready(function () {
             url: urlDatatable,
             type: "GET", 
             data: function (d) {
-                // Tus filtros personalizados
                 d.filtro = $("#filtro-buscar").val();
                 d.usuario_id = $("#filtro-usuario").val();
                 d.evento = $("#filtro-evento").val();
@@ -91,7 +90,6 @@ $(document).ready(function () {
         drawCallback: function (settings) {
             $("[data-toggle='tooltip']").tooltip();
             
-            // Eventos para los botones de acción
             $("#tabla").off('click', '.ver-detalle').on('click', '.ver-detalle', function() {
                 const registroId = $(this).data('id');
                 verDetalleRegistro(registroId);
@@ -104,30 +102,25 @@ $(document).ready(function () {
         }
     });
     cargarUsuarios();
-    // Búsqueda por Enter
     $("#filtro-buscar").keypress(function (event) {
         if (event.which == 13) {
             tablaRegistroActividad.ajax.reload();
         }
     });
 
-    // Mover select de length
     $("#tabla_length").detach().appendTo("#select-length");
 
-    // Panel de filtros
     $("#btn-panel-filtros").on("click", function () {
         const offcanvas = new bootstrap.Offcanvas(document.getElementById('panelFiltros'));
         offcanvas.show();
     });
     
-    // Aplicar filtros
     $("#aplicar-filtros").on("click", function () {
         tablaRegistroActividad.ajax.reload();
         const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('panelFiltros'));
         offcanvas.hide();
     });
 
-    // Limpiar filtros
     $("#limpiar-filtros").on("click", function () {
         $("#form-filtros")[0].reset();
         tablaRegistroActividad.ajax.reload();
@@ -135,7 +128,6 @@ $(document).ready(function () {
 
 });
 
-// Cargar opciones de usuarios en el filtro
 function cargarUsuarios() {
     return $.ajax({
         url: urlObtenerUsuarios,
@@ -161,11 +153,8 @@ function cargarUsuarios() {
     });
 }
 
-// Funciones auxiliares
 function verDetalleRegistro(registroId) {
-    // Tu implementación aquí
 }
 
 function descargarRegistro(registroId) {
-    // Tu implementación aquí
 }

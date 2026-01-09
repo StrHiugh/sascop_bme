@@ -93,7 +93,6 @@ def crear_tipos(request):
 @require_http_methods(["POST"])
 def eliminar_tipos(request):
     try:
-        # Obtener el ID de la embarcación
         id = request.POST.get('id')
         
         if not id:
@@ -103,7 +102,6 @@ def eliminar_tipos(request):
                 'exito': False
             })
 
-        # Eliminación lógica
         tipo = Tipo.objects.get(id=id)
         tipo.activo = False
         tipo.save()
@@ -264,7 +262,6 @@ def crear_sitio(request):
 @require_http_methods(["POST"])
 def eliminar_sitio(request):
     try:
-        # Obtener el ID de la sitio
         sitio_id = request.POST.get('sitio_id')
         
         if not sitio_id:
@@ -274,7 +271,6 @@ def eliminar_sitio(request):
                 'exito': False
             })
 
-        # Eliminación lógica
         sitio = Sitio.objects.get(id=sitio_id)
         sitio.activo = False
         sitio.save()
@@ -433,7 +429,6 @@ def crear_estatus(request):
 @require_http_methods(["POST"])
 def eliminar_estatus(request):
     try:
-        # Obtener el ID de la embarcación
         id = request.POST.get('id')
         
         if not id:
@@ -443,7 +438,6 @@ def eliminar_estatus(request):
                 'exito': False
             })
 
-        # Eliminación lógica
         estatus = Estatus.objects.get(id=id)
         estatus.activo = False
         estatus.save()
@@ -595,7 +589,6 @@ def crear_unidad_medida(request):
 @require_http_methods(["POST"])
 def eliminar_unidad_medida(request):
     try:
-        # Obtener el ID de la embarcación
         unidad_id = request.POST.get('id')
         
         if not unidad_id:
@@ -605,7 +598,6 @@ def eliminar_unidad_medida(request):
                 'exito': False
             })
 
-        # Eliminación lógica
         unidad_medida = UnidadMedida.objects.get(id=unidad_id)
         unidad_medida.activo = False
         unidad_medida.save()
@@ -778,7 +770,6 @@ def crear_frente(request):
 @require_http_methods(["POST"])
 def eliminar_frente(request):
     try:
-        # Obtener el ID de la embarcación
         id = request.POST.get('id')
         
         if not id:
@@ -788,7 +779,6 @@ def eliminar_frente(request):
                 'exito': False
             })
 
-        # Eliminación lógica
         frente = Frente.objects.get(id=id)
         frente.activo = False
         frente.save()
@@ -945,7 +935,6 @@ def crear_paso(request):
 @require_http_methods(["POST"])
 def eliminar_paso(request):
     try:
-        # Obtener el ID de la embarcación
         id = request.POST.get('id')
         
         if not id:
@@ -955,7 +944,6 @@ def eliminar_paso(request):
                 'exito': False
             })
 
-        # Eliminación lógica
         paso = Paso.objects.get(id=id)
         paso.activo = False
         paso.save()
@@ -1045,33 +1033,29 @@ def datatable_producto(request):
     start = int(request.GET.get('start', 0))
     length = int(request.GET.get('length', 10))
     
-    # Nuevos parámetros de filtro
     search_value = request.GET.get('filtro', '')
     tipo_partida = request.GET.get('tipo_partida', '')
     frente = request.GET.get('frente', '')
     unidad_medida = request.GET.get('unidad_medida', '')
     estado = request.GET.get('estado', '')
     
-    # Parámetros de ordenamiento de DataTables
     order_column_index = request.GET.get('order[0][column]', '0')
     order_direction = request.GET.get('order[0][dir]', 'asc')
     
-    # Mapeo de columnas del DataTable a campos del modelo
     column_mapping = {
-        '0': 'id',  # ID
-        '1': 'id_partida',  # ID Partida
-        '2': 'descripcion_concepto',  # Descripción
-        '3': 'id_tipo_partida__descripcion',  # Tipo Partida
-        '4': 'id_frente__descripcion',  # Sitio
-        '5': 'id_unidad_medida__descripcion',  # Unidad Medida
-        '6': 'anexo',  # Anexo
-        '7': 'precio_unitario_mn',  # Precio MN
-        '8': 'precio_unitario_usd',  # Precio USD
-        '9': 'activo'  # Estatus
+        '0': 'id',  
+        '1': 'id_partida',      
+        '2': 'descripcion_concepto', 
+        '3': 'id_tipo_partida__descripcion', 
+        '4': 'id_frente__descripcion', 
+        '5': 'id_unidad_medida__descripcion', 
+        '6': 'anexo', 
+        '7': 'precio_unitario_mn', 
+        '8': 'precio_unitario_usd', 
+        '9': 'activo' 
     }
     
     order_field = column_mapping.get(order_column_index, 'id')
-    # Aplicar dirección de ordenamiento
     if order_direction == 'desc':
         order_field = f'-{order_field}'
     
@@ -1089,39 +1073,31 @@ def datatable_producto(request):
         unidad_medida_descripcion=F('id_unidad_medida__descripcion')
     )
     
-    # Aplicar filtros
     if search_value:
         productos = productos.filter(
             Q(id_partida__icontains=search_value) |
             Q(descripcion_concepto__icontains=search_value)
         )
     
-    # Filtro por tipo partida
     if tipo_partida:
         productos = productos.filter(id_tipo_partida_id=tipo_partida)
     
-    # Filtro por frente
     if frente:
         productos = productos.filter(id_frente_id=frente)
     
-    # Filtro por unidad de medida
     if unidad_medida:
         productos = productos.filter(id_unidad_medida_id=unidad_medida)
     
-    # Filtro por estado
     if estado:
         if estado == 'activo':
             productos = productos.filter(activo=True)
         elif estado == 'inactivo':
             productos = productos.filter(activo=False)
         
-    # Contar total de registros después del filtro (para recordsFiltered)
     total_records_filtered = productos.count()
     
-    # Aplicar ordenamiento
     productos = productos.order_by(order_field)
     
-    # Aplicar paginación
     productos = productos[start:start + length]
     
     data = []
@@ -1143,15 +1119,14 @@ def datatable_producto(request):
     
     return JsonResponse({
         'draw': draw,
-        'recordsTotal': Producto.objects.filter(activo=1).count(),  # Total sin filtros
-        'recordsFiltered': total_records_filtered,  # Total con filtros aplicados
+        'recordsTotal': Producto.objects.filter(activo=1).count(), 
+        'recordsFiltered': total_records_filtered, 
         'data': data
     })
     
 @require_http_methods(["POST"])
 def crear_producto(request):
     try:
-        # Obtener datos del formulario
         id_partida = request.POST.get('id_partida')
         descripcion_concepto = request.POST.get('descripcion')
         anexo = request.POST.get('anexo', '')
@@ -1162,7 +1137,6 @@ def crear_producto(request):
         precio_unitario_usd = request.POST.get('precio_unitario_usd', 0)
         comentario = request.POST.get('comentario', '')
         
-        # Validaciones básicas
         if not id_partida:
             return JsonResponse({
                 'exito': False,
@@ -1177,7 +1151,6 @@ def crear_producto(request):
                 'detalles': 'La descripción es obligatoria'
             })
         
-        # Verificar si ya existe un producto con el mismo id_partida
         if id_partida != 'NA':
             if Producto.objects.filter(id_partida=id_partida, activo=True).exists():
                 return JsonResponse({
@@ -1186,7 +1159,6 @@ def crear_producto(request):
                     'detalles': 'Ya existe un producto con este ID de partida'
                 })
         
-        # Obtener las instancias de los modelos FK
         try:
             frente = Frente.objects.get(id=frente_id)
             tipo_partida = Tipo.objects.get(id=tipo_partida_id)
@@ -1198,7 +1170,6 @@ def crear_producto(request):
                 'detalles': 'Uno de los campos de relación no existe'
             })
         
-        # Convertir precios a decimal
         try:
             precio_mn = Decimal(precio_unitario_mn) if precio_unitario_mn else Decimal('0')
             precio_usd = Decimal(precio_unitario_usd) if precio_unitario_usd else Decimal('0')
@@ -1209,7 +1180,6 @@ def crear_producto(request):
                 'detalles': 'Los precios deben ser valores numéricos válidos'
             })
         
-        # Crear el producto
         producto = Producto.objects.create(
             id_partida=id_partida,
             descripcion_concepto=descripcion_concepto,
@@ -1240,7 +1210,6 @@ def crear_producto(request):
 @require_http_methods(["POST"])
 def eliminar_producto(request):
     try:
-        # Obtener el ID de la embarcación
         id = request.POST.get('id')
         
         if not id:
@@ -1250,7 +1219,6 @@ def eliminar_producto(request):
                 'exito': False
             })
 
-        # Eliminación lógica
         producto = Producto.objects.get(id=id)
         producto.activo = False
         producto.save()
@@ -1314,7 +1282,6 @@ def editar_producto(request):
         precio_unitario_usd = request.POST.get('precio_unitario_usd', 0)
         comentario = request.POST.get('comentario', '')
         
-        # Validaciones básicas
         if not producto_id:
             return JsonResponse({
                 'exito': False,
@@ -1336,7 +1303,6 @@ def editar_producto(request):
                 'detalles': 'La descripción es obligatoria'
             })
         
-        # Obtener el producto existente
         try:
             producto = Producto.objects.get(id=producto_id)
         except Producto.DoesNotExist:
@@ -1346,7 +1312,6 @@ def editar_producto(request):
                 'detalles': 'Producto no encontrado'
             })
         
-        # Verificar si ya existe otro producto con el mismo id_partida
         if id_partida != 'NA':
             if Producto.objects.filter(id_partida=id_partida, activo=True).exclude(id=producto_id).exists():
                 return JsonResponse({
@@ -1355,7 +1320,6 @@ def editar_producto(request):
                     'detalles': 'Ya existe otro producto con este ID de partida'
                 })
             
-        # Obtener las instancias de los modelos FK
         try:
             frente = Frente.objects.get(id=frente_id)
             tipo_partida = Tipo.objects.get(id=tipo_partida_id)
@@ -1367,7 +1331,6 @@ def editar_producto(request):
                 'detalles': 'Uno de los campos de relación no existe'
             })
         
-        # Convertir precios a decimal
         try:
             precio_mn = Decimal(precio_unitario_mn) if precio_unitario_mn else Decimal('0')
             precio_usd = Decimal(precio_unitario_usd) if precio_unitario_usd else Decimal('0')
@@ -1378,7 +1341,6 @@ def editar_producto(request):
                 'detalles': 'Los precios deben ser valores numéricos válidos'
             })
         
-        # Actualizar el producto
         producto.id_partida = id_partida
         producto.descripcion_concepto = descripcion_concepto
         producto.anexo = anexo
@@ -1478,7 +1440,6 @@ def crear_responsable(request):
 @require_http_methods(["POST"])
 def eliminar_responsable(request):
     try:
-        # Obtener el ID de la embarcación
         responsable_id = request.POST.get('id')
         
         if not responsable_id:
@@ -1488,7 +1449,6 @@ def eliminar_responsable(request):
                 'exito': False
             })
 
-        # Eliminación lógica
         responsable = ResponsableProyecto.objects.get(id=responsable_id)
         responsable.activo = False
         responsable.save()
@@ -1638,7 +1598,6 @@ def crear_cliente(request):
 @require_http_methods(["POST"])
 def eliminar_cliente(request):
     try:
-        # Obtener el ID de la cliente
         cliente_id = request.POST.get('cliente_id')
         
         if not cliente_id:
@@ -1648,7 +1607,6 @@ def eliminar_cliente(request):
                 'exito': False
             })
 
-        # Eliminación lógica
         cliente = Cliente.objects.get(id=cliente_id)
         cliente.activo = False
         cliente.save()
@@ -1807,7 +1765,6 @@ def crear_paso_ot(request):
 @require_http_methods(["POST"])
 def eliminar_paso_ot(request):
     try:
-        # Obtener el ID de la embarcación
         id = request.POST.get('id')
         
         if not id:
@@ -1817,7 +1774,6 @@ def eliminar_paso_ot(request):
                 'exito': False
             })
 
-        # Eliminación lógica
         paso = PasoOt.objects.get(id=id)
         paso.activo = False
         paso.save()

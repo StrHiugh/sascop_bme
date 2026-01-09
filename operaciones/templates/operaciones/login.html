@@ -94,16 +94,13 @@
         </div>
     </div>
     <script>
-        // Variables para validar
         var loginError = {{ login_error|yesno:"true,false" }};
         var errorMessage = "{{ error_message|default:'' }}";
         var userAuthenticated = {{ user.is_authenticated|yesno:"true,false" }};
-        //Si la página viene del cache, recargar
         if (performance.navigation.type === 2) {
             window.location.reload();
         }
         
-        // Prevenir reenvío del formulario
         if (window.history && window.history.replaceState) {
             window.history.replaceState(null, null, window.location.href);
         }

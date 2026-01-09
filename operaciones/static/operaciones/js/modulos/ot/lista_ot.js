@@ -38,7 +38,6 @@ $(document).ready(function () {
             }
         },
         createdRow: function (row, data, dataIndex) {
-            // Si el estatus es -1 aplicar estilo especial
             if (data.estatus === -1 || data.estatus === 'Por definir') {
                 $(row).addClass('fila-por-definir');
             }
@@ -138,7 +137,7 @@ $(document).ready(function () {
             {
                 "data": "progreso_tiempo", 
                 "title": "Progreso Tiempo",
-                "visible": false,  // Oculto por defecto
+                "visible": false,
                 "render": function(data, type, row) {
                     let color = 'bg-primary';
                     if (row.dias_restantes <= 7 && data < 100) color = 'bg-danger';
@@ -164,7 +163,7 @@ $(document).ready(function () {
             {
                 "data": "progreso_pasos",
                 "title": "Progreso Pasos", 
-                "visible": false,  // Oculto por defecto
+                "visible": false,
                 "render": function(data, type, row) {
                     let color = 'bg-success';
                     if (data < 25) color = 'bg-danger';
@@ -205,7 +204,6 @@ $(document).ready(function () {
                         'POR CANCELAR': 'bg-danger'
                     };
 
-                    // Si el estatus es 1 (activo), mostrar dropdown con estatus actual
                     if (row.estatus_numero === 1) {
                         return `
                             <div class="dropdown">
@@ -228,7 +226,6 @@ $(document).ready(function () {
                             </div>
                         `;
                     } else {
-                        // Si es -1 (por definir), mostrar solo el badge
                         return `<button class="btn btn-sm ${estatusClasses[data] || 'bg-secondary'} text-white w-100" 
                                         type="button" data-bs-toggle="dropdown" data-bs-display="static" 
                                         aria-expanded="false">
@@ -272,23 +269,18 @@ $(document).ready(function () {
         }
     });
 
-    // Búsqueda por Enter
     $("#filtro-buscar").keypress(function (event) {
         if (event.which == 13) {
         tablaOt.draw();
         }
     });
 
-    // Mover select de length
     $("#tabla_length").detach().appendTo("#select-length");
 
-    // Abrir modal para crear PTE
     $(document).on("click", ".crear-ot", function() {
         abrirModalCrearOT();
     });
 
-
-    // Evento para editar ot
     $("#tabla tbody").on("click", ".editar_ot", function () {
         const otID = $(this).data('id');
         abrirModalEditarOT(otID);
@@ -298,7 +290,6 @@ $(document).ready(function () {
         window.ot_actual = otID;
     });
 
-    // Evento para expandir detalles del OT y repros
     $(document).on("click", ".detalle-pte", function () {
         window.tablaActiva =tablaOt.row($(this).parents('tr')).data() ?
             tablaOt :
@@ -311,20 +302,17 @@ $(document).ready(function () {
         let row = window.tablaActiva.row(tr);
         let otId = row.data().id;
 
-        // Cerrar detalles
         if (row.child.isShown()) {
             row.child.hide();
             tr.removeClass('shown');
             $(this).find('i').removeClass('fa-minus-square').addClass('fa-plus-square');
 
-            // Si al cerrar hay tabla hija, destruirla
             const tablaImportacionesId = `#tabla-importaciones_${otId}`;
             if ($.fn.DataTable.isDataTable(tablaImportacionesId)) {
                 $(tablaImportacionesId).DataTable().destroy();
                 $(tablaImportacionesId).empty();
             }
 
-            // Destruir Detalles (sea OT o Repro)
             const tablaDetalleId = `#tabla-detalle-ot_${otId}`;
             if ($.fn.DataTable.isDataTable(tablaDetalleId)) {
                 $(tablaDetalleId).DataTable().destroy();
@@ -338,11 +326,9 @@ $(document).ready(function () {
                 }
             }
         } else {
-            // Abrir detalles
             $(this).find('i').removeClass('fa-plus-square').addClass('fa-minus-square');
             row.child(fnHTMLTablaDetallePTE(otId)).show();
 
-            // Inicializar DataTable de Reprogramaciones y Detalles
             if (window.tablaTexto === "OT") {
                 initTablaReprogramaciones(otId);
                 initTablaDetalleOT(otId);
@@ -354,7 +340,6 @@ $(document).ready(function () {
         }
     });
 
-    // Función para abrir modal de edición
     function abrirModalEditarOT(otID) {
         $("#formCrearOT")[0].reset();
         $("#modalCrearOTLabel").text("Editar OT");
@@ -363,7 +348,6 @@ $(document).ready(function () {
         const $divOTPrincipal = $('#ot_principal').closest('.mb-3');
         const $divNumReprogramacion = $('#num_reprogramacion').closest('.mb-3');
 
-        // Ocultar campos por defecto
         $divOTPrincipal.hide().attr('hidden', 'hidden');
         $divNumReprogramacion.hide().attr('hidden', 'hidden');
         $('#num_reprogramacion').val('').prop('disabled', true);
@@ -373,13 +357,11 @@ $(document).ready(function () {
             $('#ot_principal').select2('destroy');
         }
 
-        // Obtener datos de la ot
         BMAjax(urlObtenerDatos, { id: otID }, "GET")
             .done(function (datos) {
                 iniciarLoader();
                 const ot = datos.datos;
 
-                // Llenar formulario con datos existentes
                 $("#ot_id").val(ot.id);
                 $("#orden_trabajo").val(ot.orden_trabajo);
                 $("#oficio_solicitud").val(ot.oficio_solicitud);
@@ -409,11 +391,9 @@ $(document).ready(function () {
                     $("#responsable_proyecto").val(ot.responsable_proyecto).trigger('change');
                 });
 
-                // Verificar si es reprogramación y habilitar campos
                 const esReprogramacion = (ot.id_tipo_id === 5);
 
                 if (esReprogramacion) {
-                    // Mostrar campos de reprogramación
                     $divOTPrincipal.show().removeAttr('hidden');
                     $divNumReprogramacion.show().removeAttr('hidden');
 
@@ -427,7 +407,6 @@ $(document).ready(function () {
                     });
                 }
 
-                // Mostrar modal
                 setTimeout(() => {
                     finalizarLoader();
                     REGISTRO_ACTIVIDAD.registra_actuales("#formCrearOT");
@@ -514,7 +493,6 @@ $(document).ready(function () {
         }, 500);
     }
 
-    // Función para cargar responsables de proyecto
     function cargarResponsablesProyecto() {
         return $.ajax({
             url: urlObtenerResponsables,
@@ -554,7 +532,6 @@ $(document).ready(function () {
         });
     }
 
-    //Funcion para guardar las ediciones
     $("#btnGuardarOT").off('click').on("click", function () {
         const otId = $("#ot_id").val();
         const formData = new FormData($("#formCrearOT")[0]);
@@ -610,9 +587,7 @@ $(document).ready(function () {
         });
     });
 
-    // Panel de filtros
     $("#btn-panel-filtros").on("click", function () {
-        // Mostrar el offcanvas de Bootstrap
         cargarClientes();
         var filtrosOffcanvas = new bootstrap.Offcanvas(document.getElementById('panelFiltros'));
         filtrosOffcanvas.show();
@@ -620,17 +595,13 @@ $(document).ready(function () {
         obtenerSitios();
     });
 
-    // Aplicar filtros
     $("#aplicar-filtros").on("click", function () {
-        // Obtener valores de los filtros
         var estatus = $("#estatus").val();
         var tipo = $("#tipo").val();
         var responsable = $("#id_responsable_proyecto").val();
         
-        // Aplicar filtros a la DataTable
         tablaOt.draw();
         
-        // Cerrar el panel
         var filtrosOffcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('panelFiltros'));
         filtrosOffcanvas.hide();
         iniciarLoader();
@@ -639,19 +610,15 @@ $(document).ready(function () {
         }, 1300);
     });
 
-    // Limpiar filtros
     $("#limpiar-filtros").on("click", function () {
-        // Limpiar todos los selects
         $("#estatus").val("");
         $("#tipo").val("");
         $("#id_responsable_proyecto").val("").trigger('change');
         $("#id_cliente").val("").trigger('change');
         $("#anio").val("");
         $("#cliente").val("");
-        // Redibujar la tabla sin filtros
         tablaOt.draw();
         
-        // Cerrar el panel (opcional)
         var filtrosOffcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('panelFiltros'));
         filtrosOffcanvas.hide();
         iniciarLoader();
@@ -660,7 +627,6 @@ $(document).ready(function () {
         }, 1300);
     });
 
-    //Funcion para eliminar
     $(document).on("click", ".eliminar_ot", function () {
         const id = $(this).data('id');
         let datos = tablaOt.row($(this).parents('tr')).data() ? 
@@ -706,40 +672,31 @@ $(document).ready(function () {
         });
     });
 
-    // Evento para cambiar tipo de OT (INICIAL/REPROGRAMACION)
     $(document).on('change', '#id_tipo', function () {
         const tipoSeleccionado = $(this).val();
         const esReprogramacion = (tipoSeleccionado === '5' || tipoSeleccionado === 'REPROGRAMACION');
 
-        // SOLO LIMPIAR ELEMENTOS DE SELECT2 SI EXISTEN
         $('.select2-container').remove();
         $('#ot_principal').removeClass('select2-hidden-accessible');
 
-        // Obtener los divs contenedores
         const $divOTPrincipal = $('#ot_principal').closest('.mb-3');
         const $divNumReprogramacion = $('#num_reprogramacion').closest('.mb-3');
 
-        // Mostrar/ocultar los contenedores
         if (esReprogramacion) {
             $divOTPrincipal.show().removeAttr('hidden');
             $divNumReprogramacion.show().removeAttr('hidden');
-            // $('#responsable_proyecto').removeAttr('disabled');
         } else {
             $divOTPrincipal.hide().attr('hidden', 'hidden');
             $divNumReprogramacion.hide().attr('hidden', 'hidden');
-            // $('#responsable_proyecto').attr('disabled');
         }
 
-        // Habilitar/deshabilitar campos según el tipo
         $('#num_reprogramacion').prop('disabled', !esReprogramacion);
         $('#ot_principal').prop('disabled', !esReprogramacion);
 
-        // Limpiar campos si no es reprogramación
         if (!esReprogramacion) {
             $('#num_reprogramacion').val('');
             $('#ot_principal').val('');
         } else {
-            // Si es reprogramación, cargar las OTs disponibles
             cargarOTsPrincipales(window.ot_actual);
         }
     });
@@ -822,10 +779,8 @@ $(document).ready(function () {
         });
     }
 
-    //Carga las ots principales y omite la que esta seleccionada
     function cargarOTsPrincipales(ot_id) {
         const selectOT = $('#ot_principal');
-        // Mostrar estado de carga
         selectOT.empty().append('<option value="">Cargando OTs...</option>').prop('disabled', true);
 
         return $.ajax({
@@ -876,7 +831,6 @@ $(document).ready(function () {
         });
     }
 
-    // Evento para cambiar estatus de OT
     $(document).on('click', '.cambiar-estatus-option', function (e) {
         e.preventDefault();
         const $opcionClickeada = $(this);
@@ -896,7 +850,6 @@ $(document).ready(function () {
                 <div class="row">
         `;
 
-        // Agregar campo de fecha solo si el estatus es 10(terminado)
         if (mostrarFechaEntrega) {
             contenidoMensaje += `
                     <div class="mb-3 col-3">
@@ -965,12 +918,10 @@ $(document).ready(function () {
         });
     });
 
-    // Evento para cambiar frente
     $('#id_frente').on('change', function () {
         toggleFrenteFields();
     });
 
-    // Función para calcular fecha término basada en plazo días
     function calcularFechaTermino() {
         const fechaInicio = $('#fecha_inicio_programado').val();
         const plazoDias = parseInt($('#plazo_dias').val()) || 0;
@@ -980,7 +931,6 @@ $(document).ready(function () {
             const fechaTerminoObj = new Date(fechaInicioObj);
             fechaTerminoObj.setDate(fechaTerminoObj.getDate() + plazoDias);
 
-            // Formatear a YYYY-MM-DD para input date
             const year = fechaTerminoObj.getFullYear();
             const month = String(fechaTerminoObj.getMonth() + 1).padStart(2, '0');
             const day = String(fechaTerminoObj.getDate()).padStart(2, '0');
@@ -990,12 +940,10 @@ $(document).ready(function () {
         }
     }
 
-    // Evento cuando cambia la fecha de inicio programado
     $('#fecha_inicio_programado').on('change', function () {
         calcularFechaTermino();
     });
 
-    // Evento cuando cambia el plazo en días (también actualiza si ya hay fecha inicio)
     $('#plazo_dias').on('input', function () {
         if ($('#fecha_inicio_programado').val()) {
             calcularFechaTermino();
@@ -1011,10 +959,9 @@ $(document).ready(function () {
         const pasoId = $(this).closest('.dropdown').find('.paso-id').val();
         const nuevoEstatus = $(this).data('estatus');
         const textoEstatus = $(this).text().trim();
-        const mostrarFechaEntrega = (nuevoEstatus == '3'); // COMPLETADO
+        const mostrarFechaEntrega = (nuevoEstatus == '3');  
         const dropdownButton = $(this).closest('.dropdown').find('.dropdown-toggle');
 
-        // Obtener datos de la fila actual
         let datosPaso = window.tablaDetalleActiva ? window.tablaDetalleActiva.row($(this).parents('tr')).data() : null;
         let contenidoMensaje = `
             <div class="mb-3">
@@ -1022,7 +969,6 @@ $(document).ready(function () {
                 <div class="row">
         `;
         
-        // Agregar campo de fecha solo si el estatus es 3 (COMPLETADO)
         if (mostrarFechaEntrega) {
             contenidoMensaje += `
                     <div class="mb-3 col-3">
@@ -1051,7 +997,6 @@ $(document).ready(function () {
                     funcion: function() {
                         const comentario = $('#comentarioCambio').val().trim();
                         let fechaEntrega = null;
-                        // Validar fecha si es requerida
                         if (mostrarFechaEntrega) {
                             fechaEntrega = $('#fechaEntrega').val();
                             if (!fechaEntrega) {
@@ -1068,7 +1013,6 @@ $(document).ready(function () {
                             detalle: `el estatus de: <b>${datosPaso.estatus_paso_texto || 'PENDIENTE'}</b> a: <b>${textoEstatus}</b>, del paso <b>${datosPaso.orden || ''} - ${datosPaso.desc_paso || ''}</b> de la OT: <b>${datosPaso.oficio_ot || ''}</b>`
                         });
                         
-                        // Preparar datos para enviar
                         const datos = {
                             paso_id: pasoId,
                             nuevo_estatus: nuevoEstatus,
@@ -1077,7 +1021,6 @@ $(document).ready(function () {
                             csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val()
                         };
 
-                        // Agregar fecha de entrega solo si es COMPLETADO
                         if (mostrarFechaEntrega) {
                             datos.fecha_entrega = $('#fechaEntrega').val();
                         }
@@ -1088,12 +1031,9 @@ $(document).ready(function () {
                             "POST"
                         ).done(function(response) {
                             if (response.exito) {
-                                // Recargar la tabla de detalles
                                 if (window.tablaDetalleActiva) {
-                                    //window.tablaDetalleActiva.ajax.reload(null, false);
                                     actualizarEstatusPasoEnTiempoReal($botonDropdown, textoEstatus, nuevoEstatus, fechaEntrega, comentario);
                                     actualizarProgresoGeneralOT(datosPaso.id_ot)
-                                    //tablaOt.ajax.reload(null, false);
                                 }
                             } else {
                                 aviso("error", response.detalles || "Error al actualizar el estatus");
@@ -1112,11 +1052,10 @@ $(document).ready(function () {
         });
     });
 
-    // Cambio de fechas
     $(document).on('change', '.fecha-paso-input', function () {
         const pasoId = $(this).data('id');
         const fecha = $(this).val();
-        const tipo = $(this).data('tipo'); // 1: Inicio, 2: Termino, 3: Entrega
+        const tipo = $(this).data('tipo');
         let datosPaso = window.tablaDetalleActiva ? window.tablaDetalleActiva.row($(this).parents('tr')).data() : null;
 
         let log = new RegistroActividad(5,datosPaso.id,"ACTUALIZAR");
@@ -1147,7 +1086,6 @@ $(document).ready(function () {
         });
     });
 
-    // Subida de archivos
     $(document).on('click', '.ver-archivo', function () {
         const pasoId = $(this).data('id');
         const input = $(this).closest('div').find('.archivo-input')[0];
@@ -1161,9 +1099,7 @@ $(document).ready(function () {
         abrirModalImportarAnexo(otId);
     });
 
-    // 2. Crear Modal Dinámico si no existe
     function abrirModalImportarAnexo(otId) {
-        // Si el modal no existe en el DOM, crearlo
         if ($('#modalImportarAnexo').length === 0) {
             const modalHTML = `
                 <div class="modal fade" id="modalImportarAnexo" tabindex="-1" aria-hidden="true">
@@ -1195,7 +1131,7 @@ $(document).ready(function () {
             $('body').append(modalHTML);
         }
         $('#import_ot_id').val(otId);
-        $('#archivoAnexo').val(''); // Limpiar input
+        $('#archivoAnexo').val(''); 
         const modal = new bootstrap.Modal(document.getElementById('modalImportarAnexo'));
         modal.show();
     }
@@ -1274,7 +1210,6 @@ $(document).ready(function () {
     });
 });
 
-// Funcion para guardar el archivo
 function guardarEnlaceArchivo() {
     const enlace = $('#enlaceArchivoOt').val().trim();
     const $btn = $('#btnGuardarEnlacePaso');
@@ -1284,7 +1219,6 @@ function guardarEnlaceArchivo() {
         return;
     }
     
-    // Validación de URL
     if (!enlace.startsWith('http://') && !enlace.startsWith('https://')) {
         aviso("advertencia", "La URL debe comenzar con http:// o https://");
         $('#enlaceArchivoOt').focus();
@@ -1407,11 +1341,11 @@ function initTablaDetalleOT(otId) {
         searching: false,
         paging: true,
         info: true,
-        pageLength: 10,    // 10 registros por página
-        lengthChange: false, // No permitir cambiar cantidad de registros
-        dom: '<"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>', // Solo info y paginación
+        pageLength: 10,    
+        lengthChange: false, 
+        dom: '<"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>', 
         language: {
-            "lengthMenu": "",  // Ocultar texto de length menu
+            "lengthMenu": "",  
             "info": "Mostrando _START_ a _END_ de _TOTAL_ registros",
             "infoEmpty": "No hay registros",
             "infoFiltered": "",
@@ -1447,7 +1381,6 @@ function initTablaDetalleOT(otId) {
                 className:"text-center",
                 width: "5%",
                 render: function (data, type, row) {
-                    // Convertir DD/MM/YYYY a YYYY-MM-DD para el input date
                     let val = "";
                     if (data) {
                         let parts = data.split('/');
@@ -1555,7 +1488,6 @@ function initTablaDetalleOT(otId) {
                 "orderable": false,
                 "render": function(data, type, row) {
                     if (row.archivo && row.archivo.trim() !== '') {
-                        // Codificar la URL para caracteres especiales
                         const urlCodificada = encodeURI(row.archivo);
                         const archivoAcortado = row.archivo.length > 30 ? 
                             row.archivo.substring(0, 30) + '...' : row.archivo;
@@ -1577,7 +1509,6 @@ function initTablaDetalleOT(otId) {
                             </a>
                         `;
                     } else {
-                        // Si no tiene archivo, mostrar solo ícono de subir
                         return `
                             <a class="table-icon ver-archivo" title="Subir archivo" data-id="${row.id}">
                                 <i class="fas fa-upload"></i>
@@ -1602,12 +1533,11 @@ function initTablaReprogramaciones(otId) {
             url: urlDatatable,
             type: "GET",
             data: function (d) {
-                d.tipo = 5; // Reprogramacion
+                d.tipo = 5; 
                 d.ot_principal = otId;
             }
         },
         createdRow: function (row, data, dataIndex) {
-            // Si el estatus es -1 aplicar estilo especial
             if (data.estatus === -1 || data.estatus === 'Por definir') {
                 $(row).addClass('fila-por-definir');
             }
@@ -1704,7 +1634,6 @@ function initTablaReprogramaciones(otId) {
                         'POR CANCELAR': 'bg-danger'
                     };
 
-                    // Si el estatus es 1 (activo), mostrar dropdown con estatus actual
                     if (row.estatus_numero === 1) {
                         return `
                             <div class="dropdown">
@@ -1727,7 +1656,6 @@ function initTablaReprogramaciones(otId) {
                             </div>
                         `;
                     } else {
-                        // Si es -1 (por definir), mostrar solo el badge
                         return `<button class="btn btn-sm ${estatusClasses[data] || 'bg-secondary'} text-white w-100" 
                                         type="button" data-bs-toggle="dropdown" data-bs-display="static" 
                                         aria-expanded="false">
@@ -1847,18 +1775,16 @@ function toggleFrenteFields() {
     const $divIntercom = $('#id_intercom').closest('.mb-3');
     const $divPatio = $('#id_patio').closest('.mb-3');
 
-    // Ocultar todos primero
     $divEmbarcacion.attr('hidden', true);
     $divPlataforma.attr('hidden', true);
     $divIntercom.attr('hidden', true);
     $divPatio.attr('hidden', true);
 
-    // Deshabilitar selects
     $('#id_embarcacion, #id_plataforma, #id_intercom, #id_patio').prop('disabled', true);
 
     let promises = [];
 
-    if (frenteId == '2') { // BARCO
+    if (frenteId == '2') {  
         $divEmbarcacion.removeAttr('hidden');
         $divPlataforma.removeAttr('hidden');
         $divIntercom.removeAttr('hidden');
@@ -1866,7 +1792,7 @@ function toggleFrenteFields() {
         promises.push(cargarSitios(7, '#id_plataforma'));
         promises.push(cargarSitios(5, '#id_intercom'));
 
-    } else if (frenteId == '1') { // TIERRA
+    } else if (frenteId == '1') {   
         $divPatio.removeAttr('hidden');
         $divPlataforma.removeAttr('hidden');
         $divIntercom.removeAttr('hidden');
@@ -1874,7 +1800,7 @@ function toggleFrenteFields() {
         promises.push(cargarSitios(7, '#id_plataforma'));
         promises.push(cargarSitios(5, '#id_intercom'));
 
-    } else if (frenteId == '4') { // CP / PS
+    } else if (frenteId == '4') {   
         $divPlataforma.removeAttr('hidden');
         promises.push(cargarSitios(7, '#id_plataforma'));
     }

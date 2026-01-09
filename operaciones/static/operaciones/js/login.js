@@ -1,36 +1,29 @@
-// Funcionalidad para la página de login
 $(document).ready(function() {
-    // Verificar si hay error de login desde Django
     if (typeof loginError !== 'undefined' && loginError) {
         aviso('error', errorMessage || 'Usuario o contraseña incorrectos.')
     }
     
-    // Verificar si el usuario ya está logueado (redirección desde Django)
     if (typeof userAuthenticated !== 'undefined' && userAuthenticated) {
-        // Redirigir después de mostrar el mensaje
         window.location.href = "{% url 'operaciones:index' %}";
     }
 
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('logout_exitoso') === '1') {
         aviso('exito', 'Sesión cerrada correctamente.');
-        // Limpiar URL
         window.history.replaceState({}, document.title, window.location.pathname);
     }
 
-    // Prevenir reenvío del formulario al usar el botón "atrás"
     if (window.history && window.history.replaceState) {
         window.history.replaceState(null, null, window.location.href);
     }
 
     $('.login-form input').on('keypress', function(e) {
-        if (e.which === 13) { // 13 es el código de la tecla Enter
+        if (e.which === 13) {
             $('.login-form').submit();
             return false; 
         }
     });
 
-    // Toggle entre login y recuperar contraseña
     $('.forgot-password-link').click(function(e) {
         e.preventDefault();
         $('.info-login-registro').hide();
@@ -49,9 +42,8 @@ $(document).ready(function() {
         $('.info-login-registro').show();
     });
     
-    // Validación del formulario de login
     $('.login-form').submit(function(e) {
-        e.preventDefault(); // ← Esto evita el envío inmediato
+        e.preventDefault();
         const form = this;
         const username = $('input[name="username"]').val();
         const password = $('input[name="password"]').val();
@@ -61,7 +53,6 @@ $(document).ready(function() {
             return false;
         }
         
-        // Mostrar spinner
         const button = $('.login-btn');
         const originalText = button.html();
         
@@ -71,14 +62,12 @@ $(document).ready(function() {
             Iniciando sesión...
             `);
             
-        // Esperar 5 segundos antes de enviar el formulario
         setTimeout(function() {
             form.submit();
             finalizarLoader();
         }, 2000);
     });
     
-    // Validación del formulario de recuperación
     $('.recovery-btn').click(function(e) {
         e.preventDefault();
         const email = $('input[name="email"]').val();
@@ -88,7 +77,6 @@ $(document).ready(function() {
             return false;
         }
         
-        // Mostrar spinner
         const button = $(this);
         const originalText = button.html();
         button.plrop('disabled', true).html(`
@@ -96,33 +84,26 @@ $(document).ready(function() {
             Enviando...
         `);
 
-        // Simular envío de recuperación
         setTimeout(function() {
-            // Restaurar botón
             button.prop('disabled', false);
             button.html(originalText);
-            // Mostrar éxito
             aviso('exito','Se ha enviado un correo con las instrucciones para recuperar su contraseña.');
             
-            // Regresar al login después de enviar
             $('.info-recuperar-password').hide();
             $('.info-login-registro').show();
             $('input[name="email"]').val('');
         }, 2000);
     });
     
-    // Manejar específicamente el error CSRF
     $(document).ajaxError(function(event, xhr, settings, error) {
         if (xhr.status === 403 && xhr.responseText.includes('CSRF')) {
             aviso('error', 'La sesión ha expirado. Por favor, recarga la página e intenta nuevamente.');
-            // Recargar la página para obtener un nuevo token CSRF
             setTimeout(function() {
                 window.location.reload();
             }, 3000);
         }
     });
 
-    // Animación simple de los inputs
     $('.form-input').focus(function() {
         $(this).css('border-color', '#434c5b');
         $(this).css('background-color', 'white');
@@ -133,7 +114,6 @@ $(document).ready(function() {
         $(this).css('background-color', '#f8f9fa');
     });
     
-    // Efecto hover simple en botones
     $('.login-btn, .recovery-btn').hover(
         function() {
             $(this).css('opacity', '0.9');

@@ -1,6 +1,3 @@
-// =============================================
-// AVISO - Funcionalidad de avisos configurables
-// =============================================
 function aviso(tipo_aviso, parametros) {
     let obj = {
         titulo: "",
@@ -10,7 +7,6 @@ function aviso(tipo_aviso, parametros) {
         icono: "fa fa-bell"
     };
 
-    // Mapear tipos a estilos SmartNotification
     const estilos = {
         "exito": {
             titulo: "¡Éxito!",
@@ -62,7 +58,6 @@ function aviso(tipo_aviso, parametros) {
     }
     $.extend(obj, parametros);
 
-    // Crear alerta estilo SmartNotification
     const alertId = "smart-alert-" + Date.now();
     const alertHtml = `
         <div id="${alertId}" class="smart-alert animated fadeInRight" 
@@ -104,7 +99,6 @@ function aviso(tipo_aviso, parametros) {
         </div>
     `;
 
-    // Agregar al contenedor de alertas (crear si no existe)
     let alertContainer = $("#smart-alert-container");
     if (alertContainer.length === 0) {
         $("body").prepend(`
@@ -115,31 +109,24 @@ function aviso(tipo_aviso, parametros) {
         alertContainer = $("#smart-alert-container");
     }
 
-    // Hacer el contenedor clickeable para las alertas
     alertContainer.css('pointer-events', 'auto');
 
-    // Calcular posición para stacking
     const alertasExistentes = alertContainer.find('.smart-alert').length;
-    const topPosition = 20 + (alertasExistentes * 15); // 15PX por cada alerta
+    const topPosition = 20 + (alertasExistentes * 15);
 
     alertContainer.append(alertHtml);
-
-    // Posicionar la nueva alerta
     $("#" + alertId).css('top', topPosition + 'px');
 
-    // Animar barra de progreso
     setTimeout(() => {
         $("#" + alertId + " .progress-bar").css('width', '0%');
     }, 100);
 
-    // Auto-remover si tiene tiempo definido
     if (obj.tiempo) {
         setTimeout(() => {
             cerrarSmartAviso(alertId);
         }, obj.tiempo);
     }
 
-    // Cerrar al hacer click en cualquier parte de la alerta
     $("#" + alertId).on('click', function (e) {
         if (!$(e.target).hasClass('close-smart-alert')) {
             cerrarSmartAviso(alertId);
@@ -147,7 +134,6 @@ function aviso(tipo_aviso, parametros) {
     });
 }
 
-// Función para cerrar alertas con animación
 function cerrarSmartAviso(alertId) {
     $("#" + alertId)
         .removeClass("fadeInRight")
@@ -160,7 +146,6 @@ function cerrarSmartAviso(alertId) {
         });
 }
 
-// Reorganizar alertas después de cerrar una
 function reorganizarAlertas() {
     const alertContainer = $("#smart-alert-container");
     const alertas = alertContainer.find('.smart-alert');
@@ -169,13 +154,10 @@ function reorganizarAlertas() {
         $(this).css('top', (20 + (index * 90)) + 'px');
     });
 
-    // Si no hay alertas, hacer el contenedor no clickeable
     if (alertas.length === 0) {
         alertContainer.css('pointer-events', 'none');
     }
 }
-
-// Agregar CSS para animaciones
 if (!$('#smart-alert-styles').length) {
     $('head').append(`
         <style id="smart-alert-styles">
@@ -199,9 +181,6 @@ if (!$('#smart-alert-styles').length) {
     `);
 }
 
-// =============================================
-// BMENSAJE - Modal de pantalla completa
-// =============================================
 var existeContenedorDHMensaje = false;
 (function ($) {
     $.BMensaje = function (configuracion) {
@@ -232,7 +211,6 @@ var existeContenedorDHMensaje = false;
             html: configuracion.subtitulo
         }).appendTo(contenedor);
 
-        /** FORMULARIO **/
         if (configuracion.tipo_input != undefined) {
             switch (configuracion.tipo_input) {
                 case "select":
@@ -276,7 +254,6 @@ var existeContenedorDHMensaje = false;
             }
         }
 
-        /** BOTONERA **/
         var botonera = $("<div>", { class: "botones" }).appendTo(contenedor);
         if (configuracion.botones != undefined && typeof configuracion.botones === "object") {
             botones = configuracion.botones;
@@ -339,7 +316,6 @@ var existeContenedorDHMensaje = false;
     };
 })(jQuery);
 
-/* Funcion para el formato de números */
 function formatoNumero(numero) {
     var decimales = 2;
     var separadorDecimal = ".";
@@ -356,7 +332,6 @@ function formatoNumero(numero) {
         separadorMiles = "";
     }
 
-    // Redondeamos
     if (!isNaN(parseInt(decimales))) {
         if (decimales >= 0) {
             numero = numero.toFixed(decimales);
@@ -370,7 +345,6 @@ function formatoNumero(numero) {
         numero = numero.toString();
     }
 
-    // Damos formato
     partes = numero.split(".", 2);
     array = partes[0].split("");
     for (var i = array.length - 3; i > 0 && array[i - 1] !== "-"; i -= 3) {
@@ -385,12 +359,10 @@ function formatoNumero(numero) {
     return numero;
 }
 
-// ADAPTADA: Cargar contenido via AJAX (compatible con Django CSRF)
 function cargarURL(url, container, parametros) {
     const obj = { data: {} };
     $.extend(obj, parametros);
 
-    // Agregar CSRF token para Django
     obj.data.csrfmiddlewaretoken = $("[name=csrfmiddlewaretoken]").val();
 
     $.ajax({
@@ -430,11 +402,7 @@ function getFormDataToJson($form) {
     return indexed_array;
 }
 
-// NUEVA: Función específica para Django CSRF
 function BMAjax(url, data = {}, method = "POST", mostrarLoad = true) {
-    /*
-        Función adaptada para Django que incluye CSRF token automáticamente
-    */
     if (mostrarLoad) {
         iniciarLoader();
     }
@@ -550,7 +518,6 @@ var ns_utilidades = {
     },
 };
 
-// Sistema de loading
 function iniciarLoader(parametros = {}) {
     let objeto = {
         mostrarTitulo: true,
@@ -559,7 +526,6 @@ function iniciarLoader(parametros = {}) {
     };
     $.extend(objeto, parametros);
 
-    // Crear overlay de loading si no existe
     if ($("#bm-loader-overlay").length === 0) {
         $("body").append(`
             <div id="bm-loader-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; justify-content: center; align-items: center;">
@@ -581,14 +547,11 @@ function finalizarLoader() {
     $("#bm-loader-overlay").hide();
 }
 
-// Inicialización cuando el documento está listo
 $(document).ready(function () {
-    /* Convertir texto a mayúsculas */
     $(".mayuscula").blur(function () {
         $(this).val($(this).val().toUpperCase());
     });
 
-    // Inicializar tooltips de Bootstrap
     var tooltipTriggerList = [].slice.call(
         document.querySelectorAll('[data-bs-toggle="tooltip"]')
     );
@@ -597,7 +560,6 @@ $(document).ready(function () {
     });
 });
 
-// Exportar funciones para uso global
 window.aviso = aviso;
 window.formatoNumero = formatoNumero;
 window.BMAjax = BMAjax;

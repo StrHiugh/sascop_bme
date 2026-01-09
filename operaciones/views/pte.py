@@ -13,12 +13,10 @@ from ..registro_actividad import registrar_actividad
 @login_required(login_url='/accounts/login/')
 def index(request):
     """Página principal del sistema"""
-    # Estadísticas básicas para el dashboard
     total_ptes = PTEHeader.objects.filter(estatus__in=[1,2,3,4]).count()
     total_otes = OTE.objects.count()
     total_produccion = Produccion.objects.count()
     
-    # Contar PTEs por cada estatus
     ptes_activo = PTEHeader.objects.filter(estatus=1).count()
     ptes_en_proceso = PTEHeader.objects.filter(estatus=2).count()
     ptes_terminado = PTEHeader.objects.filter(estatus=3).count()
@@ -59,28 +57,24 @@ def datatable_ptes(request):
     length = int(request.GET.get('length', 10))
     search_value = request.GET.get('search[value]', '')
     
-    # Filtro adicional del input de búsqueda
     filtro_buscar = request.GET.get('filtro', '')
     
     order_column_index = request.GET.get('order[0][column]', '0')
     order_direction = request.GET.get('order[0][dir]', 'asc')
-    # Mapear índice de columna al campo correspondiente
     column_mapping = {
-        '0': 'id',  # Columna 0 (ampliar)
-        '1': 'id',  # Columna 1 (ID)
-        '2': 'id_tipo__descripcion',  # Columna 2 (Tipo)
-        '3': 'oficio_pte',  # Columna 3 (Folio PTE)
-        '4': 'descripcion_trabajo',  # Columna 4 (Descripción)
-        '5': 'fecha_entrega',  # Columna 5 (Fecha entrega)
-        '6': 'estatus',  # Columna 6 (Estatus) 
-        '7': 'id',  # Columna 7 (Progreso)
-        '8': 'id'  # Columna 8 (Opciones)
+        '0': 'id',  
+        '1': 'id',  
+        '2': 'id_tipo__descripcion',  
+        '3': 'oficio_pte',  
+        '4': 'descripcion_trabajo',  
+        '5': 'fecha_entrega', 
+        '6': 'estatus', 
+        '7': 'id', 
+        '8': 'id' 
     }
     
-    # Obtener el campo por el cual ordenar
     order_field = column_mapping.get(order_column_index, 'id')
     
-    # Aplicar el orden descendente o ascendente
     if order_direction == 'desc':
         order_field = f'-{order_field}'
     
@@ -111,7 +105,6 @@ def datatable_ptes(request):
         )
     
     
-    #FILTROS DEL PANEL
     filtro_estatus = request.GET.get('estatus', '')
     filtro_tipo = request.GET.getlist('tipo[]', '')
     filtro_responsable = request.GET.get('responsable_proyecto', '')
@@ -126,7 +119,6 @@ def datatable_ptes(request):
     if filtro_responsable:
         ptes = ptes.filter(id_responsable_proyecto_id=filtro_responsable)
     if filtro_anio:
-        # extraer el año
         ptes_con_anio_en_oficio = ptes.filter(oficio_pte__regex=r'.*-(\d{4})$')
         
         ptes_con_anio = ptes_con_anio_en_oficio.filter(
@@ -143,11 +135,11 @@ def datatable_ptes(request):
     for pte in ptes:
         detalles = PTEDetalle.objects.filter(id_pte_header_id=pte.id)
         total_pasos = detalles.count()
-        pasos_completados = detalles.filter(estatus_paso__in=[3,14]).count()  # 3 = COMPLETADO 14 =
+        pasos_completados = detalles.filter(estatus_paso__in=[3,14]).count() 
         
         progreso = 0
         if total_pasos > 0:
-            progreso = (pasos_completados / total_pasos) * 100 #calcular porcentaje
+            progreso = (pasos_completados / total_pasos) * 100 
         
         data.append({
             'id': pte.id,
@@ -162,7 +154,7 @@ def datatable_ptes(request):
             'fecha_entrega': pte.fecha_entrega.strftime('%d/%m/%Y') if pte.fecha_entrega else None,
             'responsable_proyecto': pte.id_responsable_proyecto_id if pte.id_responsable_proyecto_id else '',
             'plazo_dias': pte.plazo_dias or 0,
-            'progreso': round(progreso),  # Porcentaje de progreso
+            'progreso': round(progreso), 
             'pasos_completados': pasos_completados,
             'id_cliente_id': pte.id_cliente_id,
             'tipo_cliente': pte.id_cliente.id_tipo_id,
@@ -180,13 +172,12 @@ def datatable_pte_detalle(request):
     """Datatable para detalle de PTE"""
     pte_header_id = request.GET.get('pte_header_id')
     
-    # Parámetros de paginación (nuevo)
     start = int(request.GET.get('start', 0))
     length = int(request.GET.get('length', 10))
     draw = int(request.GET.get('draw', 1))
     
     detalles = PTEDetalle.objects.filter(
-        id_pte_header_id=pte_header_id, id_paso__tipo=1  # Solo pasos principales
+        id_pte_header_id=pte_header_id, id_paso__tipo=1
     ).select_related('id_paso','id_pte_header').annotate(
         estatus_pte_texto=Case(
             When(estatus_paso=1, then=Value('PENDIENTE')),
@@ -204,7 +195,7 @@ def datatable_pte_detalle(request):
         if detalle.id_paso_id==4:
             subpasos = PTEDetalle.objects.filter(
                 id_pte_header_id=pte_header_id,
-                id_paso__tipo=2  # Solo subpasos
+                id_paso__tipo=2
             )
             total_subpasos = subpasos.count()
             subpasos_completados = subpasos.filter(estatus_paso__in=[3,14]).count()
@@ -216,10 +207,8 @@ def datatable_pte_detalle(request):
         else:
             detalle.progreso_subpasos = None
     
-    # Total de registros (sin paginar)
     total_records = detalles.count()
     
-    # Aplicar paginación (nuevo)
     detalles = detalles[start:start + length]
     
     data = []
@@ -235,8 +224,8 @@ def datatable_pte_detalle(request):
             'fecha_inicio': detalle.fecha_inicio,
             'fecha_termino': detalle.fecha_termino,
             'comentario': detalle.comentario or '',
-            'es_subpaso': detalle.id_paso.tipo == 2,  # Flag para identificar subpasos
-            'progreso_subpasos': getattr(detalle, 'progreso_subpasos', None),  # Progreso solo para paso 4
+            'es_subpaso': detalle.id_paso.tipo == 2, 
+            'progreso_subpasos': getattr(detalle, 'progreso_subpasos', None), 
             'total_subpasos': getattr(detalle, 'total_subpasos', 0),
             'subpasos_completados': getattr(detalle, 'subpasos_completados', 0),
             'folio_pte': detalle.id_pte_header.oficio_pte,
@@ -255,10 +244,9 @@ def datatable_subpasos(request):
     """Datatable para subpasos del paso 4 (Volumetría)"""
     pte_header_id = request.GET.get('pte_header_id')
     
-    # Obtener solo los subpasos (tipo=2) para este PTE
     subpasos = PTEDetalle.objects.filter(
         id_pte_header_id=pte_header_id,
-        id_paso__tipo=2  # Solo subpasos
+        id_paso__tipo=2 
     ).select_related('id_paso','id_pte_header' ).annotate(
         estatus_pte_texto=Case(
             When(estatus_paso=1, then=Value('PENDIENTE')),
@@ -307,13 +295,10 @@ def cambiar_estatus_pte(request):
                 'detalles': 'Datos incompletos'
             })
         
-        # Obtener la PTE
         pte = PTEHeader.objects.get(id=pte_id)
 
-        # Guardar el estatus anterior para verificar cambios
         estatus_anterior = pte.estatus
 
-        # Actualizar el estatus
         pte.estatus = nuevo_estatus
         pte.comentario = comentario
         
@@ -323,7 +308,6 @@ def cambiar_estatus_pte(request):
                 pte.fecha_entrega = fecha_entrega
             else:
                 pte.fecha_entrega = timezone.now()        
-        # Si se cambia de COMPLETADO a otro estatus, limpiar la fecha de completado
         elif estatus_anterior == 3 and int(nuevo_estatus) != 3:
             pte.fecha_entrega = None
         
@@ -359,10 +343,9 @@ def obtener_progreso_general_pte(request):
                 'detalles': 'ID de PTE no proporcionado'
             })
         
-        # Obtener todos los pasos de la PTE
         detalles = PTEDetalle.objects.filter(id_pte_header_id=pte_id)
         total_pasos = detalles.count()
-        pasos_completados = detalles.filter(estatus_paso__in=[3, 14]).count()  # 3=COMPLETADO, 14=NO APLICA
+        pasos_completados = detalles.filter(estatus_paso__in=[3, 14]).count() 
         
         progreso = 0
         if total_pasos > 0:
@@ -394,23 +377,20 @@ def obtener_progreso_paso4(request):
                 'detalles': 'ID de PTE no proporcionado'
             })
         
-        # Obtener subpasos (tipo=2) de este PTE
         subpasos = PTEDetalle.objects.filter(
             id_pte_header_id=pte_header_id,
-            id_paso__tipo=2  # Solo subpasos
+            id_paso__tipo=2 
         )
         
         total_subpasos = subpasos.count()
-        subpasos_completados = subpasos.filter(estatus_paso__in=[3, 14]).count()  # 3=COMPLETADO, 14=NO APLICA
-        
+        subpasos_completados = subpasos.filter(estatus_paso__in=[3, 14]).count()         
         progreso = 0
         if total_subpasos > 0:
             progreso = (subpasos_completados / total_subpasos) * 100
         
-        # Obtener descripción del paso 4
         paso4 = PTEDetalle.objects.filter(
             id_pte_header_id=pte_header_id,
-            id_paso__orden=4  # Paso 4 = Volumetría
+            id_paso__orden=4  
         ).select_related('id_paso').first()
         
         descripcion = paso4.id_paso.descripcion if paso4 else "Volumetría de Materiales"
@@ -446,7 +426,6 @@ def actualizar_fecha(request):
         
         paso_detalle = PTEDetalle.objects.get(id=id_paso)
         
-        # Validar y guardar la fecha
         if tipo == '1':
             if fecha:
                 paso_detalle.fecha_inicio = fecha
@@ -519,7 +498,6 @@ def crear_pte(request):
     try:
         get_val = lambda k, d=None, t=str: t(v) if (v := request.POST.get(k, '').strip()) else d
         
-        # Datos del header
         oficio_pte = get_val('oficio_pte', 'SIN FOLIO')
         oficio_solicitud = get_val('oficio_solicitud', 'PENDIENTE')
         descripcion_trabajo = get_val('descripcion_trabajo','POR DEFINIR')
@@ -540,7 +518,6 @@ def crear_pte(request):
                 'tipo_aviso': 'error',
                 'detalles': 'El cliente es obligatorio'
             })
-        # Validaciones básicas de campos obligatorios
         if not responsable_proyecto:
             return JsonResponse({
                 'exito': False,
@@ -569,7 +546,6 @@ def crear_pte(request):
                 'detalles': 'La prioridad es obligatoria'
             })
         
-        # Crear el header del PTE
         pte_header = PTEHeader.objects.create(
             oficio_pte=oficio_pte,
             oficio_solicitud=oficio_solicitud,
@@ -587,11 +563,9 @@ def crear_pte(request):
             estatus=1
         )
         
-        #Buscar el tipo de cliente para crear su respectivos pasos
         clientes = Cliente.objects.get(id=id_cliente)
         tipo_cliente = clientes.id_tipo_id
 
-        # Obtener todos los pasos activos y crear detalles
         pasos = Paso.objects.filter(activo=1, id_tipo_cliente_id=tipo_cliente).order_by('id', 'orden')
 
         if not pasos:
@@ -650,14 +624,11 @@ def cambiar_estatus_paso(request):
                 'detalles': 'Datos incompletos'
             })
         
-        # Obtener el detalle del paso
         detalle = PTEDetalle.objects.get(id=paso_id)
         pte_header_id = detalle.id_pte_header_id
         
-        # Guardar el estatus anterior para verificar cambios
         estatus_anterior = detalle.estatus_paso_id
         
-        # Actualizar el estatus
         detalle.estatus_paso_id = int(nuevo_estatus)
         if comentario:
             detalle.comentario = comentario
@@ -669,16 +640,13 @@ def cambiar_estatus_paso(request):
                 detalle.fecha_entrega = fecha_entrega
             else:
                 detalle.fecha_entrega = timezone.now()        
-        # Si se cambia de COMPLETADO a otro estatus, limpiar la fecha de completado
         elif estatus_anterior == 3 and int(nuevo_estatus) != 3:
             detalle.fecha_entrega = None
             
         detalle.save()
         
-        # VERIFICAR SI ES UN SUBPASO DEL PASO 4 Y ACTUALIZAR AUTOMÁTICAMENTE
         paso_actualizado_4 = verificar_y_actualizar_paso_4(pte_header_id)
         
-        # Recalcular progreso del PTE
         detalles_pte = PTEDetalle.objects.filter(id_pte_header_id=detalle.id_pte_header_id)
         total_pasos = detalles_pte.count()
         pasos_completados = detalles_pte.filter(estatus_paso=3).count()
@@ -713,19 +681,17 @@ def cambiar_estatus_paso(request):
 def verificar_y_actualizar_paso_4(pte_header_id):
     """Verificar si todos los subpasos del paso 4 están completados y actualizarlo automáticamente"""
     try:
-        # Obtener el paso 4 de esta PTE
         paso_4 = PTEDetalle.objects.filter(
             id_pte_header_id=pte_header_id,
-            id_paso_id=4  # Paso 4 = Volumetría
+            id_paso_id=4 
         ).first()
         
         if not paso_4:
             return False
         
-        # Obtener todos los subpasos (tipo=2) de esta PTE
         subpasos = PTEDetalle.objects.filter(
             id_pte_header_id=pte_header_id,
-            id_paso__tipo=2  # Solo subpasos
+            id_paso__tipo=2 
         )
         
         total_subpasos = subpasos.count()
@@ -733,12 +699,10 @@ def verificar_y_actualizar_paso_4(pte_header_id):
         if total_subpasos == 0:
             return False
         
-        # Contar subpasos completados (3=COMPLETADO, 14=NO APLICA)
         subpasos_completados = subpasos.filter(estatus_paso__in=[3, 14]).count()
         
-        # Si todos los subpasos están completados, actualizar el paso 4 a COMPLETADO
         if subpasos_completados == total_subpasos and paso_4.estatus_paso_id != 3:
-            paso_4.estatus_paso_id = 3  # COMPLETADO
+            paso_4.estatus_paso_id = 3
             paso_4.comentario = "Entregables finalizados"
             paso_4.fecha_termino = timezone.now().date()
             paso_4.save()
@@ -800,7 +764,6 @@ def editar_pte(request):
         
         pte = get_object_or_404(PTEHeader, id=pte_id)
         
-        # Actualizar campos
         pte.oficio_pte = request.POST.get('oficio_pte', pte.oficio_pte)
         pte.oficio_solicitud = request.POST.get('oficio_solicitud', pte.oficio_solicitud)
         pte.descripcion_trabajo = request.POST.get('descripcion_trabajo', pte.descripcion_trabajo)
@@ -809,7 +772,6 @@ def editar_pte(request):
         pte.prioridad = request.POST.get('id_prioridad', pte.prioridad)
         pte.id_cliente_id = request.POST.get('id_cliente', pte.id_cliente_id)
         
-        # Campos con validación
         fecha_solicitud = request.POST.get('fecha_solicitud')
         if fecha_solicitud:
             pte.fecha_solicitud = fecha_solicitud
@@ -857,7 +819,6 @@ def eliminar_pte(request):
                 'exito': False
             })
         
-        # Obtener el ID del PTE
         pte_id = request.POST.get('id')
 
         if not pte_id:
@@ -867,9 +828,8 @@ def eliminar_pte(request):
                 'exito': False
             })
 
-        # Eliminación lógica - cambiar estatus a 0
         pte = PTEHeader.objects.get(id=pte_id)
-        pte.estatus = 0  # Cambiar estatus a 0 para eliminación lógica
+        pte.estatus = 0 
         pte.save()
 
         return JsonResponse({
@@ -898,7 +858,6 @@ def eliminar_pte(request):
 def guardar_archivo_pte(request):
     """Guardar Archivo de entregables de pte"""
     try:
-        # Obtener el ID del PTE
         paso_id = request.POST.get('paso_id')
         url = request.POST.get('archivo')
         
@@ -909,7 +868,6 @@ def guardar_archivo_pte(request):
                 'exito': False
             })
 
-        # Obtener y actualizar el paso
         paso = PTEDetalle.objects.get(id=paso_id)
         paso.archivo = url
         paso.save()
@@ -953,13 +911,8 @@ def crear_ot_desde_pte(request):
                 'detalles': 'Datos incompletos'
             })
         
-        # Obtener la PTE
         pte = PTEHeader.objects.get(id=pte_id)
-        
-        #obtener tipo de cliente para validacion en creacion de pasos de ot
         tipo_cliente = pte.id_cliente.id_tipo_id
-
-        # Verificar que el progreso sea 100%
         detalles_pte = PTEDetalle.objects.filter(id_pte_header_id=pte.id)
         total_pasos = detalles_pte.count()
         pasos_completados = detalles_pte.filter(estatus_paso_id__in=[3, 4, 14]).count()
@@ -973,7 +926,6 @@ def crear_ot_desde_pte(request):
                 'detalles': 'La PTE debe estar 100% completada para crear una OT'
             })
         
-        # Verificar si ya existe una OT para esta PTE
         if OTE.objects.filter(id_pte_header=pte).exists():
             return JsonResponse({
                 'exito': False,
@@ -981,7 +933,6 @@ def crear_ot_desde_pte(request):
                 'detalles': 'Ya existe una OT creada para esta PTE'
             })
         
-        # Verificar si el folio ya existe
         if OTE.objects.filter(oficio_ot=oficio_ot).exists():
             return JsonResponse({
                 'exito': False,
@@ -998,7 +949,6 @@ def crear_ot_desde_pte(request):
                 'detalles': 'Tipo de OT no válido'
             })
         
-        # Buscar estatus para OT
         estatus_ote_default = Estatus.objects.filter(nivel_afectacion=2).first()
         if not estatus_ote_default:
             return JsonResponse({
@@ -1007,7 +957,6 @@ def crear_ot_desde_pte(request):
                 'detalles': 'No se encontró un estatus válido para OT'
             })
         
-        # Crear la OTE
         ote = OTE.objects.create(
             id_tipo=tipo_ote,
             id_pte_header=pte,
@@ -1024,7 +973,6 @@ def crear_ot_desde_pte(request):
             id_cliente=pte.id_cliente
         )
 
-        #crear pasos de ot dependiendo el tipo de ot y cliente
         if tipo_ote.id == 5:
             tipo_paso_busqueda = 5 if tipo_cliente == 15 else 18 if tipo_cliente == 16 else 4
         elif tipo_ote.id == 4 and tipo_cliente == 16:

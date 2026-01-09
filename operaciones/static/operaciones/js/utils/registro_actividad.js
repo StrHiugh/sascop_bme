@@ -203,9 +203,6 @@ class RegistroActividad {
 
 
 		for (let c in form) {
-			// En este bloque se detectan los select agrupadores y se les da el siguiente formato => 1, 2, 3
-			// Replantear en caso de necesitar el cambio de " por ' en el selector multiple
-			// replace(/(\[)|(\])|("\d")|(")/g, (m, p1, p2, p3, p4) => p4 ? '\'' : '' );
 
 			if (Array.isArray(form[c])) {
 				form[c] = JSON.stringify(form[c]).replace(/(\[)|(\])|(")/g, "");

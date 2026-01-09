@@ -68,49 +68,39 @@ $(document).ready(function () {
         }
     });
 
-    // Búsqueda por Enter
     $("#filtro-buscar").keypress(function (event) {
         if (event.which == 13) {
             tablaPte.draw();
         }
     });
 
-    // Mover select de length
     $("#tabla_length").detach().appendTo("#select-length");
 
-    // Panel de filtros
     $("#btn-panel-filtros").on("click", function () {
         fn_show_panel("#panel-filtro");
     });
 
-    // Aplicar filtros
     $("#filtrar").on("click", function () {
         tablaPte.draw();
         fn_show_panel();
     });
 
-    // Limpiar filtros
     $("#limpiar").on("click", function () {
         $("#slc-estado").val("");
         tablaPte.draw();
     });
 
-
-    // Abrir panel para crear nueva embarcación
     $(".btn-primary").on("click", function() {
         if ($(this).find('span').text().trim() === 'Crear nuevo') {
             abrirPanelCrear();
         }
     });
 
-    // Función para abrir panel de creación
     function abrirPanelCrear() {
-        // Limpiar formulario
         $("#formulario-frente")[0].reset();
         $("#id").val("");
         $("#panel-title").text("Crear frente");
 
-        // Mostrar panel
         var offcanvas = new bootstrap.Offcanvas(document.getElementById('panelCrearEditar'));
         offcanvas.show();
     }
@@ -120,7 +110,6 @@ $(document).ready(function () {
         abrirPanelEditar(id);
     });
 
-    // Función para abrir panel de edición
     function abrirPanelEditar(id) {
         BMAjax(
             urlObtenerFrente, { id: id }, "GET")
@@ -131,7 +120,6 @@ $(document).ready(function () {
                 $("#comentario").val(data.comentario);
                 $("#panel-title").text("Editar frente");
 
-                // Mostrar panel
                 var offcanvas = new bootstrap.Offcanvas(document.getElementById('panelCrearEditar'));
                 offcanvas.show();
             })
@@ -142,7 +130,6 @@ $(document).ready(function () {
             });
     }
 
-    // Guardar embarcación
     $("#btn-guardar").on("click", function () {
         const formData = {
             id: $("#id").val(),
@@ -151,7 +138,6 @@ $(document).ready(function () {
             comentario: $("#comentario").val()
         };
 
-        // Validación básica
         if (!formData.descripcion.trim()) {
             aviso("advertencia", {
                 contenido: "La descripción es obligatoria",

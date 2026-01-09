@@ -64,14 +64,12 @@ $(document).ready(function () {
         }
     });
 
-    // Búsqueda por Enter
     $("#filtro-buscar").keypress(function (event) {
         if (event.which == 13) {
             tablaPte.draw();
         }
     });
 
-    // Mover select de length
     $("#tabla_length").detach().appendTo("#select-length");
 
     $("#btn-panel-filtros").on("click", function () {
@@ -93,22 +91,18 @@ $(document).ready(function () {
         offcanvas.hide();
     });
 
-    // Abrir panel para crear nueva embarcación
     $(".btn-primary").on("click", function() {
         if ($(this).find('span').text().trim() === 'Crear nuevo') {
             abrirPanelCrear();
         }
     });
 
-    // Función para abrir panel de creación
     function abrirPanelCrear() {
-        // Limpiar formulario
         $("#formulario-responsable")[0].reset();
         $("#id").val("");
         $("#panel-title").text("Crear Responsable");
         $("#activo").prop("checked", true);
         
-        // Mostrar panel
         var offcanvas = new bootstrap.Offcanvas(document.getElementById('panelCrearEditar'));
         offcanvas.show();
     }
@@ -118,7 +112,6 @@ $(document).ready(function () {
         abrirPanelEditar(embarcacion_id);
     });
     
-    // Función para abrir panel de edición
     function abrirPanelEditar(id) {
         BMAjax(
             urlObtenerResponsable, {id:id}, "GET")
@@ -128,7 +121,6 @@ $(document).ready(function () {
                 $("#comentario").val(data.comentario);
                 $("#panel-title").text("Editar Responsable");
                 
-                // Mostrar panel
                 var offcanvas = new bootstrap.Offcanvas(document.getElementById('panelCrearEditar'));
                 offcanvas.show();
             })
@@ -139,7 +131,6 @@ $(document).ready(function () {
             });
     }
 
-    // Guardar embarcación
     $("#btn-guardar").on("click", function() {
         const formData = {
             id: $("#id").val(),
@@ -147,7 +138,6 @@ $(document).ready(function () {
             comentario: $("#comentario").val()
         };
 
-        // Validación básica
         if (!formData.descripcion.trim()) {
             aviso("advertencia", {
                 contenido: "La descripción es obligatoria",
@@ -170,7 +160,6 @@ $(document).ready(function () {
         });
     });
     
-    // Eliminar PTE
     $(document).on("click", ".eliminar-responsable", function () {
         const responsable_id = $(this).data('id');
         BMensaje({

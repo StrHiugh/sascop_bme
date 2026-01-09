@@ -11,7 +11,6 @@ def api_estadisticas(request):
     total_otes = OTE.objects.count()
     total_produccion = Produccion.objects.count()
     
-    # Calcular volumen total de producción
     from django.db.models import Sum
     volumen_total = Produccion.objects.aggregate(
         total=Sum('volumen_produccion')

@@ -28,25 +28,23 @@ def datatable_ot(request):
     length = int(request.GET.get('length', 10))
     search_value = request.GET.get('search[value]', '')
     
-    # Filtro adicional del input de búsqueda
     filtro_buscar = request.GET.get('filtro', '')
     
     order_column_index = request.GET.get('order[0][column]', '1')
     order_direction = request.GET.get('order[0][dir]', 'asc')
 
-    # Mapeo de índices de DataTable a campos del modelo OTE
     column_mapping = {
-        '0': None,                    # Columna 0: Botón de detalles/ampliar
-        '1': 'id',                    # Columna 1: ID (oculta)
-        '2': 'orden_trabajo',         # Columna 2: Folio OT
-        '3': 'oficio_ot',             # Columna 3: Oficio OT  
-        '4': 'fecha_inicio_real',     # Columna 4: Fecha de inicio
-        '5': 'fecha_termino_real',    # Columna 5: Fecha término
-        '6': 'id',                    # Columna 6: Progreso
-        '7': 'id',                    # Columna 7: Progreso Tiempo
-        '8': 'id',                    # Columna 8: Progreso Pasos
-        '9': 'id_estatus_ot__descripcion',  # Columna 9: Estatus
-        '10': None                    # Columna 10: Opciones
+        '0': None,                    
+        '1': 'id',                    
+        '2': 'orden_trabajo',         
+        '3': 'oficio_ot',             
+        '4': 'fecha_inicio_real',     
+        '5': 'fecha_termino_real',    
+        '6': 'id',                    
+        '7': 'id',                    
+        '8': 'id',                    
+        '9': 'id_estatus_ot__descripcion',  
+        '10': None                    
     }   
 
     tipo_id = request.GET.get('tipo', '4') 
@@ -99,7 +97,6 @@ def datatable_ot(request):
     )
 
     if anio:
-        # extraer el año
         ots_con_anio_en_oficio = ots.filter(oficio_ot__regex=r'.*-(\d{4})$')
         ots_sin_anio_en_oficio = ots.exclude(oficio_ot__regex=r'.*-(\d{4})$')
         
@@ -129,7 +126,6 @@ def datatable_ot(request):
     
     field_name = column_mapping.get(order_column_index)
     
-    # Solo ordenar si field_name no es None y no es una columna no ordenable
     if field_name is not None:
         if order_direction == 'desc':
             order_by_field = f'-{field_name}'
@@ -151,7 +147,6 @@ def datatable_ot(request):
     today = date.today()
 
     for ot in ots:
-        # 1. Calcular progreso por pasos
         detalles = ot.detalles.all()
         total_pasos = detalles.count()
         pasos_completados = detalles.filter(estatus_paso_id__in=[3]).count()
@@ -160,7 +155,6 @@ def datatable_ot(request):
         if total_pasos > 0:
             progreso_pasos = int((pasos_completados / total_pasos) * 100)
         
-        # 2. Calcular progreso por tiempo
         progreso_tiempo = 0
         dias_restantes = 0
         dias_transcurridos = 0
@@ -174,22 +168,17 @@ def datatable_ot(request):
                 plazo_total = (fecha_termino - fecha_inicio + timedelta(days=1)).days
                 if plazo_total > 0:
                     if today < fecha_inicio:
-                        # No ha iniciado
                         progreso_tiempo = 0
                         dias_restantes = plazo_total
                     elif today > fecha_termino:
-                        # Ya terminó
                         progreso_tiempo = 100
                         dias_restantes = 0
                         dias_transcurridos = plazo_total
                     else:
-                        # En progreso
                         dias_transcurridos = (today - fecha_inicio).days
                         progreso_tiempo = int((dias_transcurridos / plazo_total) * 100)
                         dias_restantes = max(0, plazo_total - dias_transcurridos)
         
-        #tiempo real
-        # 2. Calcular progreso por tiempo
         progreso_tiempo_real = 0
         dias_restantes_real = 0
         dias_transcurridos_real = 0
@@ -203,27 +192,20 @@ def datatable_ot(request):
                 plazo_total_real = (fecha_termino - fecha_inicio + timedelta(days=1)).days
                 if plazo_total_real > 0:
                     if today < fecha_inicio:
-                        # No ha iniciado
                         progreso_tiempo_real = 0
                         dias_restantes_real = plazo_total_real
                     elif today > fecha_termino:
-                        # Ya terminó
                         progreso_tiempo_real = 100
                         dias_restantes_real = 0
                         dias_transcurridos_real = plazo_total_real
                     else:
-                        # En progreso
                         dias_transcurridos_real = (today - fecha_inicio).days
                         progreso_tiempo_real = int((dias_transcurridos_real / plazo_total_real) * 100)
                         dias_restantes_real = max(0, plazo_total_real - dias_transcurridos_real)
         
-
-
-        # 3. Progreso combinado
         progreso_final = int((progreso_tiempo * 0.7) + (progreso_pasos * 0.3))
         progreso_final_real = int((progreso_tiempo_real * 0.7) + (progreso_pasos * 0.3))
         
-        # 4. Estatus
         if ot.estatus == -1:
             estatus_display = 'Por definir'
             estatus_ot_texto = 'POR DEFINIR'
@@ -260,7 +242,6 @@ def datatable_ot(request):
             'plazo_dias': ot.plazo_dias,
             'num_reprogramacion': ot.num_reprogramacion,
             
-            # Campos de progreso
             'total_pasos': total_pasos,
             'pasos_completados': pasos_completados,
             'progreso_pasos': progreso_pasos,
@@ -270,14 +251,12 @@ def datatable_ot(request):
             'dias_transcurridos': dias_transcurridos,
             'plazo_total': plazo_total,
 
-            # Campos de progreso real
             'progreso_tiempo_real': progreso_tiempo_real,
             'progreso_final_real': progreso_final_real,
             'dias_restantes_real': dias_restantes_real,
             'dias_transcurridos_real': dias_transcurridos_real,
             'plazo_total_real': plazo_total_real,
 
-            # Campos de reprogramaciones
             'tiene_reprogramaciones': ot.tiene_reprogramaciones,
             'count_reprogramaciones': ot.count_reprogramaciones,
 
@@ -365,7 +344,6 @@ def obtener_ots_principales(request):
 def eliminar_ot(request):
     """Eliminación lógica de OT"""
     try:
-        # Obtener el ID del PTE
         ot_id = request.POST.get('id')
 
         if not ot_id:
@@ -376,7 +354,7 @@ def eliminar_ot(request):
             })
 
         ot = OTE.objects.get(id=ot_id)
-        ot.estatus = 0  # Cambiar estatus a 0 para eliminación lógica
+        ot.estatus = 0 
         ot.save()
 
         return JsonResponse({
@@ -417,10 +395,8 @@ def cambiar_estatus_ot(request):
         
         ot = OTE.objects.get(id=ot_id)
 
-        # Guardar el estatus anterior para verificar cambios
         estatus_anterior = ot.id_estatus_ot_id
 
-        # Actualizar el id_estatus_ot
         ot.id_estatus_ot_id = nuevo_estatus_id
         ot.comentario = comentario
 
@@ -472,22 +448,18 @@ def crear_ot(request):
         ot.responsable_cliente = request.POST.get('responsable_cliente')
         ot.plazo_dias = request.POST.get('plazo_dias') or 0
 
-        # Relaciones (Foreign Keys)
         ot.id_cliente_id = request.POST.get('id_cliente') or None
         ot.id_frente_id = request.POST.get('id_frente') or None
         ot.id_responsable_proyecto_id = request.POST.get('responsable_proyecto') or None
         
-        # Ubicaciones
         ot.id_embarcacion = request.POST.get('id_embarcacion') or None
         ot.id_plataforma = request.POST.get('id_plataforma') or None
         ot.id_intercom = request.POST.get('id_intercom') or None
         ot.id_patio = request.POST.get('id_patio') or None
 
-        # Montos (Limpieza básica por si vienen vacíos)
         ot.monto_mxn = request.POST.get('monto_mxn') or 0
         ot.monto_usd = request.POST.get('monto_usd') or 0
 
-        # --- Fechas ---
         if request.POST.get('fecha_inicio_programado'):
             ot.fecha_inicio_programado = request.POST['fecha_inicio_programado']
             
@@ -522,7 +494,6 @@ def crear_ot(request):
         ot.id_cliente_id = 1
         ot.save()
 
-        #crear pasos de ot dependiendo el tipo de ot y cliente
         if ot.id_tipo_id == 5:
             tipo_paso_busqueda = 5 if ot.id_cliente_id == 1 else 18 if ot.id_cliente_id in [2, 3, 4] else 5
         else:
@@ -587,14 +558,12 @@ def editar_ot(request):
         ot.id_patio = request.POST.get('id_patio')
         ot.plazo_dias = request.POST.get('plazo_dias')
         ot.id_responsable_proyecto_id = request.POST.get('responsable_proyecto', ot.id_responsable_proyecto_id)
-        # Actualizar montos
         if request.POST.get('monto_mxn'):
             ot.monto_mxn = request.POST.get('monto_mxn')
 
         if request.POST.get('monto_usd'):
             ot.monto_usd = request.POST.get('monto_usd')
         
-        # Actualizar fechas:
         if request.POST.get('fecha_inicio_programado'):
             ot.fecha_inicio_programado = request.POST['fecha_inicio_programado']
             
@@ -607,7 +576,6 @@ def editar_ot(request):
         if request.POST.get('fecha_termino_real'):
             ot.fecha_termino_real = request.POST['fecha_termino_real']
 
-        # Campos específicos para reprogramación
         num_reprogramacion = request.POST.get('num_reprogramacion')
         if num_reprogramacion and num_reprogramacion.strip(): 
             try:
@@ -619,7 +587,6 @@ def editar_ot(request):
                     'detalles': 'El número de reprogramación debe ser un número válido'
                 })
         else:
-            # Si está vacío, establecer como None
             ot.num_reprogramacion = None  
         
         
@@ -655,7 +622,6 @@ def datatable_ot_detalle(request):
     """Datatable para detalle de OT"""
     ot_id = request.GET.get('ot_id')
     
-    # Parámetros de paginación
     start = int(request.GET.get('start', 0))
     length = int(request.GET.get('length', 10))
     draw = int(request.GET.get('draw', 1))
@@ -666,10 +632,8 @@ def datatable_ot_detalle(request):
         estatus_texto=F('estatus_paso__descripcion')
     ).order_by('id_paso__id')
     
-    # Total de registros (sin paginar)
     total_records = detalles.count()
     
-    # Aplicar paginación
     if length != -1:
         detalles = detalles[start:start + length]
     
@@ -717,22 +681,19 @@ def cambiar_estatus_paso_ot(request):
             })
         
         detalle = OTDetalle.objects.get(id=paso_id)
-        # Guardar el estatus anterior para verificar cambios
         estatus_anterior = detalle.estatus_paso_id
-        #Asignar nuevo estatus
         detalle.estatus_paso_id = int(nuevo_estatus)
         if comentario:
             detalle.comentario = comentario
         else:
             detalle.comentario = None
             
-        # Lógica de fechas automática (similar a PTE)
-        if int(nuevo_estatus) == 3: # COMPLETADO (asumiendo ID 3)
+        if int(nuevo_estatus) == 3: 
             if fecha_entrega:
                 detalle.fecha_entrega = fecha_entrega
             else:
                 detalle.fecha_entrega = timezone.now()   
-        # Si se cambia de COMPLETADO a otro estatus, limpiar la fecha de completado
+        
         elif estatus_anterior == 3 and int(nuevo_estatus) != 3:
             detalle.fecha_entrega = None
         detalle.save()
@@ -764,7 +725,7 @@ def actualizar_fecha_ot(request):
     try:
         id_paso = request.POST.get('id_paso')
         fecha = request.POST.get('fecha')
-        tipo = request.POST.get('tipo') # 1: Inicio, 2: Termino, 3: Entrega
+        tipo = request.POST.get('tipo')
         
         if not id_paso:
             return JsonResponse({
@@ -890,19 +851,15 @@ def obtener_progreso_general_ot(request):
             
             if plazo_total > 0:
                 if today < fecha_inicio:
-                    # No ha iniciado
                     progreso_tiempo = 0
                     dias_restantes = plazo_total
                     dias_transcurridos = 0
                 elif today > fecha_termino:
-                    # Ya terminó el plazo
                     progreso_tiempo = 100
                     dias_restantes = 0
                     dias_transcurridos = plazo_total
                 else:
-                    # En progreso
                     dias_transcurridos = (today - fecha_inicio).days
-                    # Cálculo de porcentaje
                     progreso_tiempo = int((dias_transcurridos / plazo_total) * 100)
                     dias_restantes = max(0, plazo_total - dias_transcurridos)
 
@@ -913,7 +870,7 @@ def obtener_progreso_general_ot(request):
 
         if ot.fecha_inicio_real and ot.fecha_termino_programado:
             fecha_inicio_r = ot.fecha_inicio_real
-            fecha_termino_r = ot.fecha_termino_programado # Se compara contra el término planeado habitualmente
+            fecha_termino_r = ot.fecha_termino_programado
 
             plazo_total_real = (fecha_termino_r - fecha_inicio_r).days + 1
             
@@ -934,24 +891,20 @@ def obtener_progreso_general_ot(request):
         progreso_final = int((progreso_tiempo * 0.7) + (progreso_pasos * 0.3))
         progreso_final = min(100, max(0, progreso_final))
 
-        # Retornar respuesta
         return JsonResponse({
             'exito': True,
             'ot_id': ot_id,
 
-            # Datos principales
             'progreso': progreso_final,
             'progreso_pasos': progreso_pasos,
             'pasos_completados': pasos_completados,
             'total_pasos': total_pasos,
             
-            # Datos de tiempo (para los badges visuales)
             'dias_transcurridos': dias_transcurridos,
             'plazo_total': plazo_total,
             'dias_transcurridos_real': dias_transcurridos_real,
             'plazo_total_real': plazo_total_real,
             
-            # Datos extra si los necesitas en el frontend
             'progreso_tiempo': progreso_tiempo,
             'dias_restantes': dias_restantes
         })
@@ -1096,11 +1049,10 @@ def importar_anexo_ot(request):
                 return JsonResponse({'exito': False, 'tipo_aviso':'advertencia', 'detalles': f'Faltan columnas: {", ".join(missing_cols)}'})
 
             def clean_str(val):
-                """Limpia strings generales (Conceptos) manejando saltos de línea"""
+                """Limpia strings generales manejando saltos de línea"""
                 if pd.isna(val) or val is None:
                     return ""
                 s = str(val).upper()
-                # Esto arregla el problema de \nTUBO que tenías antes
                 s = s.replace('\r\n', ' ').replace('\n', ' ').replace('\r', ' ').replace('\t', ' ')
                 return " ".join(s.split())
 

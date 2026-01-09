@@ -113,35 +113,29 @@ $(document).ready(function () {
     cargarUnidadesMedida();
     cargarUnidadesMedidaFiltro();
     
-    // Búsqueda por Enter
     $("#filtro-buscar").keypress(function (event) {
         if (event.which == 13) {
             tablaPte.draw();
         }
     });
 
-    // Mover select de length
     $("#tabla_length").detach().appendTo("#select-length");
 
-    // Panel de filtros
     $("#btn-panel-filtros").on("click", function () {
         const offcanvas = new bootstrap.Offcanvas(document.getElementById('panelFiltros'));
         offcanvas.show();
     });
-    // Aplicar filtros
     $("#aplicar-filtros").on("click", function () {
         tablaPte.draw();
         const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('panelFiltros'));
         offcanvas.hide();
     });
 
-    // Limpiar filtros
     $("#limpiar-filtros").on("click", function () {
         $("#form-filtros")[0].reset();
         tablaPte.draw();
     });
 
-    // Abrir panel para crear nueva embarcación
     $(".btn-primary").on("click", function() {
         if ($(this).find('span').text().trim() === 'Crear nuevo') {
             abrirPanelCrear();
@@ -187,14 +181,11 @@ $(document).ready(function () {
         });
     }
 
-    //Función para abrir panel de creación
     function abrirPanelCrear() {
-        //Limpiar formulario
         $("#formulario-producto")[0].reset();
         $("#id").val("");
         $("#panel-title").text("Crear concepto");
         cargarUnidadesMedida();
-        //Mostrar panel
         var offcanvas = new bootstrap.Offcanvas(document.getElementById('panelCrearEditar'));
         offcanvas.show();
     }
@@ -204,7 +195,6 @@ $(document).ready(function () {
         abrirPanelEditar(id);
     });
     
-    //Función para abrir panel de edición
     function abrirPanelEditar(id) {
         BMAjax(
             urlObtenerProducto, {id:id}, "GET")
@@ -221,7 +211,6 @@ $(document).ready(function () {
                 $("#precio_unitario_usd").val(data.precio_unitario_usd);
                 $("#panel-title").text("Editar concepto");
                     
-               //Mostrar panel
                 var offcanvas = new bootstrap.Offcanvas(document.getElementById('panelCrearEditar'));
                 offcanvas.show();
             })
@@ -232,7 +221,6 @@ $(document).ready(function () {
             });
     }
 
-    // // Guardar embarcación
     $("#btn-guardar").on("click", function() {
         const formData = {
             id: $("#id").val(),
@@ -247,7 +235,6 @@ $(document).ready(function () {
             comentario: $("#comentario").val()
         };
 
-       // Validación básica
         if (!formData.id_partida.trim()) {
             aviso("advertencia", "El ID de partida es obligatorio");
             return;

@@ -68,14 +68,12 @@ $(document).ready(function () {
         }
     });
 
-    // Búsqueda por Enter
     $("#filtro-buscar").keypress(function (event) {
         if (event.which == 13) {
             tablaPte.draw();
         }
     });
 
-    // Mover select de length
     $("#tabla_length").detach().appendTo("#select-length");
 
     $("#btn-panel-filtros").on("click", function () {
@@ -97,23 +95,18 @@ $(document).ready(function () {
         offcanvas.hide();
     });
 
-    // Abrir panel para crear nueva embarcación
     $(".btn-primary").on("click", function() {
         if ($(this).find('span').text().trim() === 'Crear nuevo') {
             abrirPanelCrear();
         }
     });
 
-    // Función para abrir panel de creación
     function abrirPanelCrear() {
-        // Limpiar formulario
         $("#formulario-sitio")[0].reset();
         $("#id").val("");
         $("#panel-title").text("Crear Sitio");
         $("#id_frente").val("");
         $("#activo").prop("checked", true);
-
-        // Mostrar panel
         var offcanvas = new bootstrap.Offcanvas(document.getElementById('panelCrearEditar'));
         offcanvas.show();
     }
@@ -123,7 +116,6 @@ $(document).ready(function () {
         abrirPanelEditar(sitio_id);
     });
 
-    // Función para abrir panel de edición
     function abrirPanelEditar(id) {
         BMAjax(
             urlObtenerSitio, { id: id }, "GET")
@@ -134,7 +126,6 @@ $(document).ready(function () {
                 $("#id_frente").val(data.id_frente);
                 $("#panel-title").text("Editar Sitio");
 
-                // Mostrar panel
                 var offcanvas = new bootstrap.Offcanvas(document.getElementById('panelCrearEditar'));
                 offcanvas.show();
             })
@@ -145,7 +136,6 @@ $(document).ready(function () {
             });
     }
 
-    // Guardar sitio
     $("#btn-guardar").on("click", function () {
         const formData = {
             id: $("#id").val(),
@@ -154,7 +144,6 @@ $(document).ready(function () {
             id_frente: $("#id_frente").val()
         };
 
-        // Validación básica
         if (!formData.descripcion.trim()) {
             aviso("advertencia", {
                 contenido: "La descripción es obligatoria",
@@ -184,7 +173,6 @@ $(document).ready(function () {
         });
     });
 
-    // Eliminar Sitio
     $(document).on("click", ".eliminar-sitio", function () {
         const sitio_id = $(this).data('id');
         BMensaje({

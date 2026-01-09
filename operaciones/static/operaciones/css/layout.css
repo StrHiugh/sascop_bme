@@ -22,7 +22,6 @@ html, body {
 }
 
 
-/* Sidebar - Color Gris con Sombra */
 #left-panel {
     width: 250px;
     max-width: 250px;
@@ -37,7 +36,6 @@ html, body {
     flex-direction: column;
 }
 
-/* Header dentro del sidebar */
 #bm-header {
     background: #434c5b;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -74,7 +72,6 @@ html, body {
     font-size: 1.1rem;
 }
 
-/* Sección Profile Image */
 .profile-image {
     display: inline-block;
     text-align: center;
@@ -115,13 +112,11 @@ html, body {
     height: 100%;
 }
 
-/* Top Header Bar Completo */
 .top-header-bar {
     background: #fff;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-/* Parte superior del top bar (original) */
 .top-header-content {
     padding: 10px 30px;
     border-bottom: 1px solid #e9ecef;
@@ -131,7 +126,6 @@ html, body {
     min-height: 60px;
 }
 
-/* Sección de Empresas */
 #cont-filtros-empresas {
     background: #fff;
     padding: 15px 30px;
@@ -169,7 +163,6 @@ html, body {
     justify-content: space-between;
 }
 
-/* Asegurar que el contenido principal se ajuste */
 .main-content-area {
     display: flex;
     flex-direction: column;
@@ -225,7 +218,7 @@ html, body {
 }
 
 .submenu .nav-link {
-  color: #d9d9d9; /* azul visible, cámbialo al que quieras */
+  color: #d9d9d9; 
 }
 
 .nav-link:hover {
@@ -251,7 +244,6 @@ html, body {
     flex: 1;
 }
 
-/* Main Content Area */
 .main-content-area {
     flex: 1;
     display: flex;
@@ -259,7 +251,6 @@ html, body {
     min-height: 100vh;
 }
 
-/* Top Header Bar */
 .top-header-bar {
     background: white;
     border-bottom: 1px solid #e9ecef;
@@ -288,7 +279,6 @@ html, body {
     gap: 1rem;
 }
 
-/* Iconos del header */
 .icono-header {
     color: #495057;
     padding: 0.5rem;
@@ -303,7 +293,6 @@ html, body {
     background-color: #f8f9fa;
 }
 
-/* Perfil de usuario */
 .user-profile-dropdown .nav-link {
     color: #495057 !important;
     padding: 0.5rem;
@@ -324,7 +313,6 @@ html, body {
     font-size: 0.9rem;
 }
 
-/* Main Content */
 .main-content {
     flex: 1;
     background: #f5f5f5ff;
@@ -332,7 +320,6 @@ html, body {
     transition: all 0.3s ease;
 }
 
-/* Estados del Sidebar */
 .sidebar-collapsed #left-panel {
     width: 100px !important;;
 }
@@ -360,20 +347,19 @@ html, body {
 }
 
 .main-nav .nav-link {
-    font-size: 15px !important; /* Tamaño de fuente más grande */
-    font-weight: 600 !important; /* Negrita */
-    padding: 0.85rem 1.5rem !important; /* Un poco más de padding para mejor separación */
-    border-radius: 6px !important; /* Bordes redondeados para mejor apariencia */
-    margin: 0 0.5rem !important; /* Margen lateral para separación */
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    padding: 0.85rem 1.5rem !important;
+    border-radius: 6px !important;
+    margin: 0 0.5rem !important;
 }
 
-/* Asegurar que todo esté centrado en estado colapsado */
 .sidebar-collapsed .main-nav .nav {
     align-items: center !important;
 }  
 
 .main-nav .nav-item {
-    margin-bottom: 8px !important; /* Separa cada li */
+    margin-bottom: 8px !important;
 }
 
 
@@ -383,7 +369,6 @@ html, body {
 }
 
 
-/* Responsive */
 .desktop-only {
     display: flex;
 }
@@ -432,7 +417,6 @@ html, body {
     }
 }
 
-/* Mejoras visuales */
 .page-header {
     margin-bottom: 2rem;
 }
@@ -460,12 +444,11 @@ html, body {
     font-weight: 600;
 }
 
-/* Footer */
 .sidebar-footer {
     background: #434c5b;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
     padding: 1rem;
-    margin-top: auto; /* Empuja el footer hacia abajo */
+    margin-top: auto;
 }
 
 .footer-content {
@@ -488,7 +471,6 @@ html, body {
     font-size: 0.7rem;
 }
 
-/* Estados del Sidebar colapsado */
 .sidebar-collapsed .sidebar-footer {
     padding: 0.75rem 0.8rem;
 }
@@ -605,21 +587,20 @@ html, body {
     border: 1px solid #dce0e5;
 }
 
-/* ////////////////////// HEADER MODULO SECCION ACTUALIZADO //////////////////////////////// */
+/* ////////////////////// HEADER MODULO SECCION //////////////////////////////// */
 
-/* 1. ARREGLO PARA FLEXBOX: Obliga a los contenedores a NO estirarse más allá del viewport */
 .layout-container,
 .main-content-area,
 .main-content,
 .container-fluid,
 .bm-content,
 .bm-cont-elementos {
-    min-width: 0 !important; /* <--- ESTO ES LO QUE FALTA */
+    min-width: 0 !important; 
     flex-shrink: 1 !important;
 }
 
 .bm-content {
-    padding: 4rem 1.25rem 2.5rem 1.25rem; /* Todo en padding */
+    padding: 4rem 1.25rem 2.5rem 1.25rem;
     display: block;
     width: 100%; 
     max-width: 100%; 
@@ -628,7 +609,7 @@ html, body {
 .tab-content, .tab-pane {
     width: 100%;
     max-width: 100%;
-    overflow: hidden; /* Esto obliga al grid a usar su propio scroll */
+    overflow: hidden; 
 }
 .grid-wrapper { 
     height: 500px; 
@@ -650,13 +631,10 @@ html, body {
     width: calc(100% - 1px);
     min-height: 5rem;
     background: #fff;
-    /* padding: 0.625rem 1.25rem 0 1.25rem; */
     border-bottom: 1px solid #dee2e6;
     position: sticky;
     z-index: 90;
-    /* top: 0.125rem; */
     transition: all 0.3s ease;
-    /* left: 85px; */
 }
 
 .header-modulo h1 {
@@ -699,7 +677,7 @@ html, body {
 
 .header-title-section {
     flex: 1;
-    min-width: 0; /* IMPORTANTE */
+    min-width: 0;
     overflow: hidden;
 }
 
@@ -731,10 +709,6 @@ html, body {
     }
 }
 
-
-
-
-/* Contenedores de elementos */
 .bm-cont-elementos {
     background: #fff;
     border-radius: 0.5rem;
@@ -747,7 +721,6 @@ html, body {
     padding: 1.5rem;
 }
 
-/* Utilidades de flexbox actualizadas */
 .flex-center {
     display: flex;
     align-items: center;
@@ -761,14 +734,12 @@ html, body {
     flex-wrap: wrap;
 }
 
-/* Margins y paddings actualizados */
 .margin-0px { margin: 0 !important; }
 .margin-bottom-10px { margin-bottom: 0.625rem !important; }
 .margin-bottom-20px { margin-bottom: 1.25rem !important; }
 .margin-left-5px { margin-left: 0.3125rem !important; }
 .padding-bottom-20px { padding-bottom: 1.25rem !important; }
 
-/* Responsive */
 @media (max-width: 768px) {
     .bm-content {
         padding-top: 7.5rem;
@@ -791,7 +762,6 @@ html, body {
     }
 }
 
-/* Para sidebar colapsado */
 .sidebar-collapsed .header-modulo {
     width: 100%;
     left: 115px;
@@ -809,19 +779,17 @@ html, body {
     
 }
 .breadcrumb-item.active {
-    color: #4ec0e7; /* tu color deseado */
-    font-weight: 600; /* opcional, para destacarlo */
+    color: #4ec0e7; 
+    font-weight: 600; 
 }
 
-/* Items inactivos (los que son links) */
 .breadcrumb-item a {
-    color: #6c757d; /* gris por defecto, cámbialo al que quieras */
-    text-decoration: none; /* quita subrayado si no lo quieres */
+    color: #6c757d; 
+    text-decoration: none; 
 }
 
-/* Opcional: hover de los inactivos */
 .breadcrumb-item a:hover {
-    color: #4ec0e7; /* azul al pasar el mouse */
+    color: #4ec0e7; 
 }
 
 .btn.btn-primary{
@@ -865,7 +833,7 @@ html, body {
 }
 
 .row.mb-3 {
-  margin-bottom: 0rem !important; /* mucho más compacto */
+  margin-bottom: 0rem !important; 
 }
 
 .dataTable-width-100{
@@ -992,7 +960,6 @@ table .table-icon i.disabled:hover {
 }
 
 
-/* Botones normales */
 .dataTables_paginate .paginate_button.page-item .page-link {
     color: #4ec0e7 !important;
     border: 1px solid #dee2e6;
@@ -1001,14 +968,12 @@ table .table-icon i.disabled:hover {
     transition: all 0.2s ease-in-out;
 }
 
-/* Hover sobre botones normales */
 .dataTables_paginate .paginate_button.page-item .page-link:hover {
     background-color: #e9f7fb !important;
     border-color: #4ec0e7 !important;
     color: #007ea8 !important;
 }
 
-/* Página activa */
 .dataTables_paginate .paginate_button.page-item.active .page-link {
     background-color: #4ec0e7 !important;
     border-color: #4ec0e7 !important;
@@ -1016,21 +981,18 @@ table .table-icon i.disabled:hover {
     font-weight: bold;
 }
 
-/* Hover sobre la página activa */
 .dataTables_paginate .paginate_button.page-item.active .page-link:hover {
     background-color: #38aed4 !important;
     border-color: #38aed4 !important;
     color: #fff !important;
 }
 
-/* Flechas anterior y siguiente */
 .dataTables_paginate .paginate_button.page-item.previous .page-link,
 .dataTables_paginate .paginate_button.page-item.next .page-link {
     font-weight: bold;
     background-color: #f8f9fa !important;
 }
 
-/* Flechas deshabilitadas */
 .dataTables_paginate .paginate_button.page-item.previous.disabled .page-link,
 .dataTables_paginate .paginate_button.page-item.next.disabled .page-link {
     color: #ccc !important;
@@ -1038,7 +1000,6 @@ table .table-icon i.disabled:hover {
     background-color: #f1f1f1 !important;
 }
 
-/* Estilos para los detalles del PTE */
 .detalle-pte-container {
     background-color: #f8f9fa;
     border-left: 4px solid #38aed4;
@@ -1056,11 +1017,9 @@ table .table-icon i.disabled:hover {
     font-weight: 600;
 }
 
-/* Estilo para fila expandida */
 tr.shown {
     background-color: #f8f9fa !important;
 }
-/* Estilos para menús desplegables */
 .nav-item.has-submenu {
     position: relative;
 }
@@ -1082,7 +1041,6 @@ tr.shown {
     transform: rotate(180deg);
 }
 
-/* Submenu */
 .submenu {
     list-style: none;
     padding: 0;
@@ -1094,7 +1052,7 @@ tr.shown {
 }
 
 .nav-item.has-submenu.active .submenu {
-    max-height: 100vh; /* Ajusta según la cantidad de items */
+    max-height: 100vh;
     overflow-y: auto;
     scrollbar-width: thin;
 }
@@ -1129,7 +1087,6 @@ tr.shown {
     display: none;
 }
 
-/* Quitar flecha automática de Bootstrap de dropdown-toggle */
 .nav-link.dropdown-toggle::after {
     display: none !important;
     content: none !important;
@@ -1200,8 +1157,9 @@ tr.shown {
 }
 
 .form-select {
-    background-color: #f9fafb; /* color fondo suave */
-    border: 1px solid #ced4da; /* borde discreto */
+    background-color: #f9fafb; 
+    border-radius: 6px;
+    border: 1px solid #ced4da; 
     padding: 0.4rem 1rem;
     font-size: 0.95rem;
     color: #333;
@@ -1213,7 +1171,6 @@ tr.shown {
     width: 80px;
 }
 
-/* Versión alternativa con clases más específicas */
 .cont-foto-perfil {
     width: 100%;
     padding: 20px;
@@ -1261,7 +1218,6 @@ tr.shown {
     text-overflow: ellipsis;
 }
 
-/* Media Queries para la versión alternativa */
 @media screen and (min-width: 1401px) {
     .foto-perfil {
         width: 100px;
@@ -1309,7 +1265,6 @@ tr.shown {
     }
 }
 
-/* Estilo para filas con estatus "Por definir" o -1 */
 table.dataTable tbody tr.fila-por-definir {
     background-color: #f9ffe3 !important;
 }
@@ -1373,7 +1328,6 @@ table.dataTable tbody tr.fila-por-definir:hover td {
     padding: 1px 15px;
 }
 
-/* Estilos básicos para Select2 */
 .select2-container {
     width: 100% !important;
 }

@@ -92,11 +92,9 @@ $(document).ready(function() {
         inicializarGrids();
     }, 100);
 
-    // --- FUNCIÓN DE FECHA: Solución al desfase de día ---
     function crearFechaLocal(dateStr) {
         if (!dateStr) return null;
         const partes = dateStr.split('T')[0].split('-');
-        // Al usar números (año, mes-1, día), JS crea la fecha en hora local 00:00:00
         return new Date(parseInt(partes[0]), parseInt(partes[1]) - 1, parseInt(partes[2]), 0, 0, 0);
     }
 
@@ -235,7 +233,6 @@ $(document).ready(function() {
         }
     }
 
-    // 4. Carga de Datos
     function cargarDatosTablero() {
         const idSitio = $('#select-sitio').val();
         const mes = $('#filtro-mes').val();
@@ -303,18 +300,15 @@ $(document).ready(function() {
             gridProduccion.enableColumn(`dia${i}`);
         }
 
-        // Se usan fechas locales para evitar el desfase de UTC
         const fechaInicio = crearFechaLocal(ot.inicio_v); 
         const fechaFin = crearFechaLocal(ot.fin_v); 
         
         const ultimoDiaMes = new Date(anio, mes, 0).getDate();
 
         for (let d = 1; d <= DAYS_IN_MONTH; d++) {
-            // Se crea la fecha del grid en hora local 00:00:00
             const fechaActual = new Date(anio, mes - 1, d, 0, 0, 0);
             const colName = `dia${d}`;
 
-            // Bloqueo: si el día no existe en el mes o está fuera del rango [inicio, fin]
             if (d > ultimoDiaMes || fechaActual < fechaInicio || fechaActual > fechaFin) {
                 gridProduccion.disableColumn(colName); 
             }

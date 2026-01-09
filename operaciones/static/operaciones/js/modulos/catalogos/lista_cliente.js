@@ -68,14 +68,12 @@ $(document).ready(function () {
         }
     });
 
-    // Búsqueda por Enter
     $("#filtro-buscar").keypress(function (event) {
         if (event.which == 13) {
             tablaPte.draw();
         }
     });
 
-    // Mover select de length
     $("#tabla_length").detach().appendTo("#select-length");
 
     $("#btn-panel-filtros").on("click", function () {
@@ -97,23 +95,19 @@ $(document).ready(function () {
         offcanvas.hide();
     });
 
-    // Abrir panel para crear nueva embarcación
     $(".btn-primary").on("click", function() {
         if ($(this).find('span').text().trim() === 'Crear nuevo') {
             abrirPanelCrear();
         }
     });
 
-    // Función para abrir panel de creación
     function abrirPanelCrear() {
-        // Limpiar formulario
         $("#formulario-cliente")[0].reset();
         $("#id").val("");
         $("#panel-title").text("Crear Cliente");
         $("#id_tipo").val("");
         $("#activo").prop("checked", true);
 
-        // Mostrar panel
         var offcanvas = new bootstrap.Offcanvas(document.getElementById('panelCrearEditar'));
         offcanvas.show();
     }
@@ -123,7 +117,6 @@ $(document).ready(function () {
         abrirPanelEditar(cliente_id);
     });
 
-    // Función para abrir panel de edición
     function abrirPanelEditar(id) {
         BMAjax(
             urlObtenerCliente, { id: id }, "GET")
@@ -134,7 +127,6 @@ $(document).ready(function () {
                 $("#id_tipo").val(data.id_tipo);
                 $("#panel-title").text("Editar Cliente");
 
-                // Mostrar panel
                 var offcanvas = new bootstrap.Offcanvas(document.getElementById('panelCrearEditar'));
                 offcanvas.show();
             })
@@ -145,7 +137,6 @@ $(document).ready(function () {
             });
     }
 
-    // Guardar cliente
     $("#btn-guardar").on("click", function () {
         const formData = {
             id: $("#id").val(),
@@ -154,7 +145,6 @@ $(document).ready(function () {
             id_tipo : $("#id_tipo").val()
         };
 
-        // Validación básica
         if (!formData.descripcion.trim()) {
             aviso("advertencia", {
                 contenido: "La descripción es obligatoria",
@@ -184,7 +174,6 @@ $(document).ready(function () {
         });
     });
 
-    // Eliminar cliente
     $(document).on("click", ".eliminar-cliente", function () {
         const cliente_id = $(this).data('id');
         BMensaje({

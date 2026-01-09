@@ -22,15 +22,12 @@ def datatable_registro_actividad(request):
     length = int(request.GET.get('length', 10))
     search_value = request.GET.get('filtro', '')
     
-    # Parámetros de filtro
     usuario_id = request.GET.get('usuario_id')
     evento = request.GET.get('evento')
     afectacion = request.GET.get('afectacion')
     
-    # Consulta
     registros = RegistroActividad.objects.select_related('usuario_id').all()
     
-    # Aplicar filtros
     if search_value:
         registros = registros.filter(
             Q(valor_anterior__icontains=search_value) |
@@ -54,7 +51,6 @@ def datatable_registro_actividad(request):
     if afectacion:
         registros = registros.filter(tabla_log=afectacion)
     
-    # Ordenamiento
     order_column = request.GET.get('order[0][column]', '0')
     order_dir = request.GET.get('order[0][dir]', 'desc')
     
@@ -76,7 +72,6 @@ def datatable_registro_actividad(request):
     total_records = registros.count()
     registros_paginados = registros[start:start + length]
     
-    # Preparar datos para DataTable
     data = []
     for registro in registros_paginados:
         fecha_local = timezone.localtime(registro.fecha) if registro.fecha else None
