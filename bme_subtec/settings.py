@@ -9,6 +9,18 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-bme-subtec-default-key-change-in-production')
 
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
+SECURE_CROSS_ORIGIN_OPENER_POLICY = None
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost',
+    'http://127.0.0.1',
+    'http://0.0.0.0',
+    'http://54.227.40.69',  
+]
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
+USE_X_FORWARDED_PORT = True
 
 ALLOWED_HOSTS = [
     'localhost',
@@ -27,7 +39,6 @@ INSTALLED_APPS = [
     'operaciones',
 ]
 
-# Agregar las nuevas apps
 INSTALLED_APPS += [
     'core',
     'costa_fuera', 
@@ -74,7 +85,7 @@ WSGI_APPLICATION = 'bme_subtec.wsgi.application'
 #     }
 # }
 
-# Configuración de la base de datos RDS
+# base de datos RDS
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -118,12 +129,10 @@ STATICFILES_DIRS = [BASE_DIR / 'operaciones' / 'static',]
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Configuración para APIs
 OPENPAY_MERCHANT_ID = os.getenv('OPENPAY_MERCHANT_ID', '')
 OPENPAY_PRIVATE_KEY = os.getenv('OPENPAY_PRIVATE_KEY', '')
 OPENPAY_PRODUCTION = os.getenv('OPENPAY_PRODUCTION', 'False') == 'True'
 
-# Configuración de sesiones
-SESSION_COOKIE_AGE = 7200  # 2 horas en segundos (3600 para 1 hora)
-SESSION_SAVE_EVERY_REQUEST = True  # Renovar sesión con cada request
-SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # La sesión persiste al cerrar navegador
+SESSION_COOKIE_AGE = 7200  
+SESSION_SAVE_EVERY_REQUEST = True 
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False 

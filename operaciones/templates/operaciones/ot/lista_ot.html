@@ -278,7 +278,7 @@
 
 
 <!-- Modal para subir archivo a pasos de PTE -->
-<div class="modal fade" id="modalSubirArchivo" tabindex="-1" aria-labelledby="modalSubirArchivoLabel" aria-hidden="true">
+<div class="modal fade" id="modalSubirArchivo" tabindex="-1" aria-labelledby="modalSubirArchivoLabel">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
@@ -299,7 +299,7 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-primary" onclick="guardarEnlaceArchivo()">
+                <button type="button" class="btn btn-primary" id="btnGuardarEnlacePaso" onclick="guardarEnlaceArchivo()">
                     <i class="fas fa-save me-2"></i>Guardar
                 </button>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">

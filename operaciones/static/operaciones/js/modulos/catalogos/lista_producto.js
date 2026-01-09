@@ -21,7 +21,7 @@ $(document).ready(function () {
             data: function (extra) {
                 extra.filtro = $("#filtro-buscar").val();
                 extra.tipo_partida = $("#filtro-tipo-partida").val();
-                extra.sitio = $("#filtro-sitio").val();
+                extra.frente = $("#filtro-frente").val();
                 extra.unidad_medida = $("#filtro-unidad-medida").val();
                 extra.estado = $("#filtro-estado").val();
             }
@@ -31,6 +31,7 @@ $(document).ready(function () {
                 "data": "id",
                 "title": "ID",
                 "orderable": true, 
+                visible: false
             },
             {
                 "data": "id_partida",
@@ -48,8 +49,8 @@ $(document).ready(function () {
                 "orderable": true, 
             },
             {
-                "data": "sitio",
-                "title": "Sitio",
+                "data": "frente",
+                "title": "Frente",
                 "orderable": true, 
             },
             {
@@ -214,7 +215,7 @@ $(document).ready(function () {
                 $("#anexo").val(data.anexo);
                 $("#comentario").val(data.comentario);
                 $("#unidad_medida").val(data.unidad_medida_id);
-                $("#sitio").val(data.sitio_id);
+                $("#frente").val(data.frente_id);
                 $("#tipo_partida").val(data.tipo_partida_id);
                 $("#precio_unitario_mn").val(data.precio_unitario_mn);
                 $("#precio_unitario_usd").val(data.precio_unitario_usd);
@@ -238,7 +239,7 @@ $(document).ready(function () {
             id_partida: $("#id_partida").val(),
             descripcion: $("#descripcion").val(),
             anexo: $("#anexo").val(),
-            sitio: $("#sitio").val(),
+            frente: $("#frente").val(),
             tipo_partida: $("#tipo_partida").val(),
             unidad_medida: $("#unidad_medida").val(),
             precio_unitario_mn: $("#precio_unitario_mn").val(),

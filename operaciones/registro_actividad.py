@@ -19,7 +19,6 @@ TABLAS_LOG = [
     "Responsable Proyecto",         # 12
 ]
 
-# Campos que se ignorarán en el registro de cambios
 IGNORAR_CAMPOS = ["csrfmiddlewaretoken", "registro_actividad"]
 
 def registrar_actividad(view_func):

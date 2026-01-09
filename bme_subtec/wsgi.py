@@ -5,5 +5,4 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'bme_subtec.settings')
 
 application = get_wsgi_application()
 
-# Para Vercel - mantener esta línea también
 app = application

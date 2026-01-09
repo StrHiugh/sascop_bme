@@ -28,7 +28,7 @@ class Command(BaseCommand):
                 'descripcion': 'Generación y visualización de reportes',
                 'orden': 3,
                 'icono': 'assessment',
-                'activo': False  # No activo inicialmente
+                'activo': False 
             },
         ]
 

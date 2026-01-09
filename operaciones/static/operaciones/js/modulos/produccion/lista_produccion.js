@@ -141,7 +141,7 @@ $(document).ready(function() {
     }
 
     function inicializarGrids() {
-        tui.Grid.applyTheme('clean');
+        tui.Grid.applyTheme('striped');
         
         const columnasDiasAsistencia = Array.from({length: DAYS_IN_MONTH}, (_, i) => ({
             header: `${i+1}`,

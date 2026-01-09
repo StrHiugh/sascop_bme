@@ -1,12 +1,12 @@
 from django.db import models
-from .catalogos_models import Sitio, Estatus, UnidadMedida, Tipo
+from .catalogos_models import Sitio, Estatus, UnidadMedida, Tipo, Frente
 from .ote_models import OTE
 
 class Producto(models.Model):
     id_partida = models.CharField(max_length=100)
     descripcion_concepto = models.TextField()
     anexo = models.CharField(max_length=100, blank=True, null=True)
-    id_sitio = models.ForeignKey(Sitio, on_delete=models.CASCADE, limit_choices_to={'nivel_afectacion': 1})
+    id_frente = models.ForeignKey(Frente, on_delete=models.CASCADE, limit_choices_to={'nivel_afectacion': 1}, blank=True, null=True)
     id_tipo_partida = models.ForeignKey(Tipo, on_delete=models.CASCADE, limit_choices_to={'nivel_afectacion': 3})
     id_unidad_medida = models.ForeignKey(UnidadMedida, on_delete=models.CASCADE)
     precio_unitario_mn = models.DecimalField(max_digits=15, decimal_places=2)

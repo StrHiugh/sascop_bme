@@ -1044,11 +1044,11 @@ def datatable_producto(request):
     draw = int(request.GET.get('draw', 1))
     start = int(request.GET.get('start', 0))
     length = int(request.GET.get('length', 10))
-    search_value = request.GET.get('filtro', '')
     
     # Nuevos parámetros de filtro
+    search_value = request.GET.get('filtro', '')
     tipo_partida = request.GET.get('tipo_partida', '')
-    sitio = request.GET.get('sitio', '')
+    frente = request.GET.get('frente', '')
     unidad_medida = request.GET.get('unidad_medida', '')
     estado = request.GET.get('estado', '')
     
@@ -1062,7 +1062,7 @@ def datatable_producto(request):
         '1': 'id_partida',  # ID Partida
         '2': 'descripcion_concepto',  # Descripción
         '3': 'id_tipo_partida__descripcion',  # Tipo Partida
-        '4': 'id_sitio__descripcion',  # Sitio
+        '4': 'id_frente__descripcion',  # Sitio
         '5': 'id_unidad_medida__descripcion',  # Unidad Medida
         '6': 'anexo',  # Anexo
         '7': 'precio_unitario_mn',  # Precio MN
@@ -1076,7 +1076,7 @@ def datatable_producto(request):
         order_field = f'-{order_field}'
     
     productos = Producto.objects.filter(activo=1).select_related(
-        'id_sitio', 'id_tipo_partida', 'id_unidad_medida'
+        'id_frente', 'id_tipo_partida', 'id_unidad_medida'
     ).annotate(
         estado_texto=Case(
             When(activo=True, then=Value('Activo')),
@@ -1084,7 +1084,7 @@ def datatable_producto(request):
             default=Value('Desconocido'),
             output_field=CharField()
         ),
-        sitio_descripcion=F('id_sitio__descripcion'),
+        frente_descripcion=F('id_frente__descripcion'),
         tipo_partida_descripcion=F('id_tipo_partida__descripcion'),
         unidad_medida_descripcion=F('id_unidad_medida__descripcion')
     )
@@ -1093,19 +1093,16 @@ def datatable_producto(request):
     if search_value:
         productos = productos.filter(
             Q(id_partida__icontains=search_value) |
-            Q(descripcion_concepto__icontains=search_value) |
-            Q(anexo__icontains=search_value) |
-            Q(sitio_descripcion__icontains=search_value) |
-            Q(tipo_partida_descripcion__icontains=search_value)
+            Q(descripcion_concepto__icontains=search_value)
         )
     
     # Filtro por tipo partida
     if tipo_partida:
         productos = productos.filter(id_tipo_partida_id=tipo_partida)
     
-    # Filtro por sitio
-    if sitio:
-        productos = productos.filter(id_sitio_id=sitio)
+    # Filtro por frente
+    if frente:
+        productos = productos.filter(id_frente_id=frente)
     
     # Filtro por unidad de medida
     if unidad_medida:
@@ -1132,7 +1129,7 @@ def datatable_producto(request):
         data.append({
             'id': producto.id,
             'tipo_partida': producto.tipo_partida_descripcion,
-            'sitio': producto.sitio_descripcion,
+            'frente': producto.frente_descripcion,
             'unidad_medida': producto.unidad_medida_descripcion,
             'anexo': producto.anexo,
             'id_partida': producto.id_partida,
@@ -1158,7 +1155,7 @@ def crear_producto(request):
         id_partida = request.POST.get('id_partida')
         descripcion_concepto = request.POST.get('descripcion')
         anexo = request.POST.get('anexo', '')
-        sitio_id = request.POST.get('sitio')
+        frente_id = request.POST.get('frente')
         tipo_partida_id = request.POST.get('tipo_partida')
         unidad_medida_id = request.POST.get('unidad_medida')
         precio_unitario_mn = request.POST.get('precio_unitario_mn', 0)
@@ -1191,10 +1188,10 @@ def crear_producto(request):
         
         # Obtener las instancias de los modelos FK
         try:
-            sitio = Sitio.objects.get(id=sitio_id)
+            frente = Frente.objects.get(id=frente_id)
             tipo_partida = Tipo.objects.get(id=tipo_partida_id)
             unidad_medida = UnidadMedida.objects.get(id=unidad_medida_id)
-        except (Sitio.DoesNotExist, Tipo.DoesNotExist, UnidadMedida.DoesNotExist) as e:
+        except (Frente.DoesNotExist, Tipo.DoesNotExist, UnidadMedida.DoesNotExist) as e:
             return JsonResponse({
                 'exito': False,
                 'tipo_aviso': 'advertencia',
@@ -1217,7 +1214,7 @@ def crear_producto(request):
             id_partida=id_partida,
             descripcion_concepto=descripcion_concepto,
             anexo=anexo,
-            id_sitio=sitio,
+            id_frente=frente,
             id_tipo_partida=tipo_partida,
             id_unidad_medida=unidad_medida,
             precio_unitario_mn=precio_mn,
@@ -1289,7 +1286,7 @@ def obtener_producto(request):
             'id_partida': producto.id_partida,
             'descripcion_concepto': producto.descripcion_concepto,
             'anexo': producto.anexo,
-            'sitio_id': producto.id_sitio_id,
+            'frente_id': producto.id_frente_id,
             'tipo_partida_id': producto.id_tipo_partida_id,
             'unidad_medida_id': producto.id_unidad_medida_id,
             'precio_unitario_mn': producto.precio_unitario_mn,
@@ -1310,7 +1307,7 @@ def editar_producto(request):
         id_partida = request.POST.get('id_partida')
         descripcion_concepto = request.POST.get('descripcion')
         anexo = request.POST.get('anexo', '')
-        sitio_id = request.POST.get('sitio')
+        frente_id = request.POST.get('frente')
         tipo_partida_id = request.POST.get('tipo_partida')
         unidad_medida_id = request.POST.get('unidad_medida')
         precio_unitario_mn = request.POST.get('precio_unitario_mn', 0)
@@ -1360,10 +1357,10 @@ def editar_producto(request):
             
         # Obtener las instancias de los modelos FK
         try:
-            sitio = Sitio.objects.get(id=sitio_id)
+            frente = Frente.objects.get(id=frente_id)
             tipo_partida = Tipo.objects.get(id=tipo_partida_id)
             unidad_medida = UnidadMedida.objects.get(id=unidad_medida_id)
-        except (Sitio.DoesNotExist, Tipo.DoesNotExist, UnidadMedida.DoesNotExist) as e:
+        except (Frente.DoesNotExist, Tipo.DoesNotExist, UnidadMedida.DoesNotExist) as e:
             return JsonResponse({
                 'exito': False,
                 'tipo_aviso': 'error',
@@ -1385,7 +1382,7 @@ def editar_producto(request):
         producto.id_partida = id_partida
         producto.descripcion_concepto = descripcion_concepto
         producto.anexo = anexo
-        producto.id_sitio = sitio
+        producto.id_frente = frente
         producto.id_tipo_partida = tipo_partida
         producto.id_unidad_medida = unidad_medida
         producto.precio_unitario_mn = precio_mn

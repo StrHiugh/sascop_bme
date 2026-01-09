@@ -1277,7 +1277,7 @@ $(document).ready(function () {
 // Funcion para guardar el archivo
 function guardarEnlaceArchivo() {
     const enlace = $('#enlaceArchivoOt').val().trim();
-    
+    const $btn = $('#btnGuardarEnlacePaso');
     if (!enlace) {
         aviso("advertencia", "Por favor ingresa un enlace válido");
         $('#enlaceArchivoOt').focus();
@@ -1293,6 +1293,8 @@ function guardarEnlaceArchivo() {
     }
     
     if (window.pasoActual) {
+        $btn.blur();
+    
         $.ajax({
             url: urlGuardarArchivo,
             method: "POST",
