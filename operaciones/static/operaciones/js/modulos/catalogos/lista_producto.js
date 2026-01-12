@@ -21,7 +21,7 @@ $(document).ready(function () {
             data: function (extra) {
                 extra.filtro = $("#filtro-buscar").val();
                 extra.tipo_partida = $("#filtro-tipo-partida").val();
-                extra.frente = $("#filtro-frente").val();
+                extra.sitio = $("#filtro-sitio").val();
                 extra.unidad_medida = $("#filtro-unidad-medida").val();
                 extra.estado = $("#filtro-estado").val();
             }
@@ -30,59 +30,59 @@ $(document).ready(function () {
             {
                 "data": "id",
                 "title": "ID",
-                "orderable": true, 
+                "orderable": true,
                 visible: false
             },
             {
                 "data": "id_partida",
                 "title": "ID Partida",
-                "orderable": true, 
+                "orderable": true,
             },
             {
                 "data": "descripcion",
                 "title": "Descripción",
-                "orderable": true, 
+                "orderable": true,
             },
             {
-                "data": "tipo_partida", 
+                "data": "tipo_partida",
                 "title": "Tipo Partida",
-                "orderable": true, 
+                "orderable": true,
             },
             {
-                "data": "frente",
-                "title": "Frente",
-                "orderable": true, 
+                "data": "sitio",
+                "title": "Sitio",
+                "orderable": true,
             },
             {
                 "data": "unidad_medida",
                 "title": "Unidad Medida",
-                "orderable": true, 
+                "orderable": true,
             },
             {
                 "data": "anexo",
                 "title": "Anexo",
-                "orderable": true, 
+                "orderable": true,
             },
             {
                 "data": "precio_unitario_mn",
                 "title": "Precio MN",
-                "orderable": true, 
-                "render": function(data, type, row) {
-                    return data ? `$${parseFloat(data).toLocaleString('es-MX', {minimumFractionDigits: 2})}` : '$0.00';
+                "orderable": true,
+                "render": function (data, type, row) {
+                    return data ? `$${parseFloat(data).toLocaleString('es-MX', { minimumFractionDigits: 2 })}` : '$0.00';
                 }
             },
             {
                 "data": "precio_unitario_usd",
                 "title": "Precio USD",
-                "orderable": true, 
-                "render": function(data, type, row) {
-                    return data ? `$${parseFloat(data).toLocaleString('es-MX', {minimumFractionDigits: 2})}` : '$0.00';
+                "orderable": true,
+                "render": function (data, type, row) {
+                    return data ? `$${parseFloat(data).toLocaleString('es-MX', { minimumFractionDigits: 2 })}` : '$0.00';
                 }
             },
             {
                 "data": "activo",
                 "title": "Estatus",
-                "render": function(data, type, row) {
+                "render": function (data, type, row) {
                     const estatusTipo = {
                         'Activo': 'bg-success',
                         'Inactivo': 'bg-danger'
@@ -94,7 +94,7 @@ $(document).ready(function () {
                 "data": null,
                 "title": "Acciones",
                 "class": "text-center",
-                "render": function(data, type, row) {
+                "render": function (data, type, row) {
                     return `
                         <a class="table-icon editar-producto" title="Editar producto" data-id="${row.id}">
                             <i class="fas fa-edit"></i>
@@ -112,7 +112,7 @@ $(document).ready(function () {
     });
     cargarUnidadesMedida();
     cargarUnidadesMedidaFiltro();
-    
+
     $("#filtro-buscar").keypress(function (event) {
         if (event.which == 13) {
             tablaPte.draw();
@@ -136,7 +136,7 @@ $(document).ready(function () {
         tablaPte.draw();
     });
 
-    $(".btn-primary").on("click", function() {
+    $(".btn-primary").on("click", function () {
         if ($(this).find('span').text().trim() === 'Crear nuevo') {
             abrirPanelCrear();
         }
@@ -147,16 +147,16 @@ $(document).ready(function () {
             url: urlObtenerUndMed,
             type: 'GET',
             dataType: 'json',
-            success: function(data) {
+            success: function (data) {
                 const select = $('#unidad_medida');
                 select.empty();
                 select.append('<option value="" selected disabled>Seleccione una opción</option>');
-                
-                data.forEach(function(unidad) {
+
+                data.forEach(function (unidad) {
                     select.append(`<option value="${unidad.id}">${unidad.descripcion}</option>`);
-                });                
+                });
             },
-            error: function(xhr, status, error) {
+            error: function (xhr, status, error) {
                 aviso('error', 'Error al cargar las unidades de medida');
             }
         });
@@ -167,16 +167,16 @@ $(document).ready(function () {
             url: urlObtenerUndMed,
             type: 'GET',
             dataType: 'json',
-            success: function(data) {
+            success: function (data) {
                 const select = $('#filtro-unidad-medida');
                 select.empty();
                 select.append('<option value="">Todas las unidades</option>');
-                
-                data.forEach(function(unidad) {
+
+                data.forEach(function (unidad) {
                     select.append(`<option value="${unidad.id}">${unidad.descripcion}</option>`);
-                });                
+                });
             },
-            error: function(xhr, status, error) {
+            error: function (xhr, status, error) {
             }
         });
     }
@@ -194,40 +194,40 @@ $(document).ready(function () {
         const id = $(this).data('id');
         abrirPanelEditar(id);
     });
-    
+
     function abrirPanelEditar(id) {
         BMAjax(
-            urlObtenerProducto, {id:id}, "GET")
-            .done(function(data) {
+            urlObtenerProducto, { id: id }, "GET")
+            .done(function (data) {
                 $("#id").val(data.id);
                 $("#id_partida").val(data.id_partida);
                 $("#descripcion").val(data.descripcion_concepto);
                 $("#anexo").val(data.anexo);
                 $("#comentario").val(data.comentario);
                 $("#unidad_medida").val(data.unidad_medida_id);
-                $("#frente").val(data.frente_id);
+                $("#sitio").val(data.sitio_id);
                 $("#tipo_partida").val(data.tipo_partida_id);
                 $("#precio_unitario_mn").val(data.precio_unitario_mn);
                 $("#precio_unitario_usd").val(data.precio_unitario_usd);
                 $("#panel-title").text("Editar concepto");
-                    
+
                 var offcanvas = new bootstrap.Offcanvas(document.getElementById('panelCrearEditar'));
                 offcanvas.show();
             })
-            .fail(function() {
+            .fail(function () {
                 aviso("error", {
                     contenido: "Error al cargar los datos del estatus",
                 });
             });
     }
 
-    $("#btn-guardar").on("click", function() {
+    $("#btn-guardar").on("click", function () {
         const formData = {
             id: $("#id").val(),
             id_partida: $("#id_partida").val(),
             descripcion: $("#descripcion").val(),
             anexo: $("#anexo").val(),
-            frente: $("#frente").val(),
+            sitio: $("#sitio").val(),
             tipo_partida: $("#tipo_partida").val(),
             unidad_medida: $("#unidad_medida").val(),
             precio_unitario_mn: $("#precio_unitario_mn").val(),
@@ -249,10 +249,10 @@ $(document).ready(function () {
         const url = formData.id ? urlEditarProducto : urlCrearProducto;
         const method = "POST";
         BMAjax(
-            url, 
-            formData, 
+            url,
+            formData,
             method
-        ).done(function(response) {
+        ).done(function (response) {
             if (response.exito) {
                 var offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('panelCrearEditar'));
                 offcanvas.hide();
@@ -260,7 +260,7 @@ $(document).ready(function () {
             }
         });
     });
-    
+
     $(document).on("click", ".eliminar-producto", function () {
         const id = $(this).data('id');
         BMensaje({
@@ -270,14 +270,14 @@ $(document).ready(function () {
                 {
                     texto: "Sí, continuar",
                     clase: "btn-primary",
-                    funcion: function() {
+                    funcion: function () {
                         const url = urlEliminarProducto;
                         const method = "POST";
                         BMAjax(
-                            url, 
+                            url,
                             { id: id },
                             method
-                        ).done(function(response) {
+                        ).done(function (response) {
                             if (response.exito) {
                                 tablaPte.ajax.reload();
                             }
@@ -285,9 +285,9 @@ $(document).ready(function () {
                     }
                 },
                 {
-                    texto: "Cancelar", 
+                    texto: "Cancelar",
                     clase: "btn-light",
-                    funcion: function() { return }
+                    funcion: function () { return }
                 }
             ]
         });
