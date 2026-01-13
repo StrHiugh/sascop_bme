@@ -92,13 +92,13 @@ $(document).ready(function () {
             },
             {
                 "data": "fecha_inicio_real",
-                "title": "Fecha de inicio",
+                "title": "Fecha de inicio real",
                 "orderable": true,
                 "type": "date",
             },
             {
                 "data": "fecha_termino_real",
-                "title": "Fecha término",
+                "title": "Fecha término real",
                 "orderable": true,
                 "type": "date",
             },
@@ -1577,11 +1577,11 @@ function initTablaReprogramaciones(otId) {
             },
             {
                 "data": "fecha_inicio_real",
-                "title": "Fecha de inicio"
+                "title": "Fecha de inicio real"
             },
             {
                 "data": "fecha_termino_real",
-                "title": "Fecha término"
+                "title": "Fecha término real"
             },
             {
                 "data": "progreso_final",
