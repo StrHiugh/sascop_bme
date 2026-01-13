@@ -173,9 +173,9 @@ class PartidaAnexoImportada(models.Model):
     id_partida = models.CharField(max_length=10)
     descripcion_concepto = models.TextField()
     unidad_medida = models.ForeignKey(UnidadMedida, on_delete=models.CASCADE)
-    volumen_proyectado = models.DecimalField(max_digits=18, decimal_places=4)
-    precio_unitario_mn = models.DecimalField(max_digits=15, decimal_places=2)
-    precio_unitario_usd = models.DecimalField(max_digits=15, decimal_places=2)
+    volumen_proyectado = models.DecimalField(max_digits=18, decimal_places=6)
+    precio_unitario_mn = models.DecimalField(max_digits=15, decimal_places=4)
+    precio_unitario_usd = models.DecimalField(max_digits=15, decimal_places=4)
     orden_fila = models.IntegerField()
     
     class Meta:

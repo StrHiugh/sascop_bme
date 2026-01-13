@@ -1,12 +1,16 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_http_methods
 from ..models import OTE, ImportacionAnexo, PartidaAnexoImportada, Produccion, ReporteMensual, Sitio
 from django.http import JsonResponse
 from itertools import chain
 from django.db.models import Q, Case, F, When, IntegerField, Value, CharField, Sum
-from datetime import date
-import calendar
 from django.db.models.functions import Coalesce
+from django.db import transaction
+from datetime import date
+from decimal import Decimal
+import calendar
+import json
 
 @login_required(login_url='/accounts/login/')
 def lista_produccion(request):
@@ -105,6 +109,7 @@ def obtener_partidas_produccion(request):
     id_ot = request.GET.get('id_ot')
     mes = request.GET.get('mes')
     anio = request.GET.get('anio')
+    tipo_tiempo = request.GET.get('tipo_tiempo', 'TE') 
 
     if not id_ot or not mes or not anio:
         return JsonResponse([], safe=False)
@@ -125,7 +130,8 @@ def obtener_partidas_produccion(request):
     resumen_produccion = Produccion.objects.filter(
         id_reporte_mensual__id_ot_id=id_ot,
         id_reporte_mensual__mes=mes,
-        id_reporte_mensual__anio=anio
+        id_reporte_mensual__anio=anio,
+        tipo_tiempo=tipo_tiempo
     ).values(
         'id_partida_anexo_id', 
         'fecha_produccion__day'
@@ -159,3 +165,128 @@ def obtener_partidas_produccion(request):
         data_produccion.append(fila)
 
     return JsonResponse(data_produccion, safe=False)
+
+@login_required
+@require_http_methods(["POST"])
+def guardar_produccion_masiva(request):
+    """
+    Guarda la matriz de producción (Grid), gestiona tipos de tiempo (TE/CMA)
+    y ejecuta el TRIGGER para crear Generadores (GPU) automáticamente si es C2/C3.
+    """
+    try:
+        data = json.loads(request.body)
+        id_ot = data.get('id_ot')
+        mes = int(data.get('mes'))
+        anio = int(data.get('anio'))
+        filas = data.get('partidas', [])
+        tipo_tiempo_batch = data.get('tipo_tiempo', 'TE')
+
+        if not filas:
+            return JsonResponse({'exito': True, 'mensaje': 'Sin datos para guardar'})
+
+        with transaction.atomic():
+            # 1. Obtener Header Mensual (1 consulta)
+            reporte_mensual, _ = ReporteMensual.objects.get_or_create(
+                id_ot_id=id_ot, mes=mes, anio=anio,
+                defaults={'id_estatus_id': 1}
+            )
+
+            # 2. Obtener todas las Partidas involucradas de golpe (1 consulta)
+            ids_partidas = [f.get('id_partida_imp') for f in filas]
+            partidas_db = PartidaAnexoImportada.objects.in_bulk(ids_partidas)
+
+            # 3. Obtener Producción Existente de este mes en memoria (1 consulta)
+            # Mapa: (id_partida, dia) -> Objeto Produccion
+            producciones_existentes = Produccion.objects.filter(
+                id_reporte_mensual=reporte_mensual,
+                id_partida_anexo_id__in=ids_partidas,
+                tipo_tiempo=tipo_tiempo_batch # Solo traemos lo que vamos a editar (TE o CMA)
+            )
+            mapa_produccion = {
+                (prod.id_partida_anexo_id, prod.fecha_produccion.day): prod 
+                for prod in producciones_existentes
+            }
+
+            # 4. Obtener Históricos para Excedentes de golpe (1 consulta compleja)
+            # Esto evita consultar el histórico fila por fila
+            historicos_query = Produccion.objects.filter(
+                id_partida_anexo_id__in=ids_partidas
+            ).exclude(
+                id_reporte_mensual=reporte_mensual
+            ).values('id_partida_anexo').annotate(total=Sum('volumen_produccion'))
+            
+            mapa_historicos = {h['id_partida_anexo']: h['total'] for h in historicos_query}
+
+            # Listas para operaciones masivas
+            a_crear = []
+            a_actualizar = []
+            ids_a_borrar = []
+
+            for fila in filas:
+                id_partida = fila.get('id_partida_imp')
+                valores_diarios = fila.get('valores', [])
+                
+                # Validar que la partida exista
+                partida = partidas_db.get(id_partida)
+                if not partida:
+                    continue
+
+                # Cálculo de Excedentes
+                volumen_autorizado = partida.volumen_proyectado or 0
+                historico = mapa_historicos.get(id_partida) or 0
+                suma_mes_actual = sum([Decimal(str(v or 0)) for v in valores_diarios])
+                acumulado_total = historico + suma_mes_actual
+                es_excedente_global = acumulado_total > volumen_autorizado
+
+                for index, volumen in enumerate(valores_diarios):
+                    dia = index + 1
+                    volumen_dec = Decimal(str(volumen))
+                    
+                    # Buscamos si ya existe registro en memoria
+                    prod_obj = mapa_produccion.get((id_partida, dia))
+
+                    if volumen_dec == 0:
+                        # Si es 0 y existe, lo mandamos borrar
+                        if prod_obj:
+                            ids_a_borrar.append(prod_obj.id)
+                    else:
+                        if prod_obj:
+                            # Si existe y cambió el valor, lo preparamos para actualizar
+                            # Optimizacion: Solo actualizar si el valor cambió realmente
+                            if prod_obj.volumen_produccion != volumen_dec or prod_obj.es_excedente != es_excedente_global:
+                                prod_obj.volumen_produccion = volumen_dec
+                                prod_obj.es_excedente = es_excedente_global
+                                a_actualizar.append(prod_obj)
+                        else:
+                            # Si no existe, lo preparamos para crear
+                            fecha_prod = date(anio, mes, dia)
+                            nuevo_obj = Produccion(
+                                id_reporte_mensual=reporte_mensual,
+                                id_partida_anexo=partida,
+                                fecha_produccion=fecha_prod,
+                                volumen_produccion=volumen_dec,
+                                tipo_tiempo=tipo_tiempo_batch,
+                                es_excedente=es_excedente_global,
+                                id_estatus_cobro_id=1
+                            )
+                            a_crear.append(nuevo_obj)
+
+            # 6. Ejecución en Base de Datos (3 Consultas Finales)
+            
+            # A. Borrar lo que se puso en 0
+            # if ids_a_borrar:
+            #     Produccion.objects.filter(id__in=ids_a_borrar).delete()
+
+            # B. Crear nuevos registros
+            if a_crear:
+                Produccion.objects.bulk_create(a_crear)
+
+            # C. Actualizar existentes
+            if a_actualizar:
+                Produccion.objects.bulk_update(a_actualizar, ['volumen_produccion', 'es_excedente'])
+
+        return JsonResponse({'exito': True, 'mensaje': f'Sábana de {tipo_tiempo_batch} guardada correctamente'})
+
+    except Exception as e:
+        return JsonResponse({'exito': False, 'mensaje': f'Error interno: {str(e)}'}, status=500)
+

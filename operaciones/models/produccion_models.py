@@ -1,6 +1,6 @@
 from django.db import models
 from .catalogos_models import Sitio, Estatus, UnidadMedida, Tipo, Frente
-from .ote_models import OTE
+from .ote_models import OTE, PartidaAnexoImportada
 
 class Producto(models.Model):
     id_partida = models.CharField(max_length=100)
@@ -21,7 +21,7 @@ class Producto(models.Model):
 
 class PartidaAnexo(models.Model):
     """
-    Tabla de partida anexo.
+    Tabla de partida anexo. ESTA NO SE ESTA USANDO
     """
     id_ot = models.ForeignKey(OTE, on_delete=models.CASCADE, related_name='presupuesto_partidas')
     id_producto = models.ForeignKey(Producto, on_delete=models.PROTECT)
@@ -80,26 +80,29 @@ class ReporteDiario(models.Model):
 class Produccion(models.Model):
     TIPO_TIEMPO_CHOICES = [
         ('TE', 'Tiempo Efectivo'),
-        ('CMA', 'Costo Mínimo/Muerto'),
+        ('CMA', 'Costo Mínimo Aplicado'),
     ]
-    id_partida_anexo = models.ForeignKey(PartidaAnexo, on_delete=models.PROTECT, related_name='registros_produccion', blank=True, null=True)
+    id_partida_anexo = models.ForeignKey(PartidaAnexoImportada, on_delete=models.PROTECT, related_name='registros_produccion', blank=True, null=True)
     id_reporte_mensual = models.ForeignKey(ReporteMensual, on_delete=models.CASCADE, related_name='producciones', blank=True, null=True)
     fecha_produccion = models.DateField()
-    volumen_produccion = models.DecimalField(max_digits=15, decimal_places=2)
-    volumen_actual = models.DecimalField(max_digits=15, decimal_places=2)
+    volumen_produccion = models.DecimalField(max_digits=15, decimal_places=6)
+    # volumen_actual = models.DecimalField(max_digits=15, decimal_places=2)
     tipo_tiempo = models.CharField(max_length=3, choices=TIPO_TIEMPO_CHOICES, blank=True, null=True)
     es_excedente = models.BooleanField(default=False)
-    importe_mn = models.DecimalField(max_digits=15, decimal_places=2)
-    importe_usd = models.DecimalField(max_digits=15, decimal_places=2)
     id_estatus_cobro = models.ForeignKey(Estatus, on_delete=models.CASCADE, limit_choices_to={'nivel_afectacion': 3})
-    id_tipo_produccion = models.ForeignKey(Tipo, on_delete=models.CASCADE, limit_choices_to={'tipo': 4}, related_name='producciones_tipo')
     comentario = models.TextField(blank=True)
 
     class Meta:
         db_table = 'produccion'
+        unique_together = ['id_partida_anexo', 'fecha_produccion', 'tipo_tiempo']
+        indexes = [
+            models.Index(fields=['fecha_produccion']),
+            models.Index(fields=['id_partida_anexo']),
+            models.Index(fields=['tipo_tiempo'])
+        ]
 
     def __str__(self):
-        return f"Producción {self.id} - OT {self.id_ot.orden_trabajo}"
+        return f"Producción {self.id} - OT {self.id_ot.orden_trabajo} - {self.fecha_produccion}"
 
 class RegistroGPU(models.Model):
     """

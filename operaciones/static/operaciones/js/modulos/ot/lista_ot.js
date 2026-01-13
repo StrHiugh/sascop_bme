@@ -546,7 +546,7 @@ $(document).ready(function () {
         REGISTRO_ACTIVIDAD._evento = otId ? "MODIFICAR" : "CREAR";
         if (REGISTRO_ACTIVIDAD._evento=="MODIFICAR"){
             REGISTRO_ACTIVIDAD.detecta_cambios("#formCrearOT");
-            const agrega_detalle = e => ({...e, detalle: `de la OT: <b>${$("#oficio_ot").val()}</b>`});
+            const agrega_detalle = e => ({...e, detalle: `de la OT: <b>${$("#orden_trabajo").val()}</b>`});
             REGISTRO_ACTIVIDAD.transforma_cambios(agrega_detalle);
             formData.append('registro_actividad', JSON.stringify(REGISTRO_ACTIVIDAD.actividad));
         }else{
@@ -555,7 +555,7 @@ $(document).ready(function () {
                 nombre:"Creó",
                 valor_actual:"",
                 valor_anterior:"",
-                detalle:` ${$("#id_tipo option:selected").text()} con folio: ${$("#oficio_ot").val()}`
+                detalle:` ${$("#id_tipo option:selected").text()} con folio: ${$("#orden_trabajo").val()}`
             })
             formData.append('registro_actividad', JSON.stringify(REGISTRO_ACTIVIDAD.actividad));
         }   
@@ -645,7 +645,7 @@ $(document).ready(function () {
                             nombre:"Eliminó",
                             valor_actual:"",
                             valor_anterior:"",
-                            detalle:`<b>una OT</b> con folio: <b>${datos.oficio_ot}</b>`})
+                            detalle:`<b>una OT</b> con folio: <b>${datos.orden_trabajo}</b>`})
 
                         const url = urlEliminarOT;
                         const method = "POST";
@@ -890,7 +890,7 @@ $(document).ready(function () {
                             nombre:"Actualizó",
                             valor_actual:nuevoEstatusTexto,
                             valor_anterior:datos.estatus,
-                            detalle:`el estatus de: <b>${datos.estatus}</b> a: <b>${nuevoEstatusTexto}</b>, de la OT: <b>${datos.oficio_ot}</b>`})   
+                            detalle:`el estatus de: <b>${datos.estatus}</b> a: <b>${nuevoEstatusTexto}</b>, de la OT: <b>${datos.orden_trabajo}</b>`})   
                         
                         BMAjax(
                             urlCambiarEstatusOT,
@@ -1010,7 +1010,7 @@ $(document).ready(function () {
                             nombre: "Actualizó",
                             valor_actual: textoEstatus,
                             valor_anterior: datosPaso.estatus_paso_texto || 'PENDIENTE',
-                            detalle: `el estatus de: <b>${datosPaso.estatus_paso_texto || 'PENDIENTE'}</b> a: <b>${textoEstatus}</b>, del paso <b>${datosPaso.orden || ''} - ${datosPaso.desc_paso || ''}</b> de la OT: <b>${datosPaso.oficio_ot || ''}</b>`
+                            detalle: `el estatus de: <b>${datosPaso.estatus_paso_texto || 'PENDIENTE'}</b> a: <b>${textoEstatus}</b>, del paso <b>${datosPaso.orden || ''} - ${datosPaso.desc_paso || ''}</b> de la OT: <b>${datosPaso.orden_trabajo || ''}</b>`
                         });
                         
                         const datos = {
@@ -1066,7 +1066,7 @@ $(document).ready(function () {
             detalle:`la fecha de:<b> ${(tipo=='1')?datosPaso.fecha_inicio:(tipo=='2')?datosPaso.fecha_termino:datosPaso.fecha_entrega}</b> a: <b>${fecha}
                 ${(tipo=='1')?'de inicio':
                 (tipo=='2')?'de término':'de entrega'} </b>
-                del paso <b>${datosPaso.orden}</b> de la OT: <b>${datosPaso.oficio_ot}</b>`}) 
+                del paso <b>${datosPaso.orden}</b> de la OT: <b>${datosPaso.orden_trabajo}</b>`}) 
         
         BMAjax(
             urlActualizarFecha,

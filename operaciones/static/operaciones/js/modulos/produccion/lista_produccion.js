@@ -84,13 +84,36 @@ $(document).ready(function() {
     let gridReportesDiarios = null; 
     let gridProduccion = null; 
     let otSeleccionada = null; 
-
+    let tipoTiempoActivo = 'TE';
     inicializarFechas();
     cargarSitiosOtProceso();
     
     setTimeout(() => {
         inicializarGrids();
     }, 100);
+
+    $('#select-tipo-tiempo').on('change', function() {
+        const nuevoValor = $(this).val();
+        tipoTiempoActivo = nuevoValor;
+        $('#lbl-tipo-guardado').text(tipoTiempoActivo);
+
+        const gridEl = $('#grid-produccion');
+        if (tipoTiempoActivo === 'CMA') {
+            gridEl.addClass('mode-cma');
+            $(this).addClass('modo-cma'); 
+        } else {
+            gridEl.removeClass('mode-cma');
+            $(this).removeClass('modo-cma');
+        }
+
+        if (otSeleccionada) {
+            iniciarLoader();
+            cargarDetalleProduccion(otSeleccionada);
+            setTimeout(() => {
+                finalizarLoader();
+            }, 2000);
+        }
+    });
 
     function crearFechaLocal(dateStr) {
         if (!dateStr) return null;
@@ -168,11 +191,11 @@ $(document).ready(function() {
                 scrollY: true,
                 bodyHeight: 350,
                 rowHeaders: ['rowNum'],
-                selectionUnit: 'row', 
+                selectionUnit: 'cell', 
                 columnOptions: { resizable: true, frozenCount: 2 },
                 columns: [
                     { header: 'OT', name: 'ot', width: 100, filter: 'select', align: 'left', validation: { required: true } },
-                    { header: 'Descripción / Actividad', name: 'desc', width: 250, align: 'left' },
+                    { header: 'Descripción', name: 'desc', width: 250, align: 'left' },
                     ...columnasDiasAsistencia
                 ],
                 data: [] 
@@ -272,7 +295,8 @@ $(document).ready(function() {
             data: { 
                 id_ot: ot.id_ot, 
                 mes: mes, 
-                anio: anio 
+                anio: anio,
+                tipo_tiempo: tipoTiempoActivo ? tipoTiempoActivo : 'TE'
             },
             success: function(data) {
                 if (gridProduccion) {
@@ -292,6 +316,53 @@ $(document).ready(function() {
             }
         });
     }
+
+    $('#btn-guardar-produccion').on('click', function() {
+        if (!otSeleccionada) {
+            aviso("advertencia", "Selecciona una OT primero");
+            return;
+        }
+
+        const rawData = gridProduccion.getData();
+        const partidasProcesadas = rawData.map(row => {
+            const valoresDias = [];
+            for (let i = 1; i <= DAYS_IN_MONTH; i++) {
+                let val = parseFloat(row[`dia${i}`]);
+                valoresDias.push(isNaN(val) ? 0 : val);
+            }
+            return {
+                id_partida_imp: row.id_partida_imp,
+                valores: valoresDias
+            };
+        });
+        const datos = {
+            id_ot: otSeleccionada.id_ot,
+            mes: $('#filtro-mes').val(),
+            anio: $('#filtro-anio').val(),
+            tipo_tiempo: tipoTiempoActivo,
+            partidas: partidasProcesadas,
+        };
+        iniciarLoader();
+        $.ajax({
+            url: urlGuardarProduccionMasivo, 
+            type: 'POST',
+            data: JSON.stringify(datos), 
+            contentType: 'application/json', 
+            headers: { 'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val() },
+            success: function(response) {
+                if (response.exito) {
+                    aviso("exito", `Sábana de ${tipoTiempoActivo} guardada correctamente`);
+                    cargarDetalleProduccion(otSeleccionada);
+                } else {
+                    aviso("error", response.mensaje);
+                }
+            },
+            error: function(xhr) { aviso("error", "Error al guardar. Verifica tu conexión."); console.log(xhr); },
+            complete: function() { 
+                finalizarLoader();
+            }
+        });
+    });
 
     function bloquearDiasFueraDeVigencia(ot, mes, anio) {
         if (!ot.inicio_v || !ot.fin_v) return;

@@ -1,5 +1,6 @@
 {% extends 'operaciones/base.html' %}
 {% load static %}
+
 {% block titulos %}
 <div class="header-modulo">
     <div class="header-modulo-container">
@@ -42,7 +43,7 @@
 
             <div class="d-flex align-items-center bg-white p-1 ps-2" id="contenedor-anio">
                 <select class="form-select form-select-sm border-0 fw-bold" id="filtro-anio" style="width: 90px;">
-                    
+                    <!-- Se llena con JS -->
                 </select>
             </div>
 
@@ -87,7 +88,7 @@
         min-width: 0 !important;
     }
 
-    /* 4. WRAPPER DEL GRID: Debe obligar al Grid a activar su scroll interno */
+    /* 4. WRAPPER DEL GRID */
     .grid-wrapper {
         width: 100% !important;
         max-width: 100% !important;
@@ -123,12 +124,39 @@
         font-weight: 600;
         border-bottom: 3px solid #007bff;
     }
+
+    .tui-grid-header-area {
+        background-color: #f5f5f5 !important;
+    }
+    
+    .mode-cma .tui-grid-header-area {
+        background-color: #fff3cd !important;
+    }
+
+    .tui-grid-cell-header {
+        background-color: #f5f5f5 !important;
+    }
+
+    .mode-cma .tui-grid-cell-header {
+        background-color: #fff3cd !important;
+    }
+
+    .btn-sabana {
+        border-radius: 20px;
+        transition: all 0.3s ease;
+    }
+
+    .btn-sabana.active {
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        background-color: #000000ff !important;
+        color: black !important;
+    }
 </style>
 
 <div class="bm-content">
     <div class="bm-cont-elementos">
         <div class="bm-cont-elementos-body pt-2">
-            
+            {% csrf_token %}
             <ul class="nav nav-tabs mb-3" id="tabProcesos" role="tablist">
                 <li class="nav-item" role="presentation">
                     <button class="nav-link active text-secondary fw-medium" id="asistencia-tab" data-bs-toggle="tab" data-bs-target="#panel-asistencia" type="button" role="tab" aria-controls="panel-asistencia" aria-selected="false">
@@ -143,20 +171,33 @@
             </ul>
             
             <div class="tab-content" id="tabProcesosContent">
+                <!-- PANEL ASISTENCIA -->
                 <div class="tab-pane fade show active" id="panel-asistencia" role="tabpanel" aria-labelledby="asistencia-tab">
                     <div id="grid-asistencia" class="grid-wrapper"></div>
                 </div>
+
+                <!-- PANEL PRODUCCIÓN -->
                 <div class="tab-pane fade" id="panel-produccion" role="tabpanel" aria-labelledby="produccion-tab">
-                    <div class="row">
-                        <div class="col-12 mb-2">
-                            <div class=" d-flex justify-content-end">
-                                <button class="btn btn-sm btn-success" id="btn-guardar-prod"><i class="fas fa-save"></i> Guardar Cambios</button>
+                    
+                    <!-- SELECTOR DE SÁBANAS (TE / CMA) Y GUARDADO -->
+                    <div class="card shadow-sm mb-3">
+                        <div class="card-body p-2 d-flex justify-content-between align-items-center bg-light">
+                            <div class="d-flex align-items-center">
+                                <span class="me-2 fw-bold text-muted"><i class="fas fa-layer-group me-1"></i>Tipo de afectación:</span>
+                                <select id="select-tipo-tiempo" class="form-select select-sabana" style="width: 250px;">
+                                    <option value="TE" selected>TE</option>
+                                    <option value="CMA">CMA</option>
+                                </select>
                             </div>
+                            <button id="btn-guardar-produccion" class="btn btn-primary px-4 fw-bold">
+                                <i class="fas fa-save me-2"></i>Guardar <span id="lbl-tipo-guardado">TE</span>
+                            </button>
                         </div>
                     </div>
+                    
+                    <div id="grid-produccion" class="grid-wrapper mb-3 border-top-0"></div> 
 
-                    <div id="grid-produccion" class="grid-wrapper"></div>
-
+                    <!-- KPI BOXES -->
                     <div class="row mt-2">
                         <div class="col-md-4">
                             <div class="kpi-box normal">
@@ -183,6 +224,7 @@
     </div>
 </div>
 
+<!-- TOAST ALERTAS -->
 <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1100">
     <div id="toastExcedente" class="toast text-white bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
         <div class="d-flex">
@@ -198,12 +240,11 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{% static 'operaciones/js/modulos/produccion/lista_produccion.js' %}?v=1.0.1"></script>
+<script src="{% static 'operaciones/js/modulos/produccion/lista_produccion.js' %}?v=1.0.2"></script>
 <script>
     var urlSitiosOtsProceso = "{% url 'operaciones:obtener_sitios_con_ots_ejecutadas' %}";
     var urlOtsPorSitioGrid = "{% url 'operaciones:ots_por_sitio_grid' %}";
     var urlObtenerPartidasProduccion = "{% url 'operaciones:obtener_partidas_produccion' %}";
-    
-    
+    var urlGuardarProduccionMasivo = "{% url 'operaciones:guardar_produccion_masiva' %}";
 </script>
 {% endblock %}
