@@ -79,6 +79,46 @@ class NativeSelectEditor {
     }
 }
 
+class ProduccionRenderer {
+    constructor(props) {
+        this.el = document.createElement('div');
+        this.el.style.width = '100%';
+        this.el.style.height = '100%';
+        // Centrado usando Flexbox
+        this.el.className = 'd-flex justify-content-center align-items-center tui-grid-cell-content';
+        this.render(props);
+    }
+    
+    getElement() { return this.el; }
+    
+    render(props) {
+        let valor = props.value;
+        let esExcedente = false;
+
+        // LÓGICA DE EXCEDENTES:
+        // Opción A: Si el backend envía un objeto { valor: 10, excedente: true }
+        if (valor && typeof valor === 'object') {
+            esExcedente = valor.es_excedente || false;
+            valor = valor.valor;
+        } 
+        // Opción B (Fallback): Si la fila completa está bloqueada, marcamos en rojo (opcional)
+        // else if (props.row.estatus_gpu === 'BLOQUEADO') {
+        //     esExcedente = true; 
+        // }
+
+        const displayValue = (valor !== null && valor !== undefined && valor !== '') 
+            ? Number(valor).toLocaleString('es-MX', { minimumFractionDigits: 6, maximumFractionDigits: 6 }) 
+            : '';
+        this.el.innerText = displayValue;
+        this.el.className = 'd-flex justify-content-center align-items-center tui-grid-cell-content';
+        
+        if (esExcedente) {
+            this.el.classList.add('text-danger', 'fw-bold');
+            this.el.style.backgroundColor = '#fff5f5';
+        }
+    }
+}
+
 $(document).ready(function() {
     const DAYS_IN_MONTH = 31;
     let gridReportesDiarios = null; 
@@ -218,7 +258,7 @@ $(document).ready(function() {
             width: 60,
             align: 'right',
             editor: 'text', 
-            formatter: ({value}) => value && value !== 0 ? value : '' 
+            renderer: { type: ProduccionRenderer } 
         }));
 
         const elGridProduccion = document.getElementById('grid-produccion');
@@ -227,7 +267,7 @@ $(document).ready(function() {
                 el: elGridProduccion,
                 scrollX: true,
                 scrollY: true,
-                bodyHeight: 350,
+                bodyHeight: 450,
                 rowHeaders: ['rowNum'],
                 columnOptions: { resizable: true, frozenCount: 4 },
                 columns: [
@@ -300,6 +340,7 @@ $(document).ready(function() {
             },
             success: function(data) {
                 if (gridProduccion) {
+                    console.log(data);
                     gridProduccion.resetData(data);
                     bloquearDiasFueraDeVigencia(ot, parseInt(mes), parseInt(anio));
                 }
