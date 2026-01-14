@@ -19,23 +19,6 @@ class Producto(models.Model):
     def __str__(self):
         return f"{self.id_partida} - {self.descripcion_concepto}"
 
-class PartidaAnexo(models.Model):
-    """
-    Tabla de partida anexo. ESTA NO SE ESTA USANDO
-    """
-    id_ot = models.ForeignKey(OTE, on_delete=models.CASCADE, related_name='presupuesto_partidas')
-    id_producto = models.ForeignKey(Producto, on_delete=models.PROTECT)
-    volumen_autorizado = models.DecimalField(max_digits=15, decimal_places=4)
-
-    class Meta:
-        db_table = 'partida_anexo_ot'
-        unique_together = ['id_ot', 'id_producto']
-
-    def __str__(self):
-        return f"OT {self.id_ot.orden_trabajo} - {self.id_producto.id_partida}: {self.volumen_autorizado}"
-
-
-
 class ReporteMensual(models.Model):
     """
     Representa la 'Carpeta Mensual' de una OT.

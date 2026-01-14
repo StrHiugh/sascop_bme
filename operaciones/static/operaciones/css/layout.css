@@ -528,7 +528,7 @@ html, body {
     min-height: 400px;
 }
 
-@media (max-width: 992px;) {
+@media (max-width: 992px) {
     .bm-cont-elementos.min-height-300px {
         min-height: auto;
     }

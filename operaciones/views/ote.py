@@ -261,7 +261,6 @@ def datatable_ot(request):
             'count_reprogramaciones': ot.count_reprogramaciones,
 
         })
-    
     return JsonResponse({
         'draw': draw,
         'recordsTotal': total_records,

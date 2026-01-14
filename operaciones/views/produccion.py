@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
-from ..models import OTE, ImportacionAnexo, PartidaAnexoImportada, Produccion, ReporteMensual, Sitio
+from ..models import Producto, OTE, ImportacionAnexo, PartidaAnexoImportada, Produccion, ReporteMensual, Sitio
 from django.http import JsonResponse
 from itertools import chain
 from django.db.models import Q, Case, F, When, IntegerField, Value, CharField, Sum
@@ -19,7 +19,7 @@ def lista_produccion(request):
     return render(request, 'operaciones/produccion/lista_produccion.html', {'producciones': producciones})
 
 def obtener_sitios_con_ots_ejecutadas(request):
-    """Obtener todos los sitios con ots activos"""
+    """Obtener todos los sitios con ots activos y en ejecucion"""
     try:
         ots_activas = OTE.objects.filter(
             id_estatus_ot_id=8, 
@@ -142,7 +142,6 @@ def obtener_partidas_produccion(request):
 
     produccion_dict = {}
     for item in resumen_produccion:
-        print(item)
         key = (item['id_partida_anexo_id'], item['fecha_produccion__day'])
         produccion_dict[key] = {
             'valor': float(item['total_dia']),
@@ -164,16 +163,21 @@ def obtener_partidas_produccion(request):
         hay_excedente_en_fila = False 
 
         for d in range(1, 32):
-            dato_celda = produccion_dict.get((p.id, d), 0.0)
+            dato_celda = produccion_dict.get((p.id, d))
             
-            fila[f'dia{d}'] = dato_celda
-            
-            if isinstance(dato_celda, dict):
-                suma_mes += dato_celda['valor']
+            if dato_celda:
+                valor = dato_celda['valor']
+                suma_mes += valor
+                
                 if dato_celda['es_excedente']:
                     hay_excedente_en_fila = True
+
+                if valor == 0 and not dato_celda['es_excedente']:
+                    fila[f'dia{d}'] = None
+                else:
+                    fila[f'dia{d}'] = dato_celda
             else:
-                suma_mes += dato_celda
+                fila[f'dia{d}'] = None
             
         fila['acumulado_mes'] = suma_mes
         
@@ -190,8 +194,7 @@ def obtener_partidas_produccion(request):
 @require_http_methods(["POST"])
 def guardar_produccion_masiva(request):
     """
-    Guarda la matriz de producción (Grid) de forma OPTIMIZADA.
-    Calcula excedentes día a día (progresivo) en lugar de globalmente.
+    Guarda la matriz de producción
     """
     try:
         data = json.loads(request.body)
@@ -205,17 +208,14 @@ def guardar_produccion_masiva(request):
             return JsonResponse({'exito': True, 'mensaje': 'Sin datos para guardar'})
 
         with transaction.atomic():
-            # 1. Obtener Header Mensual
             reporte_mensual, _ = ReporteMensual.objects.get_or_create(
                 id_ot_id=id_ot, mes=mes, anio=anio,
                 defaults={'id_estatus_id': 1}
             )
 
-            # 2. Obtener todas las Partidas involucradas de golpe
             ids_partidas = [f.get('id_partida_imp') for f in filas]
             partidas_db = PartidaAnexoImportada.objects.in_bulk(ids_partidas)
 
-            # 3. Obtener Producción Existente de este mes para el tipo actual (para editar)
             producciones_existentes = Produccion.objects.filter(
                 id_reporte_mensual=reporte_mensual,
                 id_partida_anexo_id__in=ids_partidas,
@@ -226,8 +226,6 @@ def guardar_produccion_masiva(request):
                 for prod in producciones_existentes
             }
 
-            # 3.1 Obtener Producción de OTROS TIPOS (CMA si edito TE, etc.) en este mes
-            # Esto es necesario para que el acumulado considere TODO lo del mes.
             otros_tipos_query = Produccion.objects.filter(
                 id_reporte_mensual=reporte_mensual,
                 id_partida_anexo_id__in=ids_partidas
@@ -237,7 +235,6 @@ def guardar_produccion_masiva(request):
             
             mapa_otros_tipos = {o['id_partida_anexo']: o['total'] for o in otros_tipos_query}
 
-            # 4. Obtener Históricos (Meses Anteriores)
             historicos_query = Produccion.objects.filter(
                 id_partida_anexo_id__in=ids_partidas
             ).exclude(
@@ -246,7 +243,6 @@ def guardar_produccion_masiva(request):
             
             mapa_historicos = {h['id_partida_anexo']: h['total'] for h in historicos_query}
 
-            # Listas para operaciones masivas
             a_crear = []
             a_actualizar = []
             ids_a_borrar = []
@@ -259,26 +255,19 @@ def guardar_produccion_masiva(request):
                 if not partida:
                     continue
 
-                # --- LÓGICA DE EXCEDENTE PROGRESIVA ---
                 volumen_autorizado = partida.volumen_proyectado or 0
                 
-                # Base = Histórico Global + Lo que ya existe en este mes de otros tipos (ej. CMA)
                 base_acumulado = (mapa_historicos.get(id_partida) or 0) + (mapa_otros_tipos.get(id_partida) or 0)
                 
-                # Usamos una variable temporal para ir sumando día a día
                 acumulado_actual = base_acumulado
 
                 for index, volumen in enumerate(valores_diarios):
                     dia = index + 1
                     volumen_dec = Decimal(str(volumen))
                     
-                    # 1. Sumamos al acumulado
                     acumulado_actual += volumen_dec
                     
-                    # 2. Verificamos SI EN ESTE DÍA nos pasamos
                     es_excedente_dia = acumulado_actual > volumen_autorizado
-
-                    # Buscamos registro existente
                     prod_obj = mapa_produccion.get((id_partida, dia))
 
                     if volumen_dec == 0:
@@ -286,10 +275,9 @@ def guardar_produccion_masiva(request):
                             ids_a_borrar.append(prod_obj.id)
                     else:
                         if prod_obj:
-                            # Actualizar si hubo cambios en valor O en estatus de excedente
                             if prod_obj.volumen_produccion != volumen_dec or prod_obj.es_excedente != es_excedente_dia:
                                 prod_obj.volumen_produccion = volumen_dec
-                                prod_obj.es_excedente = es_excedente_dia # Aquí asignamos el estatus DEL DÍA
+                                prod_obj.es_excedente = es_excedente_dia
                                 a_actualizar.append(prod_obj)
                         else:
                             fecha_prod = date(anio, mes, dia)
@@ -299,14 +287,10 @@ def guardar_produccion_masiva(request):
                                 fecha_produccion=fecha_prod,
                                 volumen_produccion=volumen_dec,
                                 tipo_tiempo=tipo_tiempo_batch,
-                                es_excedente=es_excedente_dia, # Asignamos estatus DEL DÍA
+                                es_excedente=es_excedente_dia,
                                 id_estatus_cobro_id=1
                             )
                             a_crear.append(nuevo_obj)
-
-            # 6. Ejecución en Base de Datos
-            # if ids_a_borrar:
-            #     Produccion.objects.filter(id__in=ids_a_borrar).delete()
 
             if a_crear:
                 Produccion.objects.bulk_create(a_crear)
@@ -319,3 +303,76 @@ def guardar_produccion_masiva(request):
     except Exception as e:
         return JsonResponse({'exito': False, 'mensaje': f'Error interno: {str(e)}'}, status=500)
 
+@login_required
+@require_http_methods(["GET"])
+def buscar_productos_catalogo(request):
+    """
+    Busqueda en sabana de productos 
+    """
+    query = request.GET.get('q', '')
+
+    productos = Producto.objects.filter(
+        Q(id_partida__icontains=query) | Q(descripcion_concepto__icontains=query),
+        activo=True
+    )[:20]
+
+    results = []
+    for p in productos:
+        results.append({
+            'id': p.id,
+            'text': f"{p.id_partida} - {p.descripcion_concepto}",
+            'partida': p.id_partida,
+            'unidad': p.id_unidad_medida.clave if p.id_unidad_medida else 'N/A',
+            'precio': float(p.precio_unitario_mn),
+            'precio_usd': float(p.precio_unitario_usd)
+        })
+    
+    return JsonResponse({'results': results})
+
+@login_required
+@require_http_methods(["POST"])
+def vincular_partida_ot(request):
+    """
+    Agrega un producto del catálogo al Anexo de una OT específica.
+    """
+
+    id_ot = request.POST.get('id_ot')
+    id_producto = request.POST.get('id_producto')
+    volumen = request.POST.get('volumen', 0)
+
+    try:
+        importacion = ImportacionAnexo.objects.filter(ot_id=id_ot, es_activo=True).first()
+        
+        if not importacion:
+            ot = OTE.objects.get(id=id_ot)
+            importacion = ImportacionAnexo.objects.create(
+                ot=ot,
+                usuario_carga=request.user,
+                es_activo=True
+            )
+
+        producto = Producto.objects.get(id=id_producto)
+
+        if not producto:
+            return JsonResponse({'exito': False, 'mensaje': 'Producto no encontrado. Verifique si existe en la sabana de productos'})
+        
+        if PartidaAnexoImportada.objects.filter(importacion_anexo=importacion, id_partida=producto.id_partida).exists():
+            return JsonResponse({'exito': False, 'mensaje': f'La partida {producto.id_partida} ya existe en esta OT.'})
+
+        ultimo_orden = PartidaAnexoImportada.objects.filter(importacion_anexo=importacion).count() + 1
+        
+        PartidaAnexoImportada.objects.create(
+            importacion_anexo=importacion,
+            id_partida=producto.id_partida,
+            descripcion_concepto=producto.descripcion_concepto,
+            unidad_medida=producto.id_unidad_medida,
+            volumen_proyectado=volumen,
+            precio_unitario_mn=producto.precio_unitario_mn,
+            precio_unitario_usd=producto.precio_unitario_usd,
+            orden_fila=ultimo_orden
+        )
+
+        return JsonResponse({'exito': True, 'mensaje': 'Partida vinculada correctamente'})
+
+    except Exception as e:
+        return JsonResponse({'exito': False, 'mensaje': f'Error: {str(e)}'}, status=500)

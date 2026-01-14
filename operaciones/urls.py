@@ -61,6 +61,9 @@ urlpatterns = [
     path('produccion/ots_por_sitio_grid/', produccion.ots_por_sitio_grid, name='ots_por_sitio_grid'),
     path('produccion/obtener_partidas_produccion/', produccion.obtener_partidas_produccion, name='obtener_partidas_produccion'),
     path('produccion/guardar_produccion_masiva/', produccion.guardar_produccion_masiva, name='guardar_produccion_masiva'),
+    path('produccion/buscar_productos_catalogo/', produccion.buscar_productos_catalogo, name='buscar_productos_catalogo'),
+    path('produccion/vincular_partida_ot/', produccion.vincular_partida_ot, name='vincular_partida_ot'),
+    
     #URLs para PRODUCTOS
     path('catalogos/producto/', catalogos.lista_producto, name='lista_producto'),
     path('catalogos/producto/datatable_producto/', catalogos.datatable_producto, name='datatable_producto'),

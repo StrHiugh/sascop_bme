@@ -1,3 +1,13 @@
+const numberFormatter = new Intl.NumberFormat('es-MX', { 
+    minimumFractionDigits: 6, 
+    maximumFractionDigits: 6 
+});
+
+const currencyFormatter = new Intl.NumberFormat('es-MX', { 
+    minimumFractionDigits: 2, 
+    maximumFractionDigits: 2 
+});
+
 class StatusRenderer {
     constructor(props) {
         this.el = document.createElement('div');
@@ -95,20 +105,15 @@ class ProduccionRenderer {
         let valor = props.value;
         let esExcedente = false;
 
-        // LÓGICA DE EXCEDENTES:
-        // Opción A: Si el backend envía un objeto { valor: 10, excedente: true }
         if (valor && typeof valor === 'object') {
             esExcedente = valor.es_excedente || false;
             valor = valor.valor;
         } 
-        // Opción B (Fallback): Si la fila completa está bloqueada, marcamos en rojo (opcional)
-        // else if (props.row.estatus_gpu === 'BLOQUEADO') {
-        //     esExcedente = true; 
-        // }
 
         const displayValue = (valor !== null && valor !== undefined && valor !== '') 
-            ? Number(valor).toLocaleString('es-MX', { minimumFractionDigits: 6, maximumFractionDigits: 6 }) 
+            ? numberFormatter.format(Number(valor))
             : '';
+
         this.el.innerText = displayValue;
         this.el.className = 'd-flex justify-content-center align-items-center tui-grid-cell-content';
         
@@ -116,7 +121,7 @@ class ProduccionRenderer {
             this.el.classList.add('text-danger', 'fw-bold');
             this.el.style.backgroundColor = '#fff5f5';
         }
-    }
+    }   
 }
 
 $(document).ready(function() {
@@ -125,12 +130,86 @@ $(document).ready(function() {
     let gridProduccion = null; 
     let otSeleccionada = null; 
     let tipoTiempoActivo = 'TE';
+    let productoSeleccionadoCatalogo = null;
+    
     inicializarFechas();
     cargarSitiosOtProceso();
-    
+    inicializarSelect2Catalogo();
+
     setTimeout(() => {
         inicializarGrids();
     }, 100);
+
+    $('#btn-agregar-partida').on('click', function() {
+        if (!otSeleccionada) {
+            aviso("advertencia", "Primero selecciona una OT en el grid");
+            return;
+        }
+
+        $('#detalle-producto-seleccionado').addClass('d-none');
+        $('#select-producto-catalogo').val(null).trigger('change');
+        $('#input-volumen-autorizar').val(0);
+        
+        const modal = new bootstrap.Modal(document.getElementById('modalNuevaPartida'));
+        modal.show();
+    });
+
+    $('#btn-confirmar-add-partida').on('click', function() {
+        const volumen = parseFloat($('#input-volumen-autorizar').val());
+
+        if (!productoSeleccionadoCatalogo) {
+            aviso("error", "Debe seleccionar un producto del catálogo");
+            return;
+        }
+
+        iniciarLoader();
+        $.ajax({
+            url: urlVincularPartidaOT,
+            type: 'POST',
+            data: {
+                id_ot: otSeleccionada.id_ot,
+                id_producto: productoSeleccionadoCatalogo.id,
+                volumen: volumen
+            },
+            headers: { 'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val() },
+            success: function(res) {
+                if (res.exito) {
+                    aviso("exito", "Partida agregada correctamente");
+                    bootstrap.Modal.getInstance(document.getElementById('modalNuevaPartida')).hide();
+                    cargarDetalleProduccion(otSeleccionada);
+                } else {
+                    aviso("error", res.mensaje);
+                }
+            },
+            error: function() { aviso("error", "Error de comunicación con el servidor"); },
+            complete: finalizarLoader
+        });
+    });
+
+    function inicializarSelect2Catalogo() {
+        $('#select-producto-catalogo').select2({
+            dropdownParent: $('#modalNuevaPartida'),
+            placeholder: "Buscar por código o descripción...",
+            minimumInputLength: 2,
+            ajax: {
+                url: urlBuscarProductosCatalogo,
+                dataType: 'json',
+                data: function (params) { return { q: params.term }; },
+                processResults: function (data) { return { results: data.results }; },
+                cache: true
+            }
+        }).on('select2:select', function(e) {
+            const data = e.params.data;
+            productoSeleccionadoCatalogo = data;
+            // Mostrar resumen en el modal
+            $('#info-cod').text(data.partida);
+            $('#info-uni').text(data.unidad);
+            $('#info-pre').text(currencyFormatter.format(data.precio || 0));
+            $('#info-pre-usd').text(currencyFormatter.format(data.precio_usd || 0));
+            $('#info-desc').text(data.text);
+            $('#detalle-producto-seleccionado').removeClass('d-none');
+        });
+    }
 
     $('#select-tipo-tiempo').on('change', function() {
         const nuevoValor = $(this).val();
@@ -235,7 +314,7 @@ $(document).ready(function() {
                 columnOptions: { resizable: true, frozenCount: 2 },
                 columns: [
                     { header: 'OT', name: 'ot', width: 100, filter: 'select', align: 'left', validation: { required: true } },
-                    { header: 'Descripción', name: 'desc', width: 250, align: 'left' },
+                    { header: 'Descripción', name: 'desc',filter: 'select', width: 250, align: 'left' },
                     ...columnasDiasAsistencia
                 ],
                 data: [] 
@@ -268,11 +347,12 @@ $(document).ready(function() {
                 scrollX: true,
                 scrollY: true,
                 bodyHeight: 450,
+                rowHeight: 50,
                 rowHeaders: ['rowNum'],
                 columnOptions: { resizable: true, frozenCount: 4 },
                 columns: [
-                    { header: 'Partida', name: 'codigo', width: 90, align: 'center' },
-                    { header: 'Concepto', name: 'concepto', width: 150, align: 'left' },
+                    { header: 'Partida', name: 'codigo',filter: 'select', width: 90, align: 'center' },
+                    { header: 'Concepto', name: 'concepto',filter: 'select', width: 150, align: 'left' },
                     { header: 'Unidad', name: 'unidad', width: 70, align: 'center' },
                     { 
                         header: 'Vol. PTE', 
@@ -428,7 +508,7 @@ $(document).ready(function() {
     }
 
     function formatearNumero({ value }) {
-        return value ? Number(value).toLocaleString('es-MX', { minimumFractionDigits: 3, maximumFractionDigits: 3 }) : '0.000';
+        return value ? numberFormatter.format(Number(value)) : '';
     }
 
     $('#select-sitio, #filtro-mes, #filtro-anio').on('change', function() {
