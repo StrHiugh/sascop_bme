@@ -329,8 +329,8 @@ def obtener_ots_principales(request):
             estatus=0,
         ).values('id', 'orden_trabajo', 'descripcion_trabajo', 'oficio_ot').order_by('-id')
         
-        if ot_id:
-            ots = ots.exclude(id=ot_id)
+        # if ot_id:
+        #     ots = ots.exclude(id=ot_id)
         
         data = list(ots)
         return JsonResponse(data, safe=False)

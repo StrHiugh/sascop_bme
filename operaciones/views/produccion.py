@@ -102,6 +102,27 @@ def ots_por_sitio_grid(request):
 
     return JsonResponse({'reportes_diarios': data_reportes})
 
+def obtener_volumenes_consolidados(id_ot_inicial, ids_partidas_codigos):
+    """
+    Calcula el volumen total autorizado sumando la OT inicial y todas sus reprogramaciones activas.
+    """
+    id_ots_repro = OTE.objects.filter(
+        ot_principal=id_ot_inicial, 
+        id_tipo_id=5,
+        estatus=1
+    ).values_list('id', flat=True)
+    
+    todas_las_ots = [id_ot_inicial] + list(id_ots_repro)
+    
+    partidas_query = PartidaAnexoImportada.objects.filter(
+        importacion_anexo__ot_id__in=todas_las_ots,
+        importacion_anexo__es_activo=True,
+        id_partida__in=ids_partidas_codigos
+    ).values('id_partida').annotate(total_vol=Sum('volumen_proyectado'))
+    
+    return {p['id_partida']: p['total_vol'] or 0 for p in partidas_query}
+
+
 def obtener_partidas_produccion(request):
     """
     Retorna las partidas del Anexo C de una OT y su producción diaria.

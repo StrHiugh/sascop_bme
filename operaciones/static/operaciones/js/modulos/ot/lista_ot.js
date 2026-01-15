@@ -441,6 +441,7 @@ $(document).ready(function () {
         $('#id_embarcacion, #id_plataforma, #id_intercom, #id_patio').empty();
         cargarClientes();
         cargarResponsablesProyecto();
+        cargarOTsPrincipales(null);
         const modalElement = document.getElementById('modalCrearOT');
         const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
         modal.show();
