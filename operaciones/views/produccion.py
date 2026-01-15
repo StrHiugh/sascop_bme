@@ -122,7 +122,7 @@ def obtener_volumenes_consolidados(id_ot_inicial, ids_partidas_codigos):
     
     return {p['id_partida']: p['total_vol'] or 0 for p in partidas_query}
 
-
+@login_required
 def obtener_partidas_produccion(request):
     """
     Retorna las partidas del Anexo C de una OT y su producción diaria.
@@ -144,9 +144,12 @@ def obtener_partidas_produccion(request):
     if not importacion:
         return JsonResponse([], safe=False)
 
-    partidas = PartidaAnexoImportada.objects.filter(
+    partidas_base = PartidaAnexoImportada.objects.filter(
         importacion_anexo=importacion
     ).select_related('unidad_medida').order_by('orden_fila')
+
+    codigos_partidas = [p.id_partida for p in partidas_base]
+    mapa_volumenes_repro = obtener_volumenes_consolidados(id_ot, codigos_partidas)
     
     resumen_produccion = Produccion.objects.filter(
         id_reporte_mensual__id_ot_id=id_ot,
@@ -170,14 +173,15 @@ def obtener_partidas_produccion(request):
         }
 
     data_produccion = []
-    for p in partidas:
+    for p in partidas_base:
+        vol_autorizado = float(mapa_volumenes_repro.get(p.id_partida, p.volumen_proyectado or 0))
         fila = {
             'id_partida_imp': p.id,
             'codigo': p.id_partida,
             'concepto': p.descripcion_concepto,
             'unidad': p.unidad_medida.clave if p.unidad_medida else 'N/A',
-            'vol_total_proyectado': float(p.volumen_proyectado) if p.volumen_proyectado else 0.0,
-            'acumulado_otros_meses': 0.00, 
+            'vol_total_proyectado': vol_autorizado,
+            'acumulado_mes': 0.0, 
         }
         
         suma_mes = 0.0
@@ -237,87 +241,62 @@ def guardar_produccion_masiva(request):
             ids_partidas = [f.get('id_partida_imp') for f in filas]
             partidas_db = PartidaAnexoImportada.objects.in_bulk(ids_partidas)
 
-            producciones_existentes = Produccion.objects.filter(
-                id_reporte_mensual=reporte_mensual,
-                id_partida_anexo_id__in=ids_partidas,
-                tipo_tiempo=tipo_tiempo_batch 
-            )
-            mapa_produccion = {
-                (prod.id_partida_anexo_id, prod.fecha_produccion.day): prod 
-                for prod in producciones_existentes
+            codigos_a_revisar = [p.id_partida for p in partidas_db.values()]
+            mapa_volumenes_repro = obtener_volumenes_consolidados(id_ot, codigos_a_revisar)
+
+            mapa_produccion_actual = {
+                (p.id_partida_anexo_id, p.fecha_produccion.day): p 
+                for p in Produccion.objects.filter(id_reporte_mensual=reporte_mensual, tipo_tiempo=tipo_tiempo_batch)
+            }
+            
+            mapa_otros_tiempos = {
+                o['id_partida_anexo']: o['total'] for o in 
+                Produccion.objects.filter(id_reporte_mensual=reporte_mensual).exclude(tipo_tiempo=tipo_tiempo_batch).values('id_partida_anexo').annotate(total=Sum('volumen_produccion'))
             }
 
-            otros_tipos_query = Produccion.objects.filter(
-                id_reporte_mensual=reporte_mensual,
-                id_partida_anexo_id__in=ids_partidas
-            ).exclude(
-                tipo_tiempo=tipo_tiempo_batch
-            ).values('id_partida_anexo').annotate(total=Sum('volumen_produccion'))
-            
-            mapa_otros_tipos = {o['id_partida_anexo']: o['total'] for o in otros_tipos_query}
+            mapa_historicos = {
+                h['id_partida_anexo']: h['total'] for h in 
+                Produccion.objects.filter(id_partida_anexo_id__in=ids_partidas).exclude(id_reporte_mensual=reporte_mensual).values('id_partida_anexo').annotate(total=Sum('volumen_produccion'))
+            }
 
-            historicos_query = Produccion.objects.filter(
-                id_partida_anexo_id__in=ids_partidas
-            ).exclude(
-                id_reporte_mensual=reporte_mensual
-            ).values('id_partida_anexo').annotate(total=Sum('volumen_produccion'))
-            
-            mapa_historicos = {h['id_partida_anexo']: h['total'] for h in historicos_query}
-
-            a_crear = []
-            a_actualizar = []
-            ids_a_borrar = []
+            a_crear, a_actualizar, ids_borrar = [], [], []
 
             for fila in filas:
-                id_partida = fila.get('id_partida_imp')
-                valores_diarios = fila.get('valores', [])
-                
-                partida = partidas_db.get(id_partida)
-                if not partida:
-                    continue
+                id_p = fila.get('id_partida_imp')
+                partida = partidas_db.get(id_p)
+                if not partida: continue
 
-                volumen_autorizado = partida.volumen_proyectado or 0
+                # TOPE CONSOLIDADO
+                vol_autorizado = Decimal(str(mapa_volumenes_repro.get(partida.id_partida, partida.volumen_proyectado or 0)))
                 
-                base_acumulado = (mapa_historicos.get(id_partida) or 0) + (mapa_otros_tipos.get(id_partida) or 0)
-                
-                acumulado_actual = base_acumulado
+                acum_base = (Decimal(str(mapa_historicos.get(id_p) or 0)) + Decimal(str(mapa_otros_tiempos.get(id_p) or 0)))
+                running_total = acum_base
 
-                for index, volumen in enumerate(valores_diarios):
-                    dia = index + 1
-                    volumen_dec = Decimal(str(volumen))
+                for idx, vol in enumerate(fila.get('valores', [])):
+                    dia = idx + 1
+                    vol_dec = Decimal(str(vol or 0))
+                    running_total += vol_dec
+                    es_excedente = running_total > vol_autorizado
                     
-                    acumulado_actual += volumen_dec
-                    
-                    es_excedente_dia = acumulado_actual > volumen_autorizado
-                    prod_obj = mapa_produccion.get((id_partida, dia))
+                    prod_obj = mapa_produccion_actual.get((id_p, dia))
 
-                    if volumen_dec == 0:
-                        if prod_obj:
-                            ids_a_borrar.append(prod_obj.id)
+                    if vol_dec == 0:
+                        if prod_obj: ids_borrar.append(prod_obj.id)
                     else:
                         if prod_obj:
-                            if prod_obj.volumen_produccion != volumen_dec or prod_obj.es_excedente != es_excedente_dia:
-                                prod_obj.volumen_produccion = volumen_dec
-                                prod_obj.es_excedente = es_excedente_dia
+                            if prod_obj.volumen_produccion != vol_dec or prod_obj.es_excedente != es_excedente:
+                                prod_obj.volumen_produccion = vol_dec
+                                prod_obj.es_excedente = es_excedente
                                 a_actualizar.append(prod_obj)
                         else:
-                            fecha_prod = date(anio, mes, dia)
-                            nuevo_obj = Produccion(
-                                id_reporte_mensual=reporte_mensual,
-                                id_partida_anexo=partida,
-                                fecha_produccion=fecha_prod,
-                                volumen_produccion=volumen_dec,
-                                tipo_tiempo=tipo_tiempo_batch,
-                                es_excedente=es_excedente_dia,
-                                id_estatus_cobro_id=1
-                            )
-                            a_crear.append(nuevo_obj)
+                            a_crear.append(Produccion(
+                                id_reporte_mensual=reporte_mensual, id_partida_anexo=partida,
+                                fecha_produccion=date(anio, mes, dia), volumen_produccion=vol_dec,
+                                tipo_tiempo=tipo_tiempo_batch, es_excedente=es_excedente, id_estatus_cobro_id=1
+                            ))
 
-            if a_crear:
-                Produccion.objects.bulk_create(a_crear)
-
-            if a_actualizar:
-                Produccion.objects.bulk_update(a_actualizar, ['volumen_produccion', 'es_excedente'])
+            if a_crear: Produccion.objects.bulk_create(a_crear)
+            if a_actualizar: Produccion.objects.bulk_update(a_actualizar, ['volumen_produccion', 'es_excedente'])
 
         return JsonResponse({'exito': True, 'mensaje': f'Sábana de {tipo_tiempo_batch} guardada correctamente'})
 
