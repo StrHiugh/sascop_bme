@@ -420,7 +420,6 @@ $(document).ready(function() {
             },
             success: function(data) {
                 if (gridProduccion) {
-                    console.log(data);
                     gridProduccion.resetData(data);
                     bloquearDiasFueraDeVigencia(ot, parseInt(mes), parseInt(anio));
                 }
@@ -503,6 +502,7 @@ $(document).ready(function() {
 
             if (d > ultimoDiaMes || fechaActual < fechaInicio || fechaActual > fechaFin) {
                 gridProduccion.disableColumn(colName); 
+                gridProduccion.addColumnClassName(colName, 'celda-bloqueada');
             }
         }
     }
