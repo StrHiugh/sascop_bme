@@ -609,7 +609,6 @@ html, body {
 .tab-content, .tab-pane {
     width: 100%;
     max-width: 100%;
-    overflow: hidden; 
 }
 .grid-wrapper { 
     height: 500px; 
