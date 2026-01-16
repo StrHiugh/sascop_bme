@@ -372,9 +372,6 @@ def recalcular_excedentes_ot_completa(id_ot):
                 running_total += vol
                 
                 nuevo_estado_excedente = running_total > tope
-                
-                # Debug detallado solo para la partida conflictiva
-                if codigo == '2.288.':
 
                 # Solo actualizamos si cambió el estado para optimizar DB
                 if prod.es_excedente != nuevo_estado_excedente:
