@@ -13,6 +13,7 @@ from django.db.models.functions import *
 from django.views.decorators.csrf import csrf_exempt
 from django.db import transaction
 from decimal import Decimal
+from .produccion import recalcular_excedentes_ot_completa
 import pandas as pd
 import os
 import io
@@ -1221,14 +1222,91 @@ def importar_anexo_ot(request):
                     ) for p in partidas_validas
                 ]
                 
-                PartidaAnexoImportada.objects.bulk_create(objs_crear, batch_size=500)
-            return JsonResponse({
-                'exito': True, 
-                'tipo_aviso':'exito',
-                'detalles': f'Importación validada y completada. {len(objs_crear)} partidas cargadas.'
-            })
+                PartidaAnexoImportada.objects.bulk_create(objs_crear)
+                exito_recalc, msg_recalc = recalcular_excedentes_ot_completa(ot_id)
+                
+                if not exito_recalc:
+                    print(f"Advertencia: Falló recálculo de excedentes: {msg_recalc}")
+            msg_final = f'Importación completada. {len(objs_crear)} partidas registradas. {msg_recalc}'
+            if exito_recalc:
+                msg_final += " Se han actualizado los semáforos de producción automáticamente."
+
+            return JsonResponse({'exito': True, 'tipo_aviso':'exito', 'detalles': msg_final})
 
         except Exception as e:
             return JsonResponse({'exito': False, 'tipo_aviso':'advertencia', 'detalles': f'Error interno: {str(e)}'})
 
     return JsonResponse({'exito': False, 'tipo_aviso':'advertencia', 'detalles': 'Método no permitido'})
+
+
+def dashboard_stacked_view(request):
+    # -------------------------------------------------------------------------
+    # 1. FILTROS (Tus reglas de negocio)
+    # -------------------------------------------------------------------------
+    filtro_pte_paso_valido = ~Q(pteheader__detalles__estatus_paso_id__in=[14])
+    filtro_pte_con_archivo = Q(pteheader__detalles__archivo__isnull=False) & ~Q(pteheader__detalles__archivo='')
+
+    filtro_ot_paso_valido = ~Q(ote__detalles__estatus_paso_id__in=[14])
+    filtro_ot_con_archivo = Q(ote__detalles__archivo__isnull=False) & ~Q(ote__detalles__archivo='')
+
+    # -------------------------------------------------------------------------
+    # 2. CONSULTA
+    # -------------------------------------------------------------------------
+    data_queryset = ResponsableProyecto.objects.annotate(
+        # === META PTE ===
+        pte_meta=Count('pteheader__detalles', filter=filtro_pte_paso_valido, distinct=True),
+        # === REAL PTE ===
+        pte_real=Count('pteheader__detalles', filter=filtro_pte_paso_valido & filtro_pte_con_archivo, distinct=True),
+        # === META OT ===
+        ot_meta=Count('ote__detalles', filter=filtro_ot_paso_valido, distinct=True),
+        # === REAL OT ===
+        ot_real=Count('ote__detalles', filter=filtro_ot_paso_valido & filtro_ot_con_archivo, distinct=True)
+    ).filter(
+        Q(ot_meta__gt=0) | Q(pte_meta__gt=0)
+    ).order_by('descripcion')
+
+    # -------------------------------------------------------------------------
+    # 3. PROCESAMIENTO
+    # -------------------------------------------------------------------------
+    axis_nombres = []
+    
+    # ¡OJO AQUÍ! Separamos las metas en dos listas para dibujar dos líneas
+    data_meta_ot = []  
+    data_meta_pte = [] 
+    
+    data_ot = []
+    data_pte = []
+    data_info = []
+
+    for item in data_queryset:
+        # Calculamos totales solo para el semáforo global (tooltip)
+        total_meta = item.ot_meta + item.pte_meta
+        total_real = item.ot_real + item.pte_real
+        
+        pct = (total_real / total_meta * 100) if total_meta > 0 else 0
+
+        if pct < 40: color_status = '#e74c3c'
+        elif pct < 80: color_status = '#f1c40f'
+        else: color_status = '#2ecc71'
+
+        axis_nombres.append(item.descripcion)
+        
+        # Guardamos datos separados
+        data_meta_ot.append(item.ot_meta)
+        data_meta_pte.append(item.pte_meta)
+        data_ot.append(item.ot_real)
+        data_pte.append(item.pte_real)
+        
+        data_info.append({
+            'pct_txt': f"{pct:.1f}%",
+            'color': color_status
+        })
+
+    return JsonResponse({
+        'chart_nombres': axis_nombres,
+        'chart_meta_ot': data_meta_ot,   # Nueva lista
+        'chart_meta_pte': data_meta_pte, # Nueva lista
+        'chart_ot': data_ot,
+        'chart_pte': data_pte,
+        'chart_info': data_info,
+    })
