@@ -99,7 +99,6 @@ def ots_por_sitio_grid(request):
             'inicio_v': ot.inicio_vigencia.isoformat() if ot.inicio_vigencia else None,
             'fin_v': ot.fin_vigencia.isoformat() if ot.fin_vigencia else None,
         })
-
     return JsonResponse({'reportes_diarios': data_reportes})
 
 def obtener_volumenes_consolidados(id_ot_actual, ids_partidas_codigos):
@@ -225,8 +224,7 @@ def obtener_partidas_produccion(request):
 @require_http_methods(["POST"])
 def guardar_produccion_masiva(request):
     """
-    Guarda producción. Recibe 'id_partida_imp' que gracias a la fusión anterior
-    será siempre el ID de la partida Inicial (si existe), centralizando el historial.
+    Guarda producción.
     """
     try:
         data = json.loads(request.body)
@@ -243,41 +241,21 @@ def guardar_produccion_masiva(request):
                 id_ot_id=id_ot, mes=mes, anio=anio, defaults={'id_estatus_id': 1}
             )
 
-            # Cargamos partidas usando el ID "Maestro" que envió el frontend
-            ids_partidas = [f.get('id_partida_imp') for f in filas]
-            partidas_db = PartidaAnexoImportada.objects.in_bulk(ids_partidas)
-
-            # Calculamos Topes Consolidados para validación
-            codigos_en_batch = [p.id_partida for p in partidas_db.values()]
-            mapa_autorizado = obtener_volumenes_consolidados(id_ot, codigos_en_batch)
-
-            # Mapas de Producción Existente (Mes Actual)
-            mapa_produccion_actual = {
-                (p.id_partida_anexo_id, p.fecha_produccion.day): p 
-                for p in Produccion.objects.filter(id_reporte_mensual_id=reporte_mensual, tipo_tiempo=tipo_tiempo)
-            }
-            
-            # Histórico Acumulado (Anterior al mes actual)
-            # Buscamos por código en toda la familia para tener el acumulado real
             ot_actual = OTE.objects.get(id=id_ot)
             id_principal = ot_actual.ot_principal if ot_actual.ot_principal else id_ot
             familia_ots = OTE.objects.filter(Q(id=id_principal) | Q(ot_principal=id_principal)).values_list('id', flat=True)
+            
+            ids_partidas_form = [f.get('id_partida_imp') for f in filas]
+            partidas_db = PartidaAnexoImportada.objects.in_bulk(ids_partidas_form)
+            codigos_en_batch = [p.id_partida for p in partidas_db.values()]
+            mapa_autorizado = obtener_volumenes_consolidados(id_ot, codigos_en_batch)
 
-            mapa_historico_global = {
-                h['id_partida_anexo_id__id_partida']: h['total'] for h in 
-                Produccion.objects.filter(
-                    id_partida_anexo_id__importacion_anexo_id__ot_id__in=familia_ots
-                ).exclude(id_reporte_mensual_id=reporte_mensual).values('id_partida_anexo_id__id_partida').annotate(total=Sum('volumen_produccion'))
+            mapa_produccion_actual = {
+                (p.id_partida_anexo_id, p.fecha_produccion.day): p 
+                for p in Produccion.objects.filter(id_reporte_mensual=reporte_mensual, tipo_tiempo=tipo_tiempo)
             }
             
-            # Acumulado otros tiempos (mismo mes) - ej. TE + TI
-            # IMPORTANTE: Aquí buscamos por ID de partida física, ya que estamos dentro del mismo reporte mensual
-            mapa_otros_tiempos = {
-                o['id_partida_anexo_id']: o['total'] for o in 
-                Produccion.objects.filter(id_reporte_mensual_id=reporte_mensual).exclude(tipo_tiempo=tipo_tiempo).values('id_partida_anexo_id').annotate(total=Sum('volumen_produccion'))
-            }
-
-            a_crear, a_actualizar, ids_borrar = [], [], []
+            a_crear, a_actualizar = [], []
 
             for fila in filas:
                 id_p = fila.get('id_partida_imp')
@@ -285,83 +263,105 @@ def guardar_produccion_masiva(request):
                 if not partida: continue
 
                 codigo = partida.id_partida
-                vol_autorizado = Decimal(str(mapa_autorizado.get(codigo, 0)))
                 
-                # Base acumulada: Histórico Global + Otros tiempos de este ID
-                base_hist = Decimal(str(mapa_historico_global.get(codigo, 0)))
-                base_otros = Decimal(str(mapa_otros_tiempos.get(id_p, 0)))
+                c_clean = codigo.strip()
+                variantes = {codigo, c_clean, c_clean.rstrip('.'), c_clean + '.'}
+                
+                vol_autorizado = sum(
+                    Decimal(str(mapa_autorizado.get(v, 0))) for v in variantes if v in mapa_autorizado
+                )
+                vol_autorizado = round(vol_autorizado, 4)
+
+                ids_candidatos = PartidaAnexoImportada.objects.filter(
+                    importacion_anexo__ot_id__in=familia_ots, 
+                    id_partida__in=variantes
+                ).values_list('id', flat=True)
+
+                base_hist = Produccion.objects.filter(
+                    id_partida_anexo_id__in=ids_candidatos
+                ).exclude(
+                    id_reporte_mensual=reporte_mensual
+                ).aggregate(total=Sum('volumen_produccion'))['total'] or 0
+                
+                base_hist = Decimal(str(base_hist))
+
+                base_otros = Produccion.objects.filter(
+                    id_reporte_mensual=reporte_mensual,
+                    id_partida_anexo=partida
+                ).exclude(
+                    tipo_tiempo=tipo_tiempo
+                ).aggregate(total=Sum('volumen_produccion'))['total'] or 0
+                
+                base_otros = Decimal(str(base_otros))
+                
                 running_total = base_hist + base_otros
 
                 for idx, vol in enumerate(fila.get('valores', [])):
                     dia = idx + 1
-                    vol_dec = Decimal(str(vol or 0))
+                    vol_input = Decimal(str(vol or 0))
                     
-                    running_total += vol_dec
-                    es_excedente = running_total > vol_autorizado
-
                     prod_obj = mapa_produccion_actual.get((id_p, dia))
+                    vol_db = prod_obj.volumen_produccion if prod_obj else Decimal(0)
 
-                    if vol_dec == 0:
-                        if prod_obj: ids_borrar.append(prod_obj.id)
-                    else:
-                        if prod_obj:
-                            if prod_obj.volumen_produccion != vol_dec or prod_obj.es_excedente != es_excedente:
-                                prod_obj.volumen_produccion = vol_dec
+                    vol_para_calculo = vol_input if vol_input > 0 else vol_db
+                    
+                    running_total += vol_para_calculo
+                    
+                    es_excedente = round(running_total, 4) > vol_autorizado
+
+                    if prod_obj:
+                        if vol_input > 0:
+                            if prod_obj.volumen_produccion != vol_input or prod_obj.es_excedente != es_excedente:
+                                prod_obj.volumen_produccion = vol_input
                                 prod_obj.es_excedente = es_excedente
                                 a_actualizar.append(prod_obj)
                         else:
-                            a_crear.append(Produccion(
-                                id_reporte_mensual=reporte_mensual,
-                                id_partida_anexo=partida,
-                                fecha_produccion=date(anio, mes, dia),
-                                volumen_produccion=vol_dec,
-                                tipo_tiempo=tipo_tiempo,
-                                es_excedente=es_excedente,
-                                id_estatus_cobro_id=1
-                            ))
+                            if prod_obj.es_excedente != es_excedente:
+                                prod_obj.es_excedente = es_excedente
+                                a_actualizar.append(prod_obj)
 
-            # if ids_borrar: Produccion.objects.filter(id__in=ids_borrar).delete()
+                    elif vol_input > 0:
+                        a_crear.append(Produccion(
+                            id_reporte_mensual=reporte_mensual,
+                            id_partida_anexo=partida, 
+                            fecha_produccion=date(anio, mes, dia),
+                            volumen_produccion=vol_input,
+                            tipo_tiempo=tipo_tiempo,
+                            es_excedente=es_excedente,
+                            id_estatus_cobro_id=1
+                        ))
+
             if a_crear: Produccion.objects.bulk_create(a_crear)
             if a_actualizar: Produccion.objects.bulk_update(a_actualizar, ['volumen_produccion', 'es_excedente'])
-
+        
         return JsonResponse({'exito': True, 'mensaje': 'Producción guardada correctamente.'})
     except Exception as e:
         return JsonResponse({'exito': False, 'mensaje': str(e)}, status=500)
 
-
 def recalcular_excedentes_ot_completa(id_ot):
     """
-    Función MAESTRA: Se ejecuta después de importar una Reprogramación.
-    Recorre TODA la producción histórica de la familia de esa OT y 
+    Recorre toda la producción histórica de la familia de esa OT y 
     actualiza los flags 'es_excedente' basándose en los nuevos topes consolidados.
     """
     try:
         ot_actual = OTE.objects.get(id=id_ot)
-        # CORRECCIÓN: Acceso directo al campo entero (sin _id)
         id_principal = ot_actual.ot_principal if ot_actual.ot_principal else ot_actual.id
 
-        # 1. Familia de OTs (Lista de IDs)
         familia_ots = OTE.objects.filter(Q(id=id_principal) | Q(ot_principal=id_principal)).values_list('id', flat=True)
         
-        # 2. Obtener Códigos con Producción HISTÓRICA
-        # CORRECCIÓN: Filtramos por Reporte Mensual -> OT, que es la ruta más segura
         codigos_con_produccion = Produccion.objects.filter(
             id_reporte_mensual__id_ot_id__in=familia_ots
         ).values_list('id_partida_anexo__id_partida', flat=True).distinct()
         
-        # Obtenemos los NUEVOS topes sumados
         mapa_topes = obtener_volumenes_consolidados(id_ot, list(codigos_con_produccion))
         
         prod_a_actualizar = []
         
-        # 3. Recorrer código por código
         for codigo in codigos_con_produccion:
             codigo_limpio = codigo.strip() if codigo else codigo
             tope = Decimal(str(mapa_topes.get(codigo_limpio, 0)))
             running_total = Decimal(0)
             
-            # CORRECCIÓN: Filtramos historial usando id_reporte_mensual__id_ot_id
-            # Esto evita problemas con relaciones anidadas o importaciones inactivas
             historial = Produccion.objects.filter(
                 id_reporte_mensual__id_ot_id__in=familia_ots,
                 id_partida_anexo__id_partida=codigo
@@ -373,12 +373,10 @@ def recalcular_excedentes_ot_completa(id_ot):
                 
                 nuevo_estado_excedente = running_total > tope
 
-                # Solo actualizamos si cambió el estado para optimizar DB
                 if prod.es_excedente != nuevo_estado_excedente:
                     prod.es_excedente = nuevo_estado_excedente
                     prod_a_actualizar.append(prod)
         
-        # 4. Guardado Masivo de Correcciones
         if prod_a_actualizar:
             Produccion.objects.bulk_update(prod_a_actualizar, ['es_excedente'])
             
