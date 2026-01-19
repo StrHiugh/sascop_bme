@@ -121,10 +121,7 @@ def obtener_volumenes_consolidados(id_ot_actual, ids_partidas_codigos):
 @login_required
 def obtener_partidas_produccion(request):
     """
-    Retorna el Universo de Partidas (Inicial + Reprogramaciones) fusionado visualmente.
-    Lógica de Prioridad:
-    1. Si la partida existe en Inicial y Repro: Se muestra UNA fila (la Inicial) con el volumen sumado.
-    2. Si la partida es nueva en Repro: Se muestra su propia fila.
+    Retorna el Universo de Partidas (Inicial + Reprogramaciones)
     """
     id_ot = request.GET.get('id_ot')
     mes = request.GET.get('mes')
@@ -139,7 +136,6 @@ def obtener_partidas_produccion(request):
     except ValueError:
         return JsonResponse([], safe=False)
 
-    # 1. Identificar Familia de OTs (Inicial y Repros)
     ot_actual = OTE.objects.get(id=id_ot)
     id_principal = ot_actual.ot_principal if ot_actual.ot_principal else id_ot
     
@@ -148,8 +144,6 @@ def obtener_partidas_produccion(request):
         estatus=1
     ).values_list('id', flat=True)
 
-    # 2. Obtener TODAS las partidas de la familia
-    # Ordenamos por ID de OT ascendente para que las partidas de la OT Inicial (menor ID) aparezcan primero
     todas_partidas = PartidaAnexoImportada.objects.filter(
         importacion_anexo__ot_id__in=familia_ots_ids,
         importacion_anexo__es_activo=True
@@ -158,7 +152,6 @@ def obtener_partidas_produccion(request):
     if not todas_partidas:
         return JsonResponse([], safe=False)
 
-    # 3. Fusión Lógica (Merge)
     partidas_consolidadas = {} 
     codigos_activos = set()
 
@@ -167,12 +160,10 @@ def obtener_partidas_produccion(request):
         vol = float(p.volumen_proyectado or 0)
 
         if codigo in partidas_consolidadas:
-            # YA EXISTE (viene de la Inicial): Sumamos volumen de la Repro al registro maestro visual
             partidas_consolidadas[codigo]['vol_total_proyectado'] += vol
         else:
-            # NUEVA: Creamos registro. Si viene de la Inicial, será el maestro. Si es nueva de Repro, será maestro.
             partidas_consolidadas[codigo] = {
-                'id_partida_imp': p.id, # ID físico para guardar (el más antiguo gana)
+                'id_partida_imp': p.id,
                 'codigo': codigo,
                 'concepto': p.descripcion_concepto,
                 'unidad': p.unidad_medida.clave if p.unidad_medida else 'N/A',
@@ -181,27 +172,36 @@ def obtener_partidas_produccion(request):
             }
             codigos_activos.add(codigo)
 
-    # 4. Obtener Producción (Buscamos por Código en la familia)
+    mapa_anexos = {}
+    if codigos_activos:
+        productos_data = Producto.objects.filter(
+            id_partida__in=codigos_activos, 
+            activo=True
+        ).values('id_partida', 'anexo')
+        
+        for prod in productos_data:
+            mapa_anexos[prod['id_partida']] = prod['anexo']
+
     resumen_produccion = Produccion.objects.filter(
-        id_reporte_mensual_id__id_ot_id=id_ot, # Producción de este mes visualizado
-        id_reporte_mensual_id__mes=mes,
-        id_reporte_mensual_id__anio=anio,
+        id_reporte_mensual__id_ot_id=id_ot,
+        id_reporte_mensual__mes=mes,
+        id_reporte_mensual__anio=anio,
         tipo_tiempo=tipo_tiempo,
-        id_partida_anexo_id__id_partida__in=codigos_activos
-    ).values('id_partida_anexo_id__id_partida', 'fecha_produccion__day', 'es_excedente', 'volumen_produccion')
+        id_partida_anexo__id_partida__in=codigos_activos
+    ).values('id_partida_anexo__id_partida', 'fecha_produccion__day', 'es_excedente', 'volumen_produccion')
 
     produccion_dict = {}
     for item in resumen_produccion:
-        key = (item['id_partida_anexo_id__id_partida'], item['fecha_produccion__day'])
+        key = (item['id_partida_anexo__id_partida'], item['fecha_produccion__day'])
         produccion_dict[key] = {
             'valor': float(item['volumen_produccion']),
             'es_excedente': item['es_excedente']
         }
 
-    # 5. Armar respuesta final
     data_final = []
-    # Usamos items() del dict que preserva orden de inserción
     for codigo, datos in partidas_consolidadas.items():
+        datos['anexo'] = mapa_anexos.get(codigo, '')
+
         suma_mes = 0.0
         hay_excedente = False
         

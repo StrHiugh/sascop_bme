@@ -94,7 +94,6 @@ class ProduccionRenderer {
         this.el = document.createElement('div');
         this.el.style.width = '100%';
         this.el.style.height = '100%';
-        // Centrado usando Flexbox
         this.el.className = 'd-flex justify-content-center align-items-center tui-grid-cell-content';
         this.render(props);
     }
@@ -372,6 +371,7 @@ $(document).ready(function() {
                 columns: [
                     { header: 'Partida', name: 'codigo',filter: 'select', width: 90, align: 'center' },
                     { header: 'Concepto', name: 'concepto',filter: 'select', width: 150, align: 'left' },
+                    { header: 'Anexo', name: 'anexo', filter: 'select', width: 80, align: 'center' },
                     { header: 'Unidad', name: 'unidad', width: 70, align: 'center' },
                     { 
                         header: 'Vol. PTE', 
