@@ -31,6 +31,11 @@
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
+                    <button class="nav-link text-secondary fw-medium" id="actas-tab" data-bs-toggle="tab" data-bs-target="#actas-content" type="button" role="tab" aria-controls="actas" aria-selected="false">
+                        <i class="fas fa-file-alt me-2"></i>Actas
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
                     <button class="nav-link text-secondary fw-medium" id="barco-tab" data-bs-toggle="tab" data-bs-target="#barco-content" type="button" role="tab" aria-controls="barco" aria-selected="false">
                         <i class="fas fa-ship me-2"></i>Tiempos de barco
                     </button>
@@ -71,6 +76,18 @@
                         <iframe 
                             id="powerbi-frame-produccion"
                             src="https://app.powerbi.com/view?r=eyJrIjoiMWIxNTBlYmYtODhjNC00YzYzLTlkNzUtY2ExODc1M2RlZjU4IiwidCI6IjY1MTZkMzQ2LTIxZWItNDJmYS04MjMzLTJmYjEwYWUzNDNhNiIsImMiOjR9"
+                            width="100%" 
+                            height="100%"
+                            style="transform: scale(0.84); transform-origin: 0 0; width: 119.05%; height: 119.05%;"
+                            allowfullscreen>
+                        </iframe>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="actas-content" role="tabpanel" aria-labelledby="actas-tab">
+                    <div class="powerbi-container" style="height: 1080px; overflow: auto;">
+                        <iframe 
+                            id="powerbi-frame-actas"
+                            src="https://app.powerbi.com/reportEmbed?reportId=6e108e8e-cbe9-4421-9ab0-0599e7bdd8a2&autoAuth=true&ctid=6516d346-21eb-42fa-8233-2fb10ae343a6&actionBarEnabled=true&reportCopilotInEmbed=true"
                             width="100%" 
                             height="100%"
                             style="transform: scale(0.84); transform-origin: 0 0; width: 119.05%; height: 119.05%;"

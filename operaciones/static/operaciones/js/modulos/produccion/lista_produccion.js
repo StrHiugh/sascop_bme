@@ -109,7 +109,6 @@ class ProduccionRenderer {
             esExcedente = valor.es_excedente || false;
             valor = valor.valor;
         } 
-
         const displayValue = (valor !== null && valor !== undefined && valor !== '') 
             ? numberFormatter.format(Number(valor))
             : '';
@@ -122,6 +121,26 @@ class ProduccionRenderer {
             this.el.style.backgroundColor = '#fff5f5';
         }
     }   
+}
+
+class ProduccionEditor {
+    constructor(props) {
+        const el = document.createElement('input');
+        el.type = 'text';
+        el.className = 'form-control form-control-sm text-end'; 
+        let valor = props.value;
+        if (valor && typeof valor === 'object') {
+            valor = valor.valor !== undefined ? valor.valor : ''; 
+        }
+        if ((typeof valor === 'object' && valor !== null) || String(valor) === '[object Object]') {
+            valor = '';
+        }
+        el.value = (valor !== null && valor !== undefined) ? String(valor) : '';
+        this.el = el;
+    }
+    getElement() { return this.el; }
+    getValue() { return this.el.value; }
+    mounted() { this.el.select(); }
 }
 
 $(document).ready(function() {
@@ -336,7 +355,7 @@ $(document).ready(function() {
             name: `dia${i+1}`,
             width: 60,
             align: 'right',
-            editor: 'text', 
+            editor: { type: ProduccionEditor }, 
             renderer: { type: ProduccionRenderer } 
         }));
 
