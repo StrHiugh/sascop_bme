@@ -17,11 +17,23 @@ class StatusRenderer {
     render(props) {
         const value = props.value;
         this.el.innerText = value || '';
-        this.el.className = 'tui-grid-cell-content'; 
+        this.el.className = 'tui-grid-cell-content d-flex justify-content-center align-items-center'; 
         
-        if (value === 'OK') this.el.classList.add('cell-ok');
-        else if (value === 'FFP') this.el.classList.add('cell-ffp');
-        else if (value === 'S') this.el.classList.add('cell-s');
+        if (value === 'OK') {
+            this.el.style.backgroundColor = '#d4edda';
+            this.el.style.color = '#155724';
+            this.el.style.fontWeight = 'bold';
+        } 
+        else if (value === 'FFP') {
+            this.el.style.backgroundColor = '#fff3cd';
+            this.el.style.color = '#856404';
+            this.el.style.fontWeight = 'bold';
+        } 
+        else if (value === 'S') {
+            this.el.style.backgroundColor = '#f8d7da';
+            this.el.style.color = '#721c24';
+            this.el.style.fontWeight = 'bold';
+        }
     }
 }
 
@@ -167,9 +179,7 @@ $(document).ready(function() {
         $('#detalle-producto-seleccionado').addClass('d-none');
         $('#select-producto-catalogo').val(null).trigger('change');
         $('#input-volumen-autorizar').val(0);
-        
-        const modal = new bootstrap.Modal(document.getElementById('modalNuevaPartida'));
-        modal.show();
+        new bootstrap.Modal(document.getElementById('modalNuevaPartida')).show();
     });
 
     $('#btn-confirmar-add-partida').on('click', function() {
@@ -204,6 +214,115 @@ $(document).ready(function() {
         });
     });
 
+    $('#btn-guardar-asistencia').on('click', function() {
+        const idSitio = $('#select-sitio').val();
+        if (!idSitio) {
+            aviso("advertencia", "Seleccione un frente y cargue datos primero.");
+            return;
+        }
+
+        const rawData = gridReportesDiarios.getData();
+        if (rawData.length === 0) {
+            aviso("info", "No hay datos para guardar.");
+            return;
+        }
+
+        const reportes = rawData.map(row => {
+            const valores = [];
+            for (let i = 1; i <= DAYS_IN_MONTH; i++) {
+                let val = row[`dia${i}`];
+                valores.push(val || null);
+            }
+            return {
+                id_ot: row.id_ot,
+                valores: valores
+            };
+        });
+
+        const payload = {
+            reportes: reportes,
+            mes: $('#filtro-mes').val(),
+            anio: $('#filtro-anio').val()
+        };
+
+        iniciarLoader();
+        $.ajax({
+            url: urlGuardarAsistenciaMasiva,
+            type: 'POST',
+            data: JSON.stringify(payload),
+            contentType: 'application/json',
+            headers: { 'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val() },
+            success: function(response) {
+                if (response.exito) {
+                    aviso("exito", "Asistencia guardada correctamente");
+                    cargarDatosTablero(); 
+                } else {
+                    aviso("error", response.mensaje);
+                }
+            },
+            error: function(xhr) { 
+                console.error(xhr);
+                aviso("error", "Error al guardar asistencia."); 
+            },
+            complete: finalizarLoader
+        });
+    });
+
+    $('#btn-guardar-produccion').on('click', function() {
+        if (!otSeleccionada) {
+            aviso("advertencia", "Selecciona una OT primero");
+            return;
+        }
+
+        const rawData = gridProduccion.getData();
+        const partidasProcesadas = rawData.map(row => {
+            const valoresDias = [];
+            for (let i = 1; i <= DAYS_IN_MONTH; i++) {
+                let celda = row[`dia${i}`];
+                let valor = celda;
+
+                if (celda && typeof celda === 'object' && celda.valor !== undefined) {
+                    valor = celda.valor;
+                }
+                
+                let valNum = parseFloat(valor);
+                valoresDias.push(isNaN(valNum) ? 0 : valNum);
+            }
+            return {
+                id_partida_imp: row.id_partida_imp,
+                codigo: row.codigo,
+                valores: valoresDias
+            };
+        });
+
+        const datos = {
+            id_ot: otSeleccionada.id_ot,
+            mes: $('#filtro-mes').val(),
+            anio: $('#filtro-anio').val(),
+            tipo_tiempo: tipoTiempoActivo,
+            partidas: partidasProcesadas,
+        };
+
+        iniciarLoader();
+        $.ajax({
+            url: urlGuardarProduccionMasivo, 
+            type: 'POST',
+            data: JSON.stringify(datos), 
+            contentType: 'application/json', 
+            headers: { 'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val() },
+            success: function(response) {
+                if (response.exito) {
+                    aviso("exito", `Sábana de ${tipoTiempoActivo} guardada correctamente`);
+                    cargarDetalleProduccion(otSeleccionada);
+                } else {
+                    aviso("error", response.mensaje);
+                }
+            },
+            error: function(xhr) { aviso("error", "Error al guardar. Verifica tu conexión."); },
+            complete: finalizarLoader
+        });
+    });
+
     function inicializarSelect2Catalogo() {
         $('#select-producto-catalogo').select2({
             dropdownParent: $('#modalNuevaPartida'),
@@ -219,7 +338,6 @@ $(document).ready(function() {
         }).on('select2:select', function(e) {
             const data = e.params.data;
             productoSeleccionadoCatalogo = data;
-            // Mostrar resumen en el modal
             $('#info-cod').text(data.partida);
             $('#info-uni').text(data.unidad);
             $('#info-pre').text(currencyFormatter.format(data.precio || 0));
@@ -260,16 +378,13 @@ $(document).ready(function() {
 
     function inicializarFechas() {
         const hoy = new Date();
-        const mesActual = hoy.getMonth() + 1;
         const anioActual = hoy.getFullYear();
-
         const $selectAnio = $('#filtro-anio');
         $selectAnio.empty();
         for (let i = anioActual - 2; i <= anioActual + 1; i++) {
             $selectAnio.append(`<option value="${i}">${i}</option>`);
         }
-
-        $('#filtro-mes').val(mesActual);
+        $('#filtro-mes').val(hoy.getMonth() + 1);
         $('#filtro-anio').val(anioActual);
     }
 
@@ -283,18 +398,13 @@ $(document).ready(function() {
             success: function(data) {
                 const $select = $('#select-sitio');
                 $select.empty().append('<option value="" selected disabled>Seleccione un frente</option>');
-                
                 if (data && data.length > 0) {
-                    data.forEach(function(sitio) {
-                        $select.append(`<option value="${sitio.id}">${sitio.descripcion}</option>`);
-                    });
+                    data.forEach(s => $select.append(`<option value="${s.id}">${s.descripcion}</option>`));
                 } else {
                     $select.append('<option value="" disabled>No hay frentes con OTs activas</option>');
                 }
             },
-            error: function(xhr) {
-                console.error('Error cargando sitios:', xhr);
-            }
+            error: function(xhr) { console.error('Error cargando sitios:', xhr); }
         });
     }
 
@@ -367,7 +477,7 @@ $(document).ready(function() {
                 bodyHeight: 450,
                 rowHeight: 50,
                 rowHeaders: ['rowNum'],
-                columnOptions: { resizable: true, frozenCount: 4 },
+                columnOptions: { resizable: true, frozenCount: 5 }, 
                 columns: [
                     { header: 'Partida', name: 'codigo',filter: 'select', width: 90, align: 'center' },
                     { header: 'Concepto', name: 'concepto',filter: 'select', width: 150, align: 'left' },
@@ -409,16 +519,18 @@ $(document).ready(function() {
         $.ajax({
             url: urlOtsPorSitioGrid,
             type: 'GET',
-            data: { id_sitio: idSitio, mes: mes, anio: anio },
+            data: { 
+                id_sitio: idSitio, 
+                mes: mes, 
+                anio: anio 
+            },
             success: function(data) {
                 const datosOTs = data.reportes_diarios || (Array.isArray(data) ? data : []);
                 if (gridReportesDiarios) {
                     gridReportesDiarios.resetData(datosOTs);
                 }
             },
-            error: function(xhr) {
-                console.error("Error cargando OTs", xhr);
-            }
+            error: function(xhr) { console.error("Error cargando OTs", xhr); }
         });
     }
 
@@ -450,75 +562,22 @@ $(document).ready(function() {
                 }
             },
             error: function(xhr) {
-                console.error("Error cargando partidas", xhr);
                 $('#kpi-status-text').text("ERROR CARGANDO PARTIDAS").addClass('text-danger');
             }
         });
     }
 
-    $('#btn-guardar-produccion').on('click', function() {
-        if (!otSeleccionada) {
-            aviso("advertencia", "Selecciona una OT primero");
-            return;
-        }
-
-        const rawData = gridProduccion.getData();
-        const partidasProcesadas = rawData.map(row => {
-            const valoresDias = [];
-            for (let i = 1; i <= DAYS_IN_MONTH; i++) {
-                let val = parseFloat(row[`dia${i}`]);
-                valoresDias.push(isNaN(val) ? 0 : val);
-            }
-            return {
-                id_partida_imp: row.id_partida_imp,
-                valores: valoresDias
-            };
-        });
-        const datos = {
-            id_ot: otSeleccionada.id_ot,
-            mes: $('#filtro-mes').val(),
-            anio: $('#filtro-anio').val(),
-            tipo_tiempo: tipoTiempoActivo,
-            partidas: partidasProcesadas,
-        };
-        iniciarLoader();
-        $.ajax({
-            url: urlGuardarProduccionMasivo, 
-            type: 'POST',
-            data: JSON.stringify(datos), 
-            contentType: 'application/json', 
-            headers: { 'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val() },
-            success: function(response) {
-                if (response.exito) {
-                    aviso("exito", `Sábana de ${tipoTiempoActivo} guardada correctamente`);
-                    cargarDetalleProduccion(otSeleccionada);
-                } else {
-                    aviso("error", response.mensaje);
-                }
-            },
-            error: function(xhr) { aviso("error", "Error al guardar. Verifica tu conexión."); console.log(xhr); },
-            complete: function() { 
-                finalizarLoader();
-            }
-        });
-    });
-
     function bloquearDiasFueraDeVigencia(ot, mes, anio) {
         if (!ot.inicio_v || !ot.fin_v) return;
-
-        for (let i = 1; i <= DAYS_IN_MONTH; i++) {
-            gridProduccion.enableColumn(`dia${i}`);
-        }
+        for (let i = 1; i <= DAYS_IN_MONTH; i++) gridProduccion.enableColumn(`dia${i}`);
 
         const fechaInicio = crearFechaLocal(ot.inicio_v); 
         const fechaFin = crearFechaLocal(ot.fin_v); 
-        
         const ultimoDiaMes = new Date(anio, mes, 0).getDate();
 
         for (let d = 1; d <= DAYS_IN_MONTH; d++) {
             const fechaActual = new Date(anio, mes - 1, d, 0, 0, 0);
             const colName = `dia${d}`;
-
             if (d > ultimoDiaMes || fechaActual < fechaInicio || fechaActual > fechaFin) {
                 gridProduccion.disableColumn(colName); 
                 gridProduccion.addColumnClassName(colName, 'celda-bloqueada');
@@ -563,5 +622,4 @@ $(document).ready(function() {
             if (gridProduccion) gridProduccion.refreshLayout();
         }, 50);
     });
-
 });

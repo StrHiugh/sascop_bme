@@ -57,6 +57,7 @@
 
 {% block content %}
 <style>
+    /* Ajustes generales para maximizar espacio */
     html, body {
         max-width: 100vw !important;
         overflow-x: hidden !important;
@@ -69,6 +70,7 @@
         display: block !important;
     }
 
+    /* Correcciones para TABS de Toast UI Grid */
     .tab-content > .tab-pane {
         display: none;
     }
@@ -76,7 +78,7 @@
     .tab-pane.active {
         display: block !important;
         width: 100% !important;
-        min-width: 0; /* Clave para flexbox */
+        min-width: 0; 
     }
     
     .tab-content > .active {
@@ -95,18 +97,22 @@
 
     .tui-grid-cell-content { width: 100%; height: 100%; display: flex; align-items: left; justify-content: left; }
     
-    .cell-ok { background-color: #2ecc71; color: white; font-weight: bold; }
-    .cell-ffp { background-color: #f1c40f; color: black; font-weight: bold; }
-    .cell-s { background-color: #e74c3c; color: white; font-weight: bold; }
+    /* Colores para estatus de asistencia (coinciden con JS) */
+    .cell-ok { background-color: #d4edda !important; color: #155724 !important; font-weight: bold; }
+    .cell-ffp { background-color: #fff3cd !important; color: #856404 !important; font-weight: bold; }
+    .cell-s { background-color: #f8d7da !important; color: #721c24 !important; font-weight: bold; }
 
+    /* Badges para GPU */
     .gpu-badge { padding: 4px 4px; border-radius: 4px; font-size: 0.85em; font-weight: bold; width: 100%; text-align: center; }
     .gpu-pendiente { background-color: #3498db; color: white; }
     .gpu-bloqueado { background-color: #e74c3c; color: white; border: 2px solid #c0392b; }
     
+    /* KPIs */
     .kpi-box { background: #fff; padding: 15px; border-radius: 8px; border-left: 5px solid #ccc; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-top: 20px; }
     .kpi-box.normal { border-left-color: #2ecc71; }
     .kpi-box.alert { border-left-color: #e74c3c; }
 
+    /* Navegación Tabs */
     .nav-tabs .nav-link {
         color: #6c757d !important;
         font-weight: 500;
@@ -120,32 +126,12 @@
         border-bottom: 3px solid #007bff;
     }
 
-    .tui-grid-header-area {
-        background-color: #f5f5f5 !important;
-    }
-    
-    .mode-cma .tui-grid-header-area {
-        background-color: #fff3cd !important;
-    }
+    /* Headers visuales */
+    .tui-grid-header-area { background-color: #f5f5f5 !important; }
+    .mode-cma .tui-grid-header-area { background-color: #fff3cd !important; } /* Amarillo si es CMA */
+    .tui-grid-cell-header { background-color: #f5f5f5 !important; }
+    .mode-cma .tui-grid-cell-header { background-color: #fff3cd !important; }
 
-    .tui-grid-cell-header {
-        background-color: #f5f5f5 !important;
-    }
-
-    .mode-cma .tui-grid-cell-header {
-        background-color: #fff3cd !important;
-    }
-
-    .btn-sabana {
-        border-radius: 20px;
-        transition: all 0.3s ease;
-    }
-
-    .btn-sabana.active {
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        background-color: #000000ff !important;
-        color: black !important;
-    }
     .celda-bloqueada {
         background-color: #f4f4f4 !important;
         color: #f4f4f4 !important;
@@ -165,18 +151,24 @@
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link text-dark fw-semibold" id="produccion-tab" data-bs-toggle="tab" data-bs-target="#panel-produccion" type="button" role="tab" aria-controls="panel-produccion" aria-selected="true">
-                        <i class="fas fa-hard-hat me-2"></i>Producción y GPU
+                        <i class="fas fa-hard-hat me-2"></i>Producción
                     </button>
                 </li>
             </ul>
             
             <div class="tab-content" id="tabProcesosContent">
                 <div class="tab-pane fade show active" id="panel-asistencia" role="tabpanel" aria-labelledby="asistencia-tab">
+                    <div class="card shadow-sm mb-3">
+                        <div class="card-body p-2 d-flex justify-content-end align-items-center" style="background-color: #f4f4f4;">
+                            <button id="btn-guardar-asistencia" class="btn btn-primary px-4 fw-bold">
+                                <i class="fas fa-save me-2"></i>Guardar estatus
+                            </button>
+                        </div>
+                    </div>
                     <div id="grid-asistencia" class="grid-wrapper"></div>
                 </div>
 
                 <div class="tab-pane fade" id="panel-produccion" role="tabpanel" aria-labelledby="produccion-tab">
-                    
                     <div class="card shadow-sm mb-3">
                         <div class="card-body p-2 d-flex justify-content-between align-items-center" style="background-color: #f4f4f4;">
                             <div class="d-flex align-items-center">
@@ -284,6 +276,7 @@
     var urlOtsPorSitioGrid = "{% url 'operaciones:ots_por_sitio_grid' %}";
     var urlObtenerPartidasProduccion = "{% url 'operaciones:obtener_partidas_produccion' %}";
     var urlGuardarProduccionMasivo = "{% url 'operaciones:guardar_produccion_masiva' %}";
+    var urlGuardarAsistenciaMasiva = "{% url 'operaciones:guardar_reportes_diarios_masiva' %}"; 
     var urlBuscarProductosCatalogo = "{% url 'operaciones:buscar_productos_catalogo' %}";
     var urlVincularPartidaOT = "{% url 'operaciones:vincular_partida_ot' %}";
 </script>

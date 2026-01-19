@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
-from ..models import Producto, OTE, ImportacionAnexo, PartidaAnexoImportada, Produccion, ReporteMensual, Sitio
+from ..models import Producto, OTE, ImportacionAnexo, PartidaAnexoImportada, Produccion, ReporteMensual, Sitio, ReporteDiario, Estatus
 from django.http import JsonResponse
 from itertools import chain
 from django.db.models import Q, Case, F, When, IntegerField, Value, CharField, Sum
@@ -51,9 +51,11 @@ def obtener_sitios_con_ots_ejecutadas(request):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
+@login_required
 def ots_por_sitio_grid(request):
     """
-    Lista las OTs activas en un sitio que TIENEN anexo importado.
+    Lista las OTs activas en un sitio y CARGA sus reportes diarios (Asistencia)
+    para llenar el grid.
     """
     id_sitio = request.GET.get('id_sitio')
     mes = request.GET.get('mes')
@@ -90,16 +92,114 @@ def ots_por_sitio_grid(request):
         fin_vigencia__gte=fecha_inicio_mes
     )
 
+    ids_ots = list(queryset.values_list('id', flat=True))
+    
+    reportes_data = ReporteDiario.objects.filter(
+        id_reporte_mensual__id_ot_id__in=ids_ots,
+        id_reporte_mensual__mes=mes,
+        id_reporte_mensual__anio=anio
+    ).values(
+        'id_reporte_mensual__id_ot_id', # ID de la OT
+        'fecha__day',                   # Día del mes
+        'id_estatus__descripcion'            # descripcion del estatus (OK, FFP, S)
+    )
+
+    # Mapeamos para acceso rápido: {(id_ot, dia): 'OK'}
+    mapa_asistencia = {}
+    for r in reportes_data:
+        key = (r['id_reporte_mensual__id_ot_id'], r['fecha__day'])
+        # Asumimos que el descripcion del estatus es lo que muestra el grid (OK, FFP, S)
+        # Si en tu BD se llaman diferente, habría que ajustar aquí o usar un diccionario de conversión.
+        mapa_asistencia[key] = r['id_estatus__descripcion']
+
     data_reportes = []
     for ot in queryset:
-        data_reportes.append({
+        fila = {
             'id_ot': ot.id,
             'ot': ot.orden_trabajo,
             'desc': ot.descripcion_trabajo,
             'inicio_v': ot.inicio_vigencia.isoformat() if ot.inicio_vigencia else None,
             'fin_v': ot.fin_vigencia.isoformat() if ot.fin_vigencia else None,
-        })
+        }
+
+        # Llenamos columnas dia1...dia31
+        for d in range(1, 32):
+            val = mapa_asistencia.get((ot.id, d))
+            fila[f'dia{d}'] = val if val else None
+
+        data_reportes.append(fila)
+
     return JsonResponse({'reportes_diarios': data_reportes})
+
+def guardar_reportes_diarios_masiva(request):
+    """
+    Guarda los reportes diarios
+    
+    """
+    try:
+        data = json.loads(request.body)
+        filas = data.get('reportes', [])
+        mes, anio = int(data.get('mes')), int(data.get('anio'))
+
+        if not filas:
+            return JsonResponse({'exito': True, 'mensaje': 'Sin datos para guardar'})
+
+        estatus_qs = Estatus.objects.filter(nivel_afectacion=4)
+        mapa_estatus = {e.descripcion: e for e in estatus_qs}
+
+        with transaction.atomic():
+            for fila in filas:
+                id_ot = fila.get('id_ot')
+                valores = fila.get('valores', [])
+                
+                reporte_mensual, _ = ReporteMensual.objects.get_or_create(
+                    id_ot_id=id_ot,
+                    mes=mes,
+                    anio=anio,
+                    defaults={'id_estatus_id': 1}
+                )
+
+                reportes_existentes = {
+                    r.fecha.day: r 
+                    for r in ReporteDiario.objects.filter(id_reporte_mensual=reporte_mensual)
+                }
+                
+                a_crear, a_actualizar, ids_borrar = [], [], []
+
+                for idx, val_texto in enumerate(valores):
+                    dia = idx + 1
+                    
+                    try:
+                        fecha_dia = date(anio, mes, dia)
+                    except ValueError:
+                        continue
+
+                    reporte_obj = reportes_existentes.get(dia)
+                    estatus_obj = mapa_estatus.get(val_texto)
+
+                    if val_texto and estatus_obj:
+                        if reporte_obj:
+                            if reporte_obj.id_estatus != estatus_obj:
+                                reporte_obj.id_estatus = estatus_obj
+                                a_actualizar.append(reporte_obj)
+                        else:
+                            a_crear.append(ReporteDiario(
+                                id_reporte_mensual=reporte_mensual,
+                                fecha=fecha_dia,
+                                id_estatus=estatus_obj,
+                                bloqueado=False
+                            ))
+                    elif reporte_obj:
+                        ids_borrar.append(reporte_obj.id)
+
+                if a_crear: ReporteDiario.objects.bulk_create(a_crear)
+                if a_actualizar: ReporteDiario.objects.bulk_update(a_actualizar, ['id_estatus'])
+
+        return JsonResponse({'exito': True, 'mensaje': 'Reportes diarios guardados correctamente.'})
+
+    except Exception as e:
+        return JsonResponse({'exito': False, 'mensaje': str(e)}, status=500)
+
 
 def obtener_volumenes_consolidados(id_ot_actual, ids_partidas_codigos):
     """
@@ -458,3 +558,7 @@ def vincular_partida_ot(request):
 
     except Exception as e:
         return JsonResponse({'exito': False, 'mensaje': f'Error: {str(e)}'}, status=500)
+
+
+
+
