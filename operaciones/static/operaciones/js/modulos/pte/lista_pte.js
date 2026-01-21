@@ -1624,7 +1624,7 @@ function actualizarProgresoPaso4(pteId, tablaDetallePTE) {
         if (response.exito) {
             tablaDetallePTE.rows().every(function() {
                 const data = this.data();
-                if (data.orden == 4) {
+                if (data.orden == 4 && data.tipo_cliente==15) {
                     data.progreso_subpasos = response.progreso;
                     data.subpasos_completados = response.subpasos_completados;
                     data.total_subpasos = response.total_subpasos;
