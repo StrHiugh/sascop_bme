@@ -460,7 +460,7 @@ $(document).ready(function () {
                                 'NO APLICA': 'bg-secondary'
                             };
 
-                            if (row.orden == "4.0") {
+                            if (row.orden == "4.0" && row.tipo_cliente==15) {
                                 let color = 'bg-success';
                                 const progreso = Math.round(row.progreso_subpasos);
                                 
