@@ -54,7 +54,7 @@ def obtener_sitios_con_ots_ejecutadas(request):
 @login_required
 def ots_por_sitio_grid(request):
     """
-    Lista las OTs activas en un sitio y CARGA sus reportes diarios (Asistencia)
+    Lista las OTs activas en un sitio y CARGA sus reportes diarios
     para llenar el grid.
     """
     id_sitio = request.GET.get('id_sitio')
@@ -68,7 +68,7 @@ def ots_por_sitio_grid(request):
         mes, anio = int(mes), int(anio)
     except ValueError:
         return JsonResponse({'reportes_diarios': [], 'produccion': []})
-
+    
     ultimo_dia = calendar.monthrange(anio, mes)[1]
     fecha_inicio_mes = date(anio, mes, 1)
     fecha_fin_mes = date(anio, mes, ultimo_dia)
@@ -99,19 +99,24 @@ def ots_por_sitio_grid(request):
         id_reporte_mensual__mes=mes,
         id_reporte_mensual__anio=anio
     ).values(
-        'id_reporte_mensual__id_ot_id', # ID de la OT
-        'fecha__day',                   # Día del mes
-        'id_estatus__descripcion'            # descripcion del estatus (OK, FFP, S)
+        'id_reporte_mensual__id_ot_id', 
+        'fecha__day',                   
+        'id_estatus__descripcion'            
     )
 
-    # Mapeamos para acceso rápido: {(id_ot, dia): 'OK'}
     mapa_asistencia = {}
     for r in reportes_data:
         key = (r['id_reporte_mensual__id_ot_id'], r['fecha__day'])
-        # Asumimos que el descripcion del estatus es lo que muestra el grid (OK, FFP, S)
-        # Si en tu BD se llaman diferente, habría que ajustar aquí o usar un diccionario de conversión.
         mapa_asistencia[key] = r['id_estatus__descripcion']
 
+
+    reportes_mensuales = ReporteMensual.objects.filter(
+        id_ot_id__in=ids_ots,
+        mes=mes,
+        anio=anio
+    ).values('id_ot_id', 'archivo')
+    
+    mapa_archivos = {rm['id_ot_id']: rm['archivo'] for rm in reportes_mensuales}
     data_reportes = []
     for ot in queryset:
         fila = {
@@ -120,9 +125,9 @@ def ots_por_sitio_grid(request):
             'desc': ot.descripcion_trabajo,
             'inicio_v': ot.inicio_vigencia.isoformat() if ot.inicio_vigencia else None,
             'fin_v': ot.fin_vigencia.isoformat() if ot.fin_vigencia else None,
+            'archivo': mapa_archivos.get(ot.id,'')
         }
 
-        # Llenamos columnas dia1...dia31
         for d in range(1, 32):
             val = mapa_asistencia.get((ot.id, d))
             fila[f'dia{d}'] = val if val else None
@@ -221,7 +226,7 @@ def obtener_volumenes_consolidados(id_ot_actual, ids_partidas_codigos):
 @login_required
 def obtener_partidas_produccion(request):
     """
-    Retorna el Universo de Partidas (Inicial + Reprogramaciones)
+    Retorna el Universo de Partidas para el Grid de Producción.
     """
     id_ot = request.GET.get('id_ot')
     mes = request.GET.get('mes')
@@ -235,6 +240,14 @@ def obtener_partidas_produccion(request):
         mes, anio = int(mes), int(anio)
     except ValueError:
         return JsonResponse([], safe=False)
+
+    archivo_url = ''
+    try:
+        reporte = ReporteMensual.objects.filter(id_ot_id=id_ot, mes=mes, anio=anio).first()
+        if reporte and reporte.archivo:
+            archivo_url = reporte.archivo
+    except Exception:
+        pass
 
     ot_actual = OTE.objects.get(id=id_ot)
     id_principal = ot_actual.ot_principal if ot_actual.ot_principal else id_ot
@@ -268,7 +281,8 @@ def obtener_partidas_produccion(request):
                 'concepto': p.descripcion_concepto,
                 'unidad': p.unidad_medida.clave if p.unidad_medida else 'N/A',
                 'vol_total_proyectado': vol,
-                'acumulado_mes': 0.0
+                'acumulado_mes': 0.0,
+                'archivo': archivo_url
             }
             codigos_activos.add(codigo)
 
@@ -278,7 +292,6 @@ def obtener_partidas_produccion(request):
             id_partida__in=codigos_activos, 
             activo=True
         ).values('id_partida', 'anexo')
-        
         for prod in productos_data:
             mapa_anexos[prod['id_partida']] = prod['anexo']
 
@@ -286,36 +299,55 @@ def obtener_partidas_produccion(request):
         id_reporte_mensual__id_ot_id=id_ot,
         id_reporte_mensual__mes=mes,
         id_reporte_mensual__anio=anio,
-        tipo_tiempo=tipo_tiempo,
         id_partida_anexo__id_partida__in=codigos_activos
-    ).values('id_partida_anexo__id_partida', 'fecha_produccion__day', 'es_excedente', 'volumen_produccion')
+    ).values('id_partida_anexo__id_partida', 'fecha_produccion__day', 'tipo_tiempo', 'es_excedente', 'volumen_produccion')
 
-    produccion_dict = {}
+    produccion_mapa = {}
     for item in resumen_produccion:
         key = (item['id_partida_anexo__id_partida'], item['fecha_produccion__day'])
-        produccion_dict[key] = {
-            'valor': float(item['volumen_produccion']),
-            'es_excedente': item['es_excedente']
-        }
+        
+        if key not in produccion_mapa:
+            produccion_mapa[key] = {'TE': 0.0, 'CMA': 0.0, 'es_excedente': False}
+        
+        t = item['tipo_tiempo'] 
+        vol = float(item['volumen_produccion'])
+        
+        produccion_mapa[key][t] = vol
+        
+        if item['es_excedente']:
+            produccion_mapa[key]['es_excedente'] = True
 
     data_final = []
     for codigo, datos in partidas_consolidadas.items():
         datos['anexo'] = mapa_anexos.get(codigo, '')
 
-        suma_mes = 0.0
-        hay_excedente = False
+        suma_mes_visual = 0.0
+        hay_excedente_visual = False
         
         for d in range(1, 32):
-            val = produccion_dict.get((codigo, d))
-            if val:
-                datos[f'dia{d}'] = val
-                suma_mes += val['valor']
-                if val['es_excedente']: hay_excedente = True
+            info_dia = produccion_mapa.get((codigo, d))
+            
+            if info_dia:
+                val_te = info_dia['TE']
+                val_cma = info_dia['CMA']
+                es_exc = info_dia['es_excedente']
+                
+                valor_visual = val_te if tipo_tiempo == 'TE' else val_cma
+                print(valor_visual, val_te, val_cma)
+                datos[f'dia{d}'] = {
+                    'valor': valor_visual,
+                    'es_excedente': es_exc,
+                    'te_dia': val_te,
+                    'cma_dia': val_cma      
+                }
+                
+                suma_mes_visual += valor_visual
+                if es_exc: hay_excedente_visual = True
             else:
                 datos[f'dia{d}'] = None
         
-        datos['acumulado_mes'] = suma_mes
-        datos['estatus_gpu'] = 'BLOQUEADO' if hay_excedente else 'AUTORIZADO'
+        datos['acumulado_mes'] = suma_mes_visual
+        datos['estatus_gpu'] = 'BLOQUEADO' if hay_excedente_visual else 'AUTORIZADO'
         data_final.append(datos)
 
     return JsonResponse(data_final, safe=False)
@@ -560,5 +592,55 @@ def vincular_partida_ot(request):
         return JsonResponse({'exito': False, 'mensaje': f'Error: {str(e)}'}, status=500)
 
 
+@login_required
+@require_http_methods(["POST"])
+def guardar_archivo_mensual(request):
+    """
+    Guarda el enlace de archivo en el ReporteMensual
+    """
+    try:
+        data = json.loads(request.body)
+        
+        id_ot = data.get('id_ot')
+        mes = data.get('mes')
+        anio = data.get('anio')
+        url = data.get('archivo')
+        
+        if not all([id_ot, mes, anio]):
+            return JsonResponse({
+                'exito': False,
+                'mensaje': 'Faltan datos obligatorios (OT, Mes o Año).'
+            })
+
+        if not url:
+            return JsonResponse({
+                'exito': False,
+                'mensaje': 'La URL del archivo es obligatoria.'
+            })
+
+        with transaction.atomic():
+            reporte, created = ReporteMensual.objects.get_or_create(
+                id_ot_id=id_ot,
+                mes=int(mes),
+                anio=int(anio),
+                defaults={
+                    'id_estatus_id': 1
+                }
+            )
+
+            reporte.archivo = url
+            reporte.save()
+
+        return JsonResponse({
+            'exito': True,
+            'mensaje': 'Evidencia vinculada al Reporte Mensual correctamente.',
+            'archivo': reporte.archivo
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            'exito': False,
+            'mensaje': f'Error interno al guardar evidencia: {str(e)}'
+        }, status=500)
 
 

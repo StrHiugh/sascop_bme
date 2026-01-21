@@ -113,24 +113,44 @@ class ProduccionRenderer {
     getElement() { return this.el; }
     
     render(props) {
-        let valor = props.value;
+        const valorOriginal = props.value;
+        
+        let valorVisual = valorOriginal; 
         let esExcedente = false;
-
-        if (valor && typeof valor === 'object') {
-            esExcedente = valor.es_excedente || false;
-            valor = valor.valor;
+        let teDia = 0.0;
+        let cmaDia = 0.0;
+        if (valorOriginal && typeof valorOriginal === 'object') {
+            esExcedente = valorOriginal.es_excedente || false;
+            teDia = parseFloat(valorOriginal.te_dia || 0);
+            cmaDia = parseFloat(valorOriginal.cma_dia || 0);
+            valorVisual = valorOriginal.valor;
         } 
-        const displayValue = (valor !== null && valor !== undefined && valor !== '') 
-            ? numberFormatter.format(Number(valor))
+
+        const displayValue = (valorVisual !== null && valorVisual !== undefined && valorVisual !== '') 
+            ? numberFormatter.format(Number(valorVisual))
             : '';
 
         this.el.innerText = displayValue;
         this.el.className = 'd-flex justify-content-center align-items-center tui-grid-cell-content';
         
+        const diaNum = props.columnInfo.name.replace('dia', '');
+        const totalDia = teDia + cmaDia;
+        const fmt = (n) => numberFormatter.format(n);
+        
+        let tooltipText = `Día: ${diaNum}\n` +
+                            `-------------------\n` +
+                            `Ejecutado TE:  ${fmt(teDia)}\n` +
+                            `Ejecutado CMA: ${fmt(cmaDia)}\n` +
+                            `-------------------\n` +
+                            `Total Día:     ${fmt(totalDia)}`;
+
         if (esExcedente) {
             this.el.classList.add('text-danger', 'fw-bold');
             this.el.style.backgroundColor = '#fff5f5';
+            tooltipText = "⚠️ VOLUMEN EXCEDENTE ⚠️\n\n" + tooltipText;
         }
+
+        this.el.title = tooltipText;
     }   
 }
 
@@ -152,6 +172,48 @@ class ProduccionEditor {
     getElement() { return this.el; }
     getValue() { return this.el.value; }
     mounted() { this.el.select(); }
+}
+
+class OpcionesRenderer {
+    constructor(props) {
+        this.el = document.createElement('div');
+        this.el.className = 'd-flex justify-content-center align-items-center w-100 h-100 gap-2';
+        this.render(props);
+    }
+
+    getElement() { return this.el; }
+
+    render(props) {
+        const archivo = props.value; 
+        const rowKey = props.rowKey;
+        
+        if (archivo && typeof archivo === 'string' && archivo.trim() !== '') {
+            const urlCodificada = encodeURI(archivo);
+            const archivoAcortado = archivo.length > 20 ? archivo.substring(0, 20) + '...' : archivo;
+            
+            this.el.innerHTML = `
+                <a class="btn btn-sm btn-light text-secondary border ver-archivo" 
+                    title="Cambiar archivo" 
+                    data-rowkey="${rowKey}">
+                    <i class="fas fa-upload text-secondary"></i>
+                </a>
+                <a class="btn btn-sm btn-light text-success border ver-archivo-externo" 
+                    href="${urlCodificada}" 
+                    target="_blank" 
+                    title="Abrir: ${archivoAcortado}">
+                    <i class="fas fa-eye"></i>
+                </a>
+            `;
+        } else {
+            this.el.innerHTML = `
+                <a class="btn btn-sm btn-light text-primary border ver-archivo" 
+                    title="Subir archivo" 
+                    data-rowkey="${rowKey}">
+                    <i class="fas fa-upload text-secondary"></i>
+                </a>
+            `;
+        }
+    }
 }
 
 $(document).ready(function() {
@@ -323,6 +385,105 @@ $(document).ready(function() {
         });
     });
 
+    $(document).on('click', '.ver-archivo', function (e) {
+        e.preventDefault();
+        const rowKey = $(this).data('rowkey');
+        
+        if (gridReportesDiarios) {
+            const rowData = gridReportesDiarios.getRow(rowKey);
+            abrirModalSubirArchivo(rowData, rowKey);
+        }
+    });
+
+    function abrirModalSubirArchivo(rowData, rowKey) {
+        const modal = new bootstrap.Modal(document.getElementById('modalSubirArchivo'));
+        const enlaceInput = document.getElementById('enlaceArchivoOt');
+        
+        filaEnEdicion = { rowKey: rowKey, ...rowData };
+
+        if (rowData && rowData.archivo) {
+            enlaceInput.value = rowData.archivo;
+        } else {
+            enlaceInput.value = '';
+        }
+        
+        modal.show();
+        
+        setTimeout(() => {
+            enlaceInput.focus();
+        }, 500);
+    }
+
+    window.guardarEnlaceArchivo = function() {
+        const enlace = $('#enlaceArchivoOt').val().trim();
+        const $btn = $('#btnGuardarEnlacePaso');
+        
+        if (!enlace) {
+            aviso("advertencia", "Por favor ingresa un enlace válido");
+            $('#enlaceArchivoOt').focus();
+            return;
+        }
+        
+        if (!enlace.startsWith('http://') && !enlace.startsWith('https://')) {
+            aviso("advertencia", "La URL debe comenzar con http:// o https://");
+            $('#enlaceArchivoOt').focus();
+            $('#enlaceArchivoOt').select();
+            return;
+        }
+
+        if (!otSeleccionada || !otSeleccionada.id_ot) {
+            aviso("error", "No hay una OT seleccionada.");
+            return;
+        }
+        
+        if (!filaEnEdicion) return;
+
+        $btn.prop('disabled', true);
+        $btn.html('<i class="fas fa-spinner fa-spin me-2"></i>Guardando...');
+
+        const payload = {
+            id_ot: otSeleccionada.id_ot,
+            mes: $('#filtro-mes').val(),
+            anio: $('#filtro-anio').val(),
+            archivo: enlace
+        };
+    
+        const urlDestino = urlGuardarArchivoMensual;
+
+        $.ajax({
+            url: urlDestino,
+            method: "POST",
+            data: JSON.stringify(payload),
+            contentType: 'application/json',
+            headers: { 'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val() },
+            success: function(response) {
+                if (response.exito) {
+                    aviso("exito", "Enlace de evidencia guardado correctamente");
+                    
+                    if (gridReportesDiarios) {
+                        gridReportesDiarios.setValue(filaEnEdicion.rowKey, 'archivo', enlace);
+                    }
+
+                    const modalEl = document.getElementById('modalSubirArchivo');
+                    const modalInstance = bootstrap.Modal.getInstance(modalEl);
+                    modalInstance.hide();
+                    
+                    filaEnEdicion = null;
+                } else {
+                    aviso("error", response.mensaje || "Error al guardar");
+                }
+            },
+            error: function(xhr) {
+                console.error(xhr);
+                aviso("error", "Error de comunicación con el servidor");
+            },
+            complete: function() {
+                $btn.prop('disabled', false);
+                $btn.html('<i class="fas fa-save me-2"></i>Guardar en Tabla');
+            }
+        });
+    };
+
     function inicializarSelect2Catalogo() {
         $('#select-producto-catalogo').select2({
             dropdownParent: $('#modalNuevaPartida'),
@@ -443,7 +604,14 @@ $(document).ready(function() {
                 columns: [
                     { header: 'OT', name: 'ot', width: 100, filter: 'select', align: 'left', validation: { required: true } },
                     { header: 'Descripción', name: 'desc',filter: 'select', width: 250, align: 'left' },
-                    ...columnasDiasAsistencia
+                    ...columnasDiasAsistencia,
+                    {
+                        header: 'Opciones',
+                        name: 'archivo',
+                        width: 100,
+                        align: 'center',
+                        renderer: { type: OpcionesRenderer }
+                    }
                 ],
                 data: [] 
             });
@@ -484,7 +652,7 @@ $(document).ready(function() {
                     { header: 'Anexo', name: 'anexo', filter: 'select', width: 80, align: 'center' },
                     { header: 'Unidad', name: 'unidad', width: 70, align: 'center' },
                     { 
-                        header: 'Vol. PTE', 
+                        header: 'Vol. Proy', 
                         name: 'vol_total_proyectado', 
                         width: 110, 
                         align: 'center', 
@@ -498,7 +666,13 @@ $(document).ready(function() {
                         align: 'right',
                         formatter: formatearNumero
                     },
-                    { header: 'Estatus GPU', name: 'estatus_gpu', width: 130, align: 'center', renderer: { type: GpuStatusRenderer } }
+                    { 
+                        header: 'Estatus Partida', 
+                        name: 'estatus_gpu', 
+                        width: 130, 
+                        align: 'center', 
+                        renderer: { type: GpuStatusRenderer } 
+                    }
                 ],
                 data: []
             });

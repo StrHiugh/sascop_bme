@@ -66,6 +66,7 @@ urlpatterns = [
     path('produccion/buscar_productos_catalogo/', produccion.buscar_productos_catalogo, name='buscar_productos_catalogo'),
     path('produccion/vincular_partida_ot/', produccion.vincular_partida_ot, name='vincular_partida_ot'),
     path('produccion/guardar_reportes_diarios_masiva/', produccion.guardar_reportes_diarios_masiva, name='guardar_reportes_diarios_masiva'),
+    path('produccion/guardar_archivo_mensual/', produccion.guardar_archivo_mensual, name='guardar_archivo_mensual'),
     
     #URLs para PRODUCTOS 
     path('catalogos/producto/', catalogos.lista_producto, name='lista_producto'),

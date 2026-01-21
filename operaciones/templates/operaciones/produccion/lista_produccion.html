@@ -246,10 +246,10 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                 <button type="button" class="btn btn-primary" id="btn-confirmar-add-partida">
                     <i class="fas fa-check me-1"></i> Vincular a OT
                 </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
             </div>
         </div>
     </div>
@@ -267,6 +267,38 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="modalSubirArchivo" tabindex="-1" aria-labelledby="modalSubirArchivoLabel">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalSubirArchivoLabel">Subir archivo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formSubirArchivo">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="enlaceArchivoOt" class="form-label">
+                            Enlace del archivo
+                        </label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="enlaceArchivoOt" name="enlaceArchivoOt" placeholder="Pega el enlace aquí..." required>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="btnGuardarEnlacePaso" onclick="guardarEnlaceArchivo()">
+                    <i class="fas fa-save me-2"></i>Guardar
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -279,5 +311,6 @@
     var urlGuardarAsistenciaMasiva = "{% url 'operaciones:guardar_reportes_diarios_masiva' %}"; 
     var urlBuscarProductosCatalogo = "{% url 'operaciones:buscar_productos_catalogo' %}";
     var urlVincularPartidaOT = "{% url 'operaciones:vincular_partida_ot' %}";
+    var urlGuardarArchivoMensual = "{% url 'operaciones:guardar_archivo_mensual' %}";
 </script>
 {% endblock %}

@@ -16,8 +16,8 @@
 /* Imagen lateral */
 .img-login-registro {
     flex: 1;
-    background: linear-gradient(rgba(109, 111, 113, 0.7), rgba(44, 62, 80, 0.8)), 
-                url('../images/3barcos.png');
+    background: linear-gradient(rgba(109, 111, 113, 0.151), rgba(44, 62, 80, 0.767)), 
+                url('../images/3barcos1.png');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
