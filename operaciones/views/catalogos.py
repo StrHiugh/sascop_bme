@@ -1476,7 +1476,6 @@ def editar_producto(request):
 def obtener_producto(request):
     """
     Obtiene los datos de un ConceptoMaestro para edición.
-    Mapea los campos del modelo a lo que espera el frontend (JS).
     """
     try:
         id = request.GET.get('id')
