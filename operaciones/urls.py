@@ -75,6 +75,17 @@ urlpatterns = [
     path('catalogos/producto/eliminar/', catalogos.eliminar_producto, name='eliminar_producto'),
     path('catalogos/producto/obtener/', catalogos.obtener_producto, name='obtener_producto'),
     path('catalogos/producto/editar/', catalogos.editar_producto, name='editar_producto'),
+
+    #URLs para CONCEPTOS MAESTROS 
+    path('catalogos/conceptos/ordinarios/', catalogos.lista_conceptos_ordinarios, name='lista_conceptos_ordinarios'),
+    path('catalogos/conceptos/extraordinarios/', catalogos.lista_conceptos_extraordinarios, name='lista_conceptos_extraordinarios'),
+    path('catalogos/concepto/datatable_concepto/', catalogos.datatable_conceptos, name='datatable_conceptos'),
+    path('catalogos/concepto/pues_disponibles/', catalogos.datatable_pues_disponibles, name='pues_disponibles'),
+    path('catalogos/concepto/convertir_pue/', catalogos.convertir_pue_a_ordinario, name='convertir_pue'),
+    # path('catalogos/producto/crear/', catalogos.crear_producto, name='crear_producto'),
+    # path('catalogos/producto/eliminar/', catalogos.eliminar_producto, name='eliminar_producto'),
+    # path('catalogos/producto/obtener/', catalogos.obtener_producto, name='obtener_producto'),
+    # path('catalogos/producto/editar/', catalogos.editar_producto, name='editar_producto'),
     
     #URLs para TIPOS
     path('catalogos/tipos/', catalogos.lista_tipos, name='lista_tipos'),

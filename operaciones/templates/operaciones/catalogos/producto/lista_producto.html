@@ -17,17 +17,16 @@
                             Catálogos
                         </a>
                     </li>
-                    <li class="breadcrumb-item active">Catalogos conceptos</li>
+                    <li class="breadcrumb-item active">{{ titulo|default:"Catálogo de Conceptos" }}</li>
                 </ol>
             </nav>
-            <h1 class="h2 fw-bold mb-0">CATALOGO DE CONCEPTOS</h1>
+            <h1 class="h2 fw-bold mb-0 text-uppercase">{{ titulo|default:"CATÁLOGO DE CONCEPTOS" }}</h1>
         </div>
-        <!-- Lado derecho: botones -->
         <div class="d-flex gap-2 mt-2 mt-md-0">
-            <a href="#" class="btn btn-primary">
+            <button class="btn btn-primary" id="btn-crear-nuevo-logica">
                 <i class="fas fa-plus me-2"></i>
                 <span>Crear nuevo</span>
-            </a>
+            </button>
             <button class="btn btn-outline-secondary" id="btn-panel-filtros">
                 <i class="fas fa-filter me-2"></i>
                 Filtros
@@ -47,21 +46,63 @@
                         <span class="input-group-text bg-light border-end-0">
                             <i class="fas fa-search"></i>
                         </span>
-                        <input type="text" class="form-control border-start-0" id="filtro-buscar" placeholder="Enter para filtrar">
+                        <input type="text" class="form-control border-start-0" id="filtro-buscar" placeholder="Buscar por partida, descripción...">
                     </div>
                 </div>
                 <div class="col-md-2 col-lg-2">
                     <div id="select-length"></div>
                 </div>
             </div>
-            <!-- Tabla -->
-            <table id="tabla" class="table table-hover dataTable-width-100">
+            
+            <table id="tabla" class="table table-hover dataTable-width-100" data-modo="{{ tipo_vista }}">
             </table>
         </div>
     </div>
 </div>
 
-<!-- Panel de Filtros con Offcanvas de Bootstrap 5 -->
+<div class="modal fade" id="modalBusquedaPUE" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title">
+                    <i class="fas fa-exchange-alt me-2"></i> Seleccionar PUE's para autorizar
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-primary py-2 mb-3">
+                    <small><i class="fas fa-info-circle"></i> Seleccione los conceptos extraordinarios de la lista para asignarles partida y anexo autorizado.</small>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6 col-lg-4">
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0">
+                                <i class="fas fa-search"></i>
+                            </span>
+                            <input type="text" class="form-control border-start-0" id="filtro-buscar-pue" placeholder="Buscar por partida, descripción...">
+                        </div>
+                    </div>
+                    <div class="col-md-2 col-lg-2">
+                        <div id="select-length-pue"></div>
+                    </div>
+                </div>
+                <div class="table-responsive" style="max-height: 50vh; overflow-y: auto;">
+                    <table id="tablaBusquedaPUE" class="table table-striped table-hover w-100">
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th>Partida</th>
+                                <th>Descripción</th>
+                                <th>Unidad</th>
+                            </tr>
+                        </thead>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="offcanvas offcanvas-end" tabindex="-1" id="panelFiltros">
     <div class="offcanvas-header">
         <h5 class="offcanvas-title">Filtros</h5>
@@ -69,25 +110,6 @@
     </div>
     <div class="offcanvas-body">
         <form id="form-filtros">
-            <div class="mb-3">
-                <label class="form-label">Tipo Partida</label>
-                <select class="form-select" id="filtro-tipo-partida">
-                    <option value="">Todos los tipos</option>
-                    <option value="6">ORDINARIO</option>
-                    <option value="7">EXTRAORDINARIO</option>
-                </select>
-            </div>
-            <div class="mb-3">
-                <label class="form-label">Sitio</label>
-                <select class="form-select" id="filtro-sitio">
-                    <option value="">Todos los sitios</option>
-                    <option value="71">TIERRA</option>
-                    <option value="72">ABORDO</option>
-                    <option value="70">PATIO 03</option>
-                    <option value="4">PATIO MUELLE API</option>
-                    <option value="6">TMDB</option>
-                </select>
-            </div>
             <div class="mb-3">
                 <label class="form-label">Unidad de Medida</label>
                 <select class="form-select" id="filtro-unidad-medida">
@@ -106,60 +128,30 @@
     </div>
 </div>
 
-<!-- Panel Crear/Editar Estatus -->
 <div class="offcanvas offcanvas-end" tabindex="-1" id="panelCrearEditar">
     <div class="offcanvas-header">
-        <h5 class="offcanvas-title" id="panel-title">Crear nuevo producto</h5>
+        <h5 class="offcanvas-title" id="panel-title">Crear nuevo concepto</h5>
         <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
     </div>
     <div class="offcanvas-body">
         <form id="formulario-producto">
             {% csrf_token %}
-            <!-- Campo oculto para ID -->
             <input id="id" name="id" type="hidden">
+            <input id="id_pue_conversion" name="id_pue_conversion" type="hidden">
+            
             <div class="row">
                 <section class="col-12 mb-3">
-                    <label class="form-label">ID Partida <span class="text-danger">*</span></label>
+                    <label class="form-label">Partida Ext. <span class="text-danger">*</span></label>
                     <div class="input-group">
                         <input name="id_partida" class="form-control" id="id_partida" 
-                                type="text" placeholder="Ingrese la partida del producto" required>
+                            type="text" placeholder="Ej. 1.1 o 4.1" required>
                     </div>
                 </section>
                 <section class="col-12 mb-3">
                     <label class="form-label">Descripción <span class="text-danger">*</span></label>
                     <div class="input-group">
-                        <input name="descripcion" class="form-control" id="descripcion" 
-                                type="text" placeholder="Ingrese la descripción del producto" required>
-                    </div>
-                </section>
-                <section class="col-12 mb-3">
-                    <label class="form-label">Anexo <span class="text-danger">*</span></label>
-                    <div class="input-group">
-                        <input name="anexo" class="form-control" id="anexo" 
-                                type="text" placeholder="Ingrese el anexo del producto" required>
-                    </div>
-                </section>
-                <section class="col-12 mb-3">
-                    <label class="form-label">Sitio <span class="text-danger">*</span></label>
-                    <div class="input-group">
-                        <select name="sitio" class="form-select" id="sitio" required>
-                            <option value="" selected disabled>Seleccione una opción</option>
-                            <option value="71">TIERRA</option>
-                            <option value="72">ABORDO</option>
-                            <option value="70">PATIO 03</option>
-                            <option value="4">PATIO MUELLE API</option>
-                            <option value="6">TMDB</option>
-                        </select>
-                    </div>
-                </section>
-                <section class="col-12 mb-3">
-                    <label class="form-label">Tipo partida <span class="text-danger">*</span></label>
-                    <div class="input-group">
-                        <select name="tipo_partida" class="form-select" id="tipo_partida" required>
-                            <option value="" selected disabled>Seleccione una opción</option>
-                            <option value="6">ORDINARIO</option>
-                            <option value="7">EXTRAORDINARIO</option>
-                        </select>
+                        <textarea name="descripcion" class="form-control" id="descripcion" 
+                            rows="3" placeholder="Descripción de la partida" required></textarea>
                     </div>
                 </section>
                 <section class="col-12 mb-3">
@@ -170,23 +162,43 @@
                     </div>
                 </section>
                 <section class="col-12 mb-3">
-                    <label class="form-label">Precio Unitario MN <span class="text-danger">*</span></label>
+                    <label class="form-label">Cantidad <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <input name="cantidad" class="form-control" id="cantidad" step="0.01" type="number" placeholder="0" required>
+                    </div>
+                </section>
+                <section class="col-12 mb-3">
+                    <label class="form-label">Precio Unitario MN</label>
                     <div class="input-group">
                         <input name="precio_unitario_mn" class="form-control" id="precio_unitario_mn" 
-                                type="number" step="0.01" placeholder="0.00" required>
+                            type="number" step="0.01" placeholder="0.00">
                     </div>
                 </section>
                 <section class="col-12 mb-3">
                     <label class="form-label">Precio Unitario USD</label>
                     <div class="input-group">
                         <input name="precio_unitario_usd" class="form-control" id="precio_unitario_usd" 
-                                type="number" step="0.01" placeholder="0.00">
+                            type="number" step="0.01" placeholder="0.00">
+                    </div>
+                </section>
+                <section class="col-12 mb-3">
+                    <label class="form-label">PTE origen</label>
+                    <div class="input-group">
+                        <input name="pte_origen" class="form-control" id="pte_origen" 
+                            type="text" placeholder="Ej. BME-3801-001-2026" >
+                    </div>
+                </section>
+                <section class="col-12 mb-3">
+                    <label class="form-label"> OT origen</label>
+                    <div class="input-group">
+                        <input name="ot_origen" class="form-control" id="ot_origen" 
+                            type="text" placeholder="Ej. OT-801-26-001-EKA" >
                     </div>
                 </section>
                 <section class="col-12 mb-3">
                     <label class="form-label">Comentario</label>
                     <textarea name="comentario" class="form-control" id="comentario" 
-                                rows="3" placeholder="Comentarios adicionales"></textarea>
+                        rows="3" placeholder="Comentarios adicionales"></textarea>
                 </section>
             </div>
 
@@ -212,14 +224,16 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{% static 'operaciones/js/modulos/catalogos/lista_producto.js'%}?v=1.0.0"></script>
+<script src="{% static 'operaciones/js/modulos/catalogos/lista_producto.js'%}?v=1.0.3"></script>
 
 <script>
-    var urlDatatable = "{% url 'operaciones:datatable_producto' %}";
+    var urlDatatable = "{% url 'operaciones:datatable_conceptos' %}";
     var urlObtenerUndMed = "{% url 'operaciones:obtener_unidad_medida' %}";
     var urlObtenerProducto = "{% url 'operaciones:obtener_producto' %}";
     var urlEliminarProducto = "{% url 'operaciones:eliminar_producto' %}";
     var urlEditarProducto = "{% url 'operaciones:editar_producto' %}";
     var urlCrearProducto = "{% url 'operaciones:crear_producto' %}";
+    var urlPuesDisponibles = "{% url 'operaciones:pues_disponibles' %}";
+    var urlConvertirPue = "{% url 'operaciones:convertir_pue' %}";
 </script>
 {% endblock %}

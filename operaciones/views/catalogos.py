@@ -1123,90 +1123,388 @@ def datatable_producto(request):
         'recordsFiltered': total_records_filtered, 
         'data': data
     })
+
+@login_required(login_url='/accounts/login/')
+def lista_conceptos_ordinarios(request):
+    """Renderiza la página de Conceptos Ordinarios"""
+    context = {
+        'titulo': 'Catálogo de Conceptos Ordinarios',
+        'tipo_vista': 'ordinarios'
+    }
+    return render(request, 'operaciones/catalogos/producto/lista_producto.html', context)
+
+@login_required(login_url='/accounts/login/')
+def lista_conceptos_extraordinarios(request):
+    """Renderiza la página de Conceptos Extraordinarios"""
+    context = {
+        'titulo': 'Catálogo de Conceptos Extraordinarios',
+        'tipo_vista': 'extraordinarios'
+    }
+    return render(request, 'operaciones/catalogos/producto/lista_producto.html', context)
+
+def datatable_conceptos(request):
+    draw = int(request.GET.get('draw', 1))
+    start = int(request.GET.get('start', 0))
+    length = int(request.GET.get('length', 10))
+    search_value = request.GET.get('filtro', '')
     
+    modo_vista = request.GET.get('modo_vista', 'ordinarios') 
+
+    sitio = request.GET.get('sitio', '')
+    unidad_medida = request.GET.get('unidad_medida', '')
+    
+    order_column_index = request.GET.get('order[0][column]', '0')
+    order_direction = request.GET.get('order[0][dir]', 'desc')
+
+    column_mapping = {
+        '0': 'id',
+        '1': 'partida_ordinaria' if modo_vista == 'ordinarios' else 'partida_extraordinaria',
+        '2': 'descripcion',
+        '3': 'unidad_medida__descripcion',
+        '4': 'sub_anexo__clave_anexo',
+        '5': 'precio_unitario_mn',
+        '6': 'precio_unitario_usd',
+        '7': 'activo'
+    }
+
+    order_field = column_mapping.get(order_column_index, 'id')
+    if order_direction == 'desc':
+        order_field = f'-{order_field}'
+
+    conceptos = ConceptoMaestro.objects.select_related(
+        'sub_anexo', 
+        'unidad_medida', 
+        'id_tipo_partida'
+    )
+
+    if modo_vista == 'ordinarios':
+        conceptos = conceptos.filter(id_tipo_partida_id=6)
+    elif modo_vista == 'extraordinarios':
+        conceptos = conceptos.filter(id_tipo_partida_id=7)
+
+    if search_value:
+        if modo_vista == 'ordinarios':
+            conceptos = conceptos.filter(
+                Q(partida_ordinaria__icontains=search_value) |
+                Q(descripcion__icontains=search_value) |
+                Q(sub_anexo__clave_anexo__icontains=search_value)
+            )
+        else:
+            conceptos = conceptos.filter(
+                Q(partida_extraordinaria__icontains=search_value) |
+                Q(descripcion__icontains=search_value) |
+                Q(pte_creacion__icontains=search_value) |
+                Q(ot_creacion__icontains=search_value)
+            )
+
+    if unidad_medida:
+        conceptos = conceptos.filter(unidad_medida_id=unidad_medida)
+
+    total_records_filtered = conceptos.count()
+    conceptos = conceptos.order_by(order_field)[start:start + length]
+
+    data = []
+    for c in conceptos:
+        partida_display = c.partida_ordinaria if modo_vista == 'ordinarios' else c.partida_extraordinaria
+        
+        anexo_display = c.sub_anexo.clave_anexo if c.sub_anexo else 'S/A'
+
+        item = {
+            'id': c.id,
+            'id_partida': partida_display,
+            'descripcion': c.descripcion,
+            'unidad_medida': c.unidad_medida.clave,
+            'anexo': anexo_display,
+            'cantidad_referencia': str(c.cantidad),
+            'precio_unitario_mn': str(c.precio_unitario_mn),
+            'precio_unitario_usd': str(c.precio_unitario_usd),
+            'activo': 'Activo' if c.activo else 'Inactivo',
+            'activo_bool': c.activo,
+            'comentario': c.comentario,
+        }
+
+        if modo_vista == 'extraordinarios':
+            item.update({
+                'pte': c.pte_creacion,
+                'ot': c.ot_creacion,
+                'estatus_pue': c.estatus,
+                'fecha_sancion': c.fecha_autorizacion
+            })
+
+        data.append(item)
+
+    return JsonResponse({
+        'draw': draw,
+        'recordsTotal': ConceptoMaestro.objects.count(),
+        'recordsFiltered': total_records_filtered,
+        'data': data
+    })
+
+def datatable_pues_disponibles(request):
+    """
+    Devuelve solo los conceptos EXTRAORDINARIOS activos
+    para ser mostrados en el modal de selección.
+    """
+    search_value = request.GET.get('search[value]', '')
+    start = int(request.GET.get('start', 0))
+    length = int(request.GET.get('length', 10))
+
+    conceptos = ConceptoMaestro.objects.filter(id_tipo_partida_id=7, activo=True).select_related('unidad_medida')
+
+    if search_value:
+        conceptos = conceptos.filter(
+            Q(partida_extraordinaria__icontains=search_value) |
+            Q(descripcion__icontains=search_value) |
+            Q(pte_creacion__icontains=search_value)
+        )
+
+    total_records = concepts_count = conceptos.count()
+    conceptos = conceptos.order_by('-id')[start:start + length]
+
+    data = []
+    for c in conceptos:
+        data.append({
+            'id': c.id,
+            'partida_extraordinaria': c.partida_extraordinaria,
+            'descripcion': c.descripcion,
+            'unidad_medida': c.unidad_medida.clave,
+            'precio_mn': str(c.precio_unitario_mn),
+            'precio_usd': str(c.precio_unitario_usd),
+            'pte': c.pte_creacion or '',
+            'ot': c.ot_creacion or ''
+        })
+
+    return JsonResponse({
+        'draw': int(request.GET.get('draw', 1)),
+        'recordsTotal': total_records,
+        'recordsFiltered': total_records,
+        'data': data
+    })
+
+@require_http_methods(["POST"])
+def convertir_pue_a_ordinario(request):
+    """
+    Toma un concepto extraordiario, le asigna Partida Ordinaria y Anexo,
+    y lo convierte a Ordinario.
+    """
+    try:
+        pue_id = request.POST.get('id_pue')
+        nueva_partida = request.POST.get('nueva_partida')
+        clave_anexo = request.POST.get('nuevo_anexo')
+        precio_mn = request.POST.get('precio_mn')
+        precio_usd = request.POST.get('precio_usd')
+        
+        if not pue_id or not nueva_partida or not clave_anexo:
+            return JsonResponse({'exito': False, 'tipo_aviso': 'advertencia', 'detalles': 'Faltan datos obligatorios (Partida u Anexo).'})
+
+        anexo_maestro_id = 1 
+        
+        try:
+            anexo_maestro = AnexoContrato.objects.get(id=anexo_maestro_id)
+            sub_anexo, created = SubAnexo.objects.get_or_create(
+                anexo_maestro=anexo_maestro,
+                clave_anexo=clave_anexo.strip().upper(),
+                defaults={'descripcion': 'Generado por conversión', 'activo': True}
+            )
+        except Exception as e:
+            return JsonResponse({'exito': False, 'tipo_aviso': 'error', 'detalles': f'Error con el Anexo: {str(e)}'})
+
+        if ConceptoMaestro.objects.filter(sub_anexo=sub_anexo, partida_ordinaria=nueva_partida).exclude(id=pue_id).exists():
+            return JsonResponse({'exito': False, 'tipo_aviso': 'advertencia', 'detalles': f'La partida {nueva_partida} ya existe en el anexo {clave_anexo}.'})
+
+        concepto = ConceptoMaestro.objects.get(id=pue_id)
+        
+        concepto.id_tipo_partida_id = 6
+        concepto.partida_ordinaria = nueva_partida
+        concepto.sub_anexo = sub_anexo
+        
+        if precio_mn:
+            concepto.precio_unitario_mn = Decimal(precio_mn)
+        if precio_usd:
+            concepto.precio_unitario_usd = Decimal(precio_usd)
+            
+        concepto.estatus = "AUTORIZADO"
+        concepto.comentario = f"{concepto.comentario or ''} | Convertido de PUE ({concepto.partida_extraordinaria})".strip()
+        concepto.save()
+
+        return JsonResponse({'exito': True})
+
+    except ConceptoMaestro.DoesNotExist:
+        return JsonResponse({'exito': False, 'tipo_aviso': 'error', 'detalles': 'El concepto PUE no existe.'})
+    except Exception as e:
+        return JsonResponse({'exito': False, 'tipo_aviso': 'error', 'detalles': str(e)})
+
 @require_http_methods(["POST"])
 def crear_producto(request):
+    """
+    Crea un nuevo concepto extraordinario.
+    """
     try:
+        # Campos del formulario
         id_partida = request.POST.get('id_partida')
         descripcion_concepto = request.POST.get('descripcion')
-        anexo = request.POST.get('anexo', '')
-        sitio_id = request.POST.get('sitio')
-        tipo_partida_id = request.POST.get('tipo_partida')
         unidad_medida_id = request.POST.get('unidad_medida')
         precio_unitario_mn = request.POST.get('precio_unitario_mn', 0)
         precio_unitario_usd = request.POST.get('precio_unitario_usd', 0)
         comentario = request.POST.get('comentario', '')
-        
+        pte_origen = request.POST.get('pte_origen', '')
+        ot_origen = request.POST.get('ot_origen', '')
+        cantidad_post = request.POST.get('cantidad', 0)
+        tipo_partida_id = 7 
+
         if not id_partida:
-            return JsonResponse({
-                'exito': False,
-                'tipo_aviso': 'error',
-                'detalles': 'El ID de partida es obligatorio'
-            })
+            return JsonResponse({'exito': False, 'tipo_aviso': 'error', 'detalles': 'El ID de partida es obligatorio'})
         
         if not descripcion_concepto:
-            return JsonResponse({
-                'exito': False,
-                'tipo_aviso': 'error',
-                'detalles': 'La descripción es obligatoria'
-            })
+            return JsonResponse({'exito': False, 'tipo_aviso': 'error', 'detalles': 'La descripción es obligatoria'})
         
         if id_partida != 'NA':
-            if Producto.objects.filter(id_partida=id_partida, activo=True).exists():
-                return JsonResponse({
-                    'exito': False,
-                    'tipo_aviso': 'advertencia',
-                    'detalles': 'Ya existe un producto con este ID de partida'
-                })
+            if ConceptoMaestro.objects.filter(partida_extraordinaria=id_partida, activo=True).exists():
+                return JsonResponse({'exito': False, 'tipo_aviso': 'advertencia', 'detalles': 'Ya existe un concepto extraordinario con esta clave.'})
         
         try:
-            sitio = Sitio.objects.get(id=sitio_id)
-            tipo_partida = Tipo.objects.get(id=tipo_partida_id)
             unidad_medida = UnidadMedida.objects.get(id=unidad_medida_id)
-        except (Sitio.DoesNotExist, Tipo.DoesNotExist, UnidadMedida.DoesNotExist) as e:
-            return JsonResponse({
-                'exito': False,
-                'tipo_aviso': 'advertencia',
-                'detalles': 'Uno de los campos de relación no existe'
-            })
-        
+            tipo_partida = Tipo.objects.get(id=tipo_partida_id)
+        except (UnidadMedida.DoesNotExist, Tipo.DoesNotExist):
+            return JsonResponse({'exito': False, 'tipo_aviso': 'advertencia', 'detalles': 'Unidad de medida o Tipo de partida no válidos.'})
+
         try:
             precio_mn = Decimal(precio_unitario_mn) if precio_unitario_mn else Decimal('0')
             precio_usd = Decimal(precio_unitario_usd) if precio_unitario_usd else Decimal('0')
+            cantidad = Decimal(cantidad_post) if cantidad_post else Decimal('0')
         except (InvalidOperation, ValueError):
-            return JsonResponse({
-                'exito': False,
-                'tipo_aviso': 'error',
-                'detalles': 'Los precios deben ser valores numéricos válidos'
-            })
-        
-        producto = Producto.objects.create(
-            id_partida=id_partida,
-            descripcion_concepto=descripcion_concepto,
-            anexo=anexo,
-            id_sitio=sitio,
+            return JsonResponse({'exito': False, 'tipo_aviso': 'error', 'detalles': 'Valores numéricos inválidos.'})
+
+        concepto = ConceptoMaestro.objects.create(
+            partida_extraordinaria=id_partida,
+            descripcion=descripcion_concepto,
             id_tipo_partida=tipo_partida,
-            id_unidad_medida=unidad_medida,
+            unidad_medida=unidad_medida,
             precio_unitario_mn=precio_mn,
             precio_unitario_usd=precio_usd,
+            cantidad=cantidad,
             comentario=comentario,
+            pte_creacion=pte_origen,
+            ot_creacion=ot_origen,
+            estatus='EN ELABORACION', 
             activo=True
         )
         
         return JsonResponse({
             'exito': True,
             'tipo_aviso': 'exito',
-            'detalles': 'Producto creado correctamente',
-            'id': producto.id
+            'detalles': 'Concepto extraordinario creado correctamente',
+            'id': concepto.id
         })
         
     except Exception as e:
         return JsonResponse({
             'exito': False,
             'tipo_aviso': 'error',
-            'detalles': f'Error al crear producto: {str(e)}'
+            'detalles': f'Error al crear concepto: {str(e)}'
+        })
+@require_http_methods(["POST"])
+def editar_producto(request):
+    try:
+        concepto_id = request.POST.get('id')
+        id_partida = request.POST.get('id_partida')
+        descripcion_concepto = request.POST.get('descripcion')
+        unidad_medida_id = request.POST.get('unidad_medida')
+        precio_unitario_mn = request.POST.get('precio_unitario_mn', 0)
+        precio_unitario_usd = request.POST.get('precio_unitario_usd', 0)
+        comentario = request.POST.get('comentario', '')
+        
+        pte_origen = request.POST.get('pte_origen', '')
+        ot_origen = request.POST.get('ot_origen', '')
+        cantidad_post = request.POST.get('cantidad', 0)
+        
+        if not concepto_id:
+            return JsonResponse({'exito': False, 'tipo_aviso': 'error', 'detalles': 'ID no proporcionado'})
+        
+        try:
+            concepto = ConceptoMaestro.objects.get(id=concepto_id)
+        except ConceptoMaestro.DoesNotExist:
+            return JsonResponse({'exito': False, 'tipo_aviso': 'error', 'detalles': 'Concepto no encontrado'})
+        
+        if not id_partida: 
+            return JsonResponse({'exito': False, 'tipo_aviso': 'error', 'detalles': 'La partida es obligatoria'})
+        
+        if concepto.id_tipo_partida_id == 7: 
+            if id_partida != 'NA':
+                if ConceptoMaestro.objects.filter(partida_extraordinaria=id_partida, activo=True).exclude(id=concepto_id).exists():
+                    return JsonResponse({'exito': False, 'tipo_aviso': 'error', 'detalles': 'Ya existe otro concepto extraordinario con esta clave.'})
+        else: 
+            if ConceptoMaestro.objects.filter(partida_ordinaria=id_partida, activo=True).exclude(id=concepto_id).exists():
+                return JsonResponse({'exito': False, 'tipo_aviso': 'error', 'detalles': 'Ya existe otro concepto ordinario con esta partida.'})
+
+        try:
+            unidad = UnidadMedida.objects.get(id=unidad_medida_id)
+            concepto.unidad_medida = unidad
+        except UnidadMedida.DoesNotExist:
+            return JsonResponse({'exito': False, 'tipo_aviso': 'error', 'detalles': 'Unidad inválida'})
+
+        try:
+            concepto.precio_unitario_mn = Decimal(precio_unitario_mn) if precio_unitario_mn else Decimal('0')
+            concepto.precio_unitario_usd = Decimal(precio_unitario_usd) if precio_unitario_usd else Decimal('0')
+            concepto.cantidad = Decimal(cantidad_post) if cantidad_post else Decimal('0')
+        except:
+            return JsonResponse({'exito': False, 'tipo_aviso': 'error', 'detalles': 'Valores numéricos inválidos'})
+
+        concepto.descripcion = descripcion_concepto
+        concepto.comentario = comentario
+        
+        if concepto.id_tipo_partida_id == 7: 
+            concepto.partida_extraordinaria = id_partida
+            concepto.pte_creacion = pte_origen
+            concepto.ot_creacion = ot_origen
+        else: 
+            concepto.partida_ordinaria = id_partida
+
+        concepto.save()
+        
+        return JsonResponse({
+            'exito': True,
+            'tipo_aviso': 'exito',
+            'detalles': 'Actualizado correctamente',
+            'id': concepto.id
         })
         
+    except Exception as e:
+        return JsonResponse({'exito': False, 'tipo_aviso': 'error', 'detalles': f'Error al actualizar: {str(e)}'})
+
+@require_http_methods(["GET"])
+def obtener_producto(request):
+    """
+    Obtiene los datos de un ConceptoMaestro para edición.
+    Mapea los campos del modelo a lo que espera el frontend (JS).
+    """
+    try:
+        id = request.GET.get('id')
+        concepto = ConceptoMaestro.objects.get(id=id)
+        partida_val = concepto.partida_ordinaria if concepto.id_tipo_partida_id == 6 else concepto.partida_extraordinaria
+        anexo_val = concepto.sub_anexo.clave_anexo if concepto.sub_anexo else ''
+        
+        return JsonResponse({
+            'id': concepto.id,
+            'id_partida': partida_val,
+            'descripcion_concepto': concepto.descripcion,
+            'anexo': anexo_val,
+            'tipo_partida_id': concepto.id_tipo_partida_id,
+            'unidad_medida_id': concepto.unidad_medida_id,
+            'precio_unitario_mn': concepto.precio_unitario_mn,
+            'precio_unitario_usd': concepto.precio_unitario_usd,
+            'comentario': concepto.comentario,
+            'activo': concepto.activo,
+            'cantidad_referencia': concepto.cantidad,
+            'pte_origen': concepto.pte_creacion,
+            'ot_origen': concepto.ot_creacion
+        })
+    except ConceptoMaestro.DoesNotExist:
+        return JsonResponse({
+            'tipo_aviso': 'error',
+            'detalles': 'Concepto no encontrado'
+        }, status=404)
+
 @require_http_methods(["POST"])
 def eliminar_producto(request):
     try:
@@ -1219,9 +1517,9 @@ def eliminar_producto(request):
                 'exito': False
             })
 
-        producto = Producto.objects.get(id=id)
-        producto.activo = False
-        producto.save()
+        concepto = ConceptoMaestro.objects.get(id=id)
+        concepto.activo = False
+        concepto.save()
 
         return JsonResponse({
             'tipo_aviso': 'exito',
@@ -1229,7 +1527,7 @@ def eliminar_producto(request):
             'exito': True
         })
 
-    except Producto.DoesNotExist:
+    except ConceptoMaestro.DoesNotExist:
         return JsonResponse({
             'tipo_aviso': 'error',
             'detalles': 'Producto no encontrado',
@@ -1241,129 +1539,6 @@ def eliminar_producto(request):
             'tipo_aviso': 'error',
             'detalles': f'Error al desactivar el producto: {str(e)}',
             'exito': False
-        })
-
-@require_http_methods(["GET"])
-def obtener_producto(request):
-    try:
-        id = request.GET.get('id')
-        producto = Producto.objects.get(id=id)
-        
-        return JsonResponse({
-            'id': producto.id,
-            'id_partida': producto.id_partida,
-            'descripcion_concepto': producto.descripcion_concepto,
-            'anexo': producto.anexo,
-            'sitio_id': producto.id_sitio_id,
-            'tipo_partida_id': producto.id_tipo_partida_id,
-            'unidad_medida_id': producto.id_unidad_medida_id,
-            'precio_unitario_mn': producto.precio_unitario_mn,
-            'precio_unitario_usd': producto.precio_unitario_usd,
-            'comentario': producto.comentario,
-            'activo': producto.activo
-        })
-    except Producto.DoesNotExist:
-        return JsonResponse({
-            'tipo_aviso': 'error',
-            'detalles': 'Producto no encontrado'
-        }, status=404)
-        
-@require_http_methods(["POST"])
-def editar_producto(request):
-    try:
-        producto_id = request.POST.get('id')
-        id_partida = request.POST.get('id_partida')
-        descripcion_concepto = request.POST.get('descripcion')
-        anexo = request.POST.get('anexo', '')
-        sitio_id = request.POST.get('sitio')
-        tipo_partida_id = request.POST.get('tipo_partida')
-        unidad_medida_id = request.POST.get('unidad_medida')
-        precio_unitario_mn = request.POST.get('precio_unitario_mn', 0)
-        precio_unitario_usd = request.POST.get('precio_unitario_usd', 0)
-        comentario = request.POST.get('comentario', '')
-        
-        if not producto_id:
-            return JsonResponse({
-                'exito': False,
-                'tipo_aviso': 'error',
-                'detalles': 'ID de producto no proporcionado'
-            })
-        
-        if not id_partida:
-            return JsonResponse({
-                'exito': False,
-                'tipo_aviso': 'error',
-                'detalles': 'El ID de partida es obligatorio'
-            })
-        
-        if not descripcion_concepto:
-            return JsonResponse({
-                'exito': False,
-                'tipo_aviso': 'error',
-                'detalles': 'La descripción es obligatoria'
-            })
-        
-        try:
-            producto = Producto.objects.get(id=producto_id)
-        except Producto.DoesNotExist:
-            return JsonResponse({
-                'exito': False,
-                'tipo_aviso': 'error',
-                'detalles': 'Producto no encontrado'
-            })
-        
-        if id_partida != 'NA':
-            if Producto.objects.filter(id_partida=id_partida, activo=True).exclude(id=producto_id).exists():
-                return JsonResponse({
-                    'exito': False,
-                    'tipo_aviso': 'error',
-                    'detalles': 'Ya existe otro producto con este ID de partida'
-                })
-            
-        try:
-            sitio = Sitio.objects.get(id=sitio_id)
-            tipo_partida = Tipo.objects.get(id=tipo_partida_id)
-            unidad_medida = UnidadMedida.objects.get(id=unidad_medida_id)
-        except (Sitio.DoesNotExist, Tipo.DoesNotExist, UnidadMedida.DoesNotExist) as e:
-            return JsonResponse({
-                'exito': False,
-                'tipo_aviso': 'error',
-                'detalles': 'Uno de los campos de relación no existe'
-            })
-        
-        try:
-            precio_mn = Decimal(precio_unitario_mn) if precio_unitario_mn else Decimal('0')
-            precio_usd = Decimal(precio_unitario_usd) if precio_unitario_usd else Decimal('0')
-        except (InvalidOperation, ValueError):
-            return JsonResponse({
-                'exito': False,
-                'tipo_aviso': 'error',
-                'detalles': 'Los precios deben ser valores numéricos válidos'
-            })
-        
-        producto.id_partida = id_partida
-        producto.descripcion_concepto = descripcion_concepto
-        producto.anexo = anexo
-        producto.id_sitio = sitio
-        producto.id_tipo_partida = tipo_partida
-        producto.id_unidad_medida = unidad_medida
-        producto.precio_unitario_mn = precio_mn
-        producto.precio_unitario_usd = precio_usd
-        producto.comentario = comentario
-        producto.save()
-        
-        return JsonResponse({
-            'exito': True,
-            'tipo_aviso': 'exito',
-            'detalles': 'Producto actualizado correctamente',
-            'id': producto.id
-        })
-        
-    except Exception as e:
-        return JsonResponse({
-            'exito': False,
-            'tipo_aviso': 'error',
-            'detalles': f'Error al actualizar producto: {str(e)}'
         })
 
 @login_required(login_url='/accounts/login/')
