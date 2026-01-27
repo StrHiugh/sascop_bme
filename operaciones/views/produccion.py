@@ -226,9 +226,6 @@ def obtener_volumenes_consolidados(id_ot_actual, ids_partidas_codigos):
 def obtener_partidas_produccion(request):
     """
     Retorna el Universo de Partidas para el Grid de Producción.
-    SOLUCIÓN DEFINITIVA: 
-    Se lee el campo 'anexo' directo de la BD (PartidaAnexoImportada.anexo),
-    eliminando la necesidad de adivinar o buscar en el catálogo maestro.
     """
     id_ot = request.GET.get('id_ot')
     mes = request.GET.get('mes')
@@ -252,61 +249,60 @@ def obtener_partidas_produccion(request):
         pass
 
     ot_actual = OTE.objects.get(id=id_ot)
-    id_principal = ot_actual.ot_principal if ot_actual.ot_principal else id_ot
+    id_principal = ot_actual.ot_principal if ot_actual.ot_principal else ot_actual.id
     
-    familia_ots_ids = OTE.objects.filter(
+    familia_ots_ids = list(OTE.objects.filter(
         Q(id=id_principal) | Q(ot_principal=id_principal),
         estatus=1
-    ).values_list('id', flat=True)
+    ).values_list('id', flat=True))
 
     todas_partidas = PartidaAnexoImportada.objects.filter(
         importacion_anexo__ot_id__in=familia_ots_ids,
         importacion_anexo__es_activo=True
-    ).select_related('unidad_medida', 'importacion_anexo__ot').order_by('importacion_anexo__ot__id', 'orden_fila')
+    ).select_related(
+        'unidad_medida'
+    ).order_by('importacion_anexo__ot__id', 'orden_fila')
 
     if not todas_partidas:
         return JsonResponse([], safe=False)
 
-    # -------------------------------------------------------------
-    # 1. CONSTRUCCIÓN DE FILAS
-    # -------------------------------------------------------------
-    partidas_individuales = {} 
+    partidas_consolidadas = {}
     
-    # Ya no necesitamos recolectar códigos para buscar en el maestro
-    # porque el Anexo ya viene guardado en la partida importada.
+    mapa_id_a_key = {}
 
     for p in todas_partidas:
-        row_id = p.id 
+        anexo_clean = p.anexo.strip() if p.anexo else 'S/A'
+        codigo_clean = p.id_partida.strip()
+        desc_clean = p.descripcion_concepto.strip()
         
-        codigo = p.id_partida.strip()
-        desc = p.descripcion_concepto
-        vol = float(p.volumen_proyectado or 0)
+        key = (anexo_clean, codigo_clean, desc_clean)
         
-        # Leemos el anexo directo de la BD. Si es null, mostramos 'S/A'
-        # Asumimos que el campo en el modelo se llama 'anexo'
-        anexo_db = p.anexo if p.anexo else 'S/A'
+        vol_registro = float(p.volumen_proyectado or 0)
 
-        partidas_individuales[row_id] = {
-            'id_partida_imp': p.id,
-            'codigo': codigo,
-            'concepto': desc,
-            'unidad': p.unidad_medida.clave if p.unidad_medida else 'N/A',
-            'vol_total_proyectado': vol,
-            'acumulado_mes': 0.0,
-            'archivo': archivo_url,
-            'anexo': anexo_db # ¡Aquí está la solución! Directo y sin errores.
-        }
+        if key not in partidas_consolidadas:
+            partidas_consolidadas[key] = {
+                'id_principal': p.id,
+                'ids_agrupados': [p.id],
+                'codigo': codigo_clean,
+                'concepto': p.descripcion_concepto,
+                'unidad': p.unidad_medida.clave if p.unidad_medida else 'N/A',
+                'vol_total_proyectado': vol_registro,
+                'anexo': anexo_clean,
+                'archivo': archivo_url
+            }
+        else:
+            partidas_consolidadas[key]['vol_total_proyectado'] += vol_registro
+            partidas_consolidadas[key]['ids_agrupados'].append(p.id)
+        
+        mapa_id_a_key[p.id] = key
 
-    # -------------------------------------------------------------
-    # 2. PRODUCCIÓN
-    # -------------------------------------------------------------
-    ids_partidas_mostradas = list(partidas_individuales.keys())
-
+    ids_totales_db = list(mapa_id_a_key.keys())
+    
     resumen_produccion = Produccion.objects.filter(
         id_reporte_mensual__id_ot_id=id_ot,
         id_reporte_mensual__mes=mes,
         id_reporte_mensual__anio=anio,
-        id_partida_anexo_id__in=ids_partidas_mostradas
+        id_partida_anexo_id__in=ids_totales_db
     ).values(
         'id_partida_anexo_id', 
         'fecha_produccion__day', 
@@ -316,33 +312,46 @@ def obtener_partidas_produccion(request):
     )
 
     produccion_mapa = {}
+    
     for item in resumen_produccion:
-        key = (item['id_partida_anexo_id'], item['fecha_produccion__day'])
+        id_db = item['id_partida_anexo_id']
+        key_consolidada = mapa_id_a_key.get(id_db)
         
-        if key not in produccion_mapa:
-            produccion_mapa[key] = {'TE': 0.0, 'CMA': 0.0, 'es_excedente': False}
+        if not key_consolidada: continue
+        
+        dia = item['fecha_produccion__day']
+        master_key = (key_consolidada, dia)
+        
+        if master_key not in produccion_mapa:
+            produccion_mapa[master_key] = {'TE': 0.0, 'CMA': 0.0, 'es_excedente': False}
         
         t = item['tipo_tiempo'] 
         vol = float(item['volumen_produccion'])
         
-        produccion_mapa[key][t] = vol
+        produccion_mapa[master_key][t] += vol
         
         if item['es_excedente']:
-            produccion_mapa[key]['es_excedente'] = True
+            produccion_mapa[master_key]['es_excedente'] = True
 
-    # -------------------------------------------------------------
-    # 3. ARMADO FINAL
-    # -------------------------------------------------------------
     data_final = []
-    
-    for row_id, datos in partidas_individuales.items():
-        # Ya tenemos el 'anexo' en datos, no hay que buscar nada.
-
+    for key, datos in partidas_consolidadas.items():
+        
         suma_mes_visual = 0.0
         hay_excedente_visual = False
         
+        fila_grid = {
+            'id_partida_imp': datos['id_principal'],
+            'codigo': datos['codigo'],
+            'concepto': datos['concepto'],
+            'unidad': datos['unidad'],
+            'vol_total_proyectado': datos['vol_total_proyectado'],
+            'acumulado_mes': 0.0,
+            'archivo': datos['archivo'],
+            'anexo': datos['anexo']
+        }
+
         for d in range(1, 32):
-            info_dia = produccion_mapa.get((row_id, d))
+            info_dia = produccion_mapa.get((key, d))
             
             if info_dia:
                 val_te = info_dia['TE']
@@ -350,7 +359,7 @@ def obtener_partidas_produccion(request):
                 es_exc = info_dia['es_excedente']
                 
                 valor_visual = val_te if tipo_tiempo == 'TE' else val_cma
-                datos[f'dia{d}'] = {
+                fila_grid[f'dia{d}'] = {
                     'valor': valor_visual,
                     'es_excedente': es_exc,
                     'te_dia': val_te,
@@ -360,11 +369,11 @@ def obtener_partidas_produccion(request):
                 suma_mes_visual += valor_visual
                 if es_exc: hay_excedente_visual = True
             else:
-                datos[f'dia{d}'] = None
+                fila_grid[f'dia{d}'] = None
         
-        datos['acumulado_mes'] = suma_mes_visual
-        datos['estatus_gpu'] = 'BLOQUEADO' if hay_excedente_visual else 'AUTORIZADO'
-        data_final.append(datos)
+        fila_grid['acumulado_mes'] = suma_mes_visual
+        fila_grid['estatus_gpu'] = 'BLOQUEADO' if hay_excedente_visual else 'AUTORIZADO'
+        data_final.append(fila_grid)
 
     return JsonResponse(data_final, safe=False)
 
