@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
-from ..models import Producto, OTE, ImportacionAnexo, PartidaAnexoImportada, Produccion, ReporteMensual, Sitio, ReporteDiario, Estatus
+from ..models import OTE, ImportacionAnexo, PartidaAnexoImportada, Produccion, ReporteMensual, Sitio, ReporteDiario, Estatus, ConceptoMaestro
 from django.http import JsonResponse
 from itertools import chain
 from django.db.models import Q, Case, F, When, IntegerField, Value, CharField, Sum
@@ -11,6 +11,7 @@ from datetime import date
 from decimal import Decimal
 import calendar
 import json
+from collections import defaultdict
 
 @login_required(login_url='/accounts/login/')
 def lista_produccion(request):
@@ -227,6 +228,9 @@ def obtener_volumenes_consolidados(id_ot_actual, ids_partidas_codigos):
 def obtener_partidas_produccion(request):
     """
     Retorna el Universo de Partidas para el Grid de Producción.
+    SOLUCIÓN DEFINITIVA: 
+    Se lee el campo 'anexo' directo de la BD (PartidaAnexoImportada.anexo),
+    eliminando la necesidad de adivinar o buscar en el catálogo maestro.
     """
     id_ot = request.GET.get('id_ot')
     mes = request.GET.get('mes')
@@ -265,46 +269,57 @@ def obtener_partidas_produccion(request):
     if not todas_partidas:
         return JsonResponse([], safe=False)
 
-    partidas_consolidadas = {} 
-    codigos_activos = set()
+    # -------------------------------------------------------------
+    # 1. CONSTRUCCIÓN DE FILAS
+    # -------------------------------------------------------------
+    partidas_individuales = {} 
+    
+    # Ya no necesitamos recolectar códigos para buscar en el maestro
+    # porque el Anexo ya viene guardado en la partida importada.
 
     for p in todas_partidas:
-        codigo = p.id_partida
+        row_id = p.id 
+        
+        codigo = p.id_partida.strip()
+        desc = p.descripcion_concepto
         vol = float(p.volumen_proyectado or 0)
+        
+        # Leemos el anexo directo de la BD. Si es null, mostramos 'S/A'
+        # Asumimos que el campo en el modelo se llama 'anexo'
+        anexo_db = p.anexo if p.anexo else 'S/A'
 
-        if codigo in partidas_consolidadas:
-            partidas_consolidadas[codigo]['vol_total_proyectado'] += vol
-        else:
-            partidas_consolidadas[codigo] = {
-                'id_partida_imp': p.id,
-                'codigo': codigo,
-                'concepto': p.descripcion_concepto,
-                'unidad': p.unidad_medida.clave if p.unidad_medida else 'N/A',
-                'vol_total_proyectado': vol,
-                'acumulado_mes': 0.0,
-                'archivo': archivo_url
-            }
-            codigos_activos.add(codigo)
+        partidas_individuales[row_id] = {
+            'id_partida_imp': p.id,
+            'codigo': codigo,
+            'concepto': desc,
+            'unidad': p.unidad_medida.clave if p.unidad_medida else 'N/A',
+            'vol_total_proyectado': vol,
+            'acumulado_mes': 0.0,
+            'archivo': archivo_url,
+            'anexo': anexo_db # ¡Aquí está la solución! Directo y sin errores.
+        }
 
-    mapa_anexos = {}
-    if codigos_activos:
-        productos_data = Producto.objects.filter(
-            id_partida__in=codigos_activos, 
-            activo=True
-        ).values('id_partida', 'anexo')
-        for prod in productos_data:
-            mapa_anexos[prod['id_partida']] = prod['anexo']
+    # -------------------------------------------------------------
+    # 2. PRODUCCIÓN
+    # -------------------------------------------------------------
+    ids_partidas_mostradas = list(partidas_individuales.keys())
 
     resumen_produccion = Produccion.objects.filter(
         id_reporte_mensual__id_ot_id=id_ot,
         id_reporte_mensual__mes=mes,
         id_reporte_mensual__anio=anio,
-        id_partida_anexo__id_partida__in=codigos_activos
-    ).values('id_partida_anexo__id_partida', 'fecha_produccion__day', 'tipo_tiempo', 'es_excedente', 'volumen_produccion')
+        id_partida_anexo_id__in=ids_partidas_mostradas
+    ).values(
+        'id_partida_anexo_id', 
+        'fecha_produccion__day', 
+        'tipo_tiempo', 
+        'es_excedente', 
+        'volumen_produccion'
+    )
 
     produccion_mapa = {}
     for item in resumen_produccion:
-        key = (item['id_partida_anexo__id_partida'], item['fecha_produccion__day'])
+        key = (item['id_partida_anexo_id'], item['fecha_produccion__day'])
         
         if key not in produccion_mapa:
             produccion_mapa[key] = {'TE': 0.0, 'CMA': 0.0, 'es_excedente': False}
@@ -317,15 +332,19 @@ def obtener_partidas_produccion(request):
         if item['es_excedente']:
             produccion_mapa[key]['es_excedente'] = True
 
+    # -------------------------------------------------------------
+    # 3. ARMADO FINAL
+    # -------------------------------------------------------------
     data_final = []
-    for codigo, datos in partidas_consolidadas.items():
-        datos['anexo'] = mapa_anexos.get(codigo, '')
+    
+    for row_id, datos in partidas_individuales.items():
+        # Ya tenemos el 'anexo' en datos, no hay que buscar nada.
 
         suma_mes_visual = 0.0
         hay_excedente_visual = False
         
         for d in range(1, 32):
-            info_dia = produccion_mapa.get((codigo, d))
+            info_dia = produccion_mapa.get((row_id, d))
             
             if info_dia:
                 val_te = info_dia['TE']
@@ -333,7 +352,6 @@ def obtener_partidas_produccion(request):
                 es_exc = info_dia['es_excedente']
                 
                 valor_visual = val_te if tipo_tiempo == 'TE' else val_cma
-                print(valor_visual, val_te, val_cma)
                 datos[f'dia{d}'] = {
                     'valor': valor_visual,
                     'es_excedente': es_exc,
@@ -356,7 +374,7 @@ def obtener_partidas_produccion(request):
 @require_http_methods(["POST"])
 def guardar_produccion_masiva(request):
     """
-    Guarda producción.
+    Guarda producción masiva.
     """
     try:
         data = json.loads(request.body)
@@ -373,20 +391,49 @@ def guardar_produccion_masiva(request):
                 id_ot_id=id_ot, mes=mes, anio=anio, defaults={'id_estatus_id': 1}
             )
 
-            ot_actual = OTE.objects.get(id=id_ot)
-            id_principal = ot_actual.ot_principal if ot_actual.ot_principal else id_ot
-            familia_ots = OTE.objects.filter(Q(id=id_principal) | Q(ot_principal=id_principal)).values_list('id', flat=True)
+            ot_actual = OTE.objects.get(id=id_ot) 
+            id_principal = ot_actual.ot_principal if ot_actual.ot_principal else ot_actual.id
+            familia_ots = list(OTE.objects.filter(Q(id=id_principal) | Q(ot_principal=id_principal)).values_list('id', flat=True)) 
             
             ids_partidas_form = [f.get('id_partida_imp') for f in filas]
             partidas_db = PartidaAnexoImportada.objects.in_bulk(ids_partidas_form)
-            codigos_en_batch = [p.id_partida for p in partidas_db.values()]
-            mapa_autorizado = obtener_volumenes_consolidados(id_ot, codigos_en_batch)
+            
+            codigos_en_batch = set(p.id_partida for p in partidas_db.values())
+            
+            mapa_autorizado = obtener_volumenes_consolidados(id_ot, list(codigos_en_batch))
 
+            produccion_actual_qs = Produccion.objects.filter(
+                id_reporte_mensual=reporte_mensual, 
+                tipo_tiempo=tipo_tiempo
+            )
             mapa_produccion_actual = {
                 (p.id_partida_anexo_id, p.fecha_produccion.day): p 
-                for p in Produccion.objects.filter(id_reporte_mensual=reporte_mensual, tipo_tiempo=tipo_tiempo)
+                for p in produccion_actual_qs
             }
+
+            raw_historia = Produccion.objects.filter(
+                id_reporte_mensual__id_ot_id__in=familia_ots
+            ).exclude(
+                id_reporte_mensual=reporte_mensual
+            ).values('id_partida_anexo__id_partida').annotate(total=Sum('volumen_produccion')) 
             
+            mapa_historia_global = defaultdict(Decimal)
+            for item in raw_historia:
+                codigo_limpio = item['id_partida_anexo__id_partida'].strip()
+                mapa_historia_global[codigo_limpio] += item['total'] or Decimal(0)
+
+            raw_otros_tiempos = Produccion.objects.filter(
+                id_reporte_mensual=reporte_mensual,
+                id_partida_anexo_id__in=ids_partidas_form
+            ).exclude(
+                tipo_tiempo=tipo_tiempo
+            ).values('id_partida_anexo_id').annotate(total=Sum('volumen_produccion')) 
+
+            mapa_otros_tiempos = {
+                item['id_partida_anexo_id']: item['total'] or Decimal(0) 
+                for item in raw_otros_tiempos
+            }
+
             a_crear, a_actualizar = [], []
 
             for fila in filas:
@@ -395,79 +442,65 @@ def guardar_produccion_masiva(request):
                 if not partida: continue
 
                 codigo = partida.id_partida
-                
                 c_clean = codigo.strip()
-                variantes = {codigo, c_clean, c_clean.rstrip('.'), c_clean + '.'}
                 
+                variantes = {codigo, c_clean, c_clean.rstrip('.'), c_clean + '.'}
+
                 vol_autorizado = sum(
                     Decimal(str(mapa_autorizado.get(v, 0))) for v in variantes if v in mapa_autorizado
                 )
+                
                 vol_autorizado = round(vol_autorizado, 4)
 
-                ids_candidatos = PartidaAnexoImportada.objects.filter(
-                    importacion_anexo__ot_id__in=familia_ots, 
-                    id_partida__in=variantes
-                ).values_list('id', flat=True)
-
-                base_hist = Produccion.objects.filter(
-                    id_partida_anexo_id__in=ids_candidatos
-                ).exclude(
-                    id_reporte_mensual=reporte_mensual
-                ).aggregate(total=Sum('volumen_produccion'))['total'] or 0
+                base_hist = sum(mapa_historia_global[v] for v in variantes if v in mapa_historia_global)
                 
-                base_hist = Decimal(str(base_hist))
-
-                base_otros = Produccion.objects.filter(
-                    id_reporte_mensual=reporte_mensual,
-                    id_partida_anexo=partida
-                ).exclude(
-                    tipo_tiempo=tipo_tiempo
-                ).aggregate(total=Sum('volumen_produccion'))['total'] or 0
-                
-                base_otros = Decimal(str(base_otros))
+                base_otros = mapa_otros_tiempos.get(id_p, Decimal(0))
                 
                 running_total = base_hist + base_otros
 
-                for idx, vol in enumerate(fila.get('valores', [])):
+                valores_dia = fila.get('valores', [])
+                
+                for idx, vol in enumerate(valores_dia):
                     dia = idx + 1
                     vol_input = Decimal(str(vol or 0))
                     
                     prod_obj = mapa_produccion_actual.get((id_p, dia))
                     vol_db = prod_obj.volumen_produccion if prod_obj else Decimal(0)
 
-                    vol_para_calculo = vol_input if vol_input > 0 else vol_db
-                    
-                    running_total += vol_para_calculo
-                    
-                    es_excedente = round(running_total, 4) > vol_autorizado
+                    if prod_obj or vol_input > 0:
+                        vol_para_calculo = vol_input if vol_input > 0 else vol_db
+                        running_total += vol_para_calculo
+                        
+                        es_excedente = round(running_total, 4) > vol_autorizado
 
-                    if prod_obj:
-                        if vol_input > 0:
-                            if prod_obj.volumen_produccion != vol_input or prod_obj.es_excedente != es_excedente:
+                        if prod_obj:
+                            if (prod_obj.volumen_produccion != vol_input) or (prod_obj.es_excedente != es_excedente):
                                 prod_obj.volumen_produccion = vol_input
                                 prod_obj.es_excedente = es_excedente
                                 a_actualizar.append(prod_obj)
-                        else:
-                            if prod_obj.es_excedente != es_excedente:
-                                prod_obj.es_excedente = es_excedente
-                                a_actualizar.append(prod_obj)
+                        
+                        elif vol_input > 0:
+                            a_crear.append(Produccion(
+                                id_reporte_mensual=reporte_mensual,
+                                id_partida_anexo=partida, 
+                                fecha_produccion=date(anio, mes, dia),
+                                volumen_produccion=vol_input,
+                                tipo_tiempo=tipo_tiempo,
+                                es_excedente=es_excedente,
+                                id_estatus_cobro_id=1
+                            ))
+                    else:
+                        pass
 
-                    elif vol_input > 0:
-                        a_crear.append(Produccion(
-                            id_reporte_mensual=reporte_mensual,
-                            id_partida_anexo=partida, 
-                            fecha_produccion=date(anio, mes, dia),
-                            volumen_produccion=vol_input,
-                            tipo_tiempo=tipo_tiempo,
-                            es_excedente=es_excedente,
-                            id_estatus_cobro_id=1
-                        ))
-
-            if a_crear: Produccion.objects.bulk_create(a_crear)
-            if a_actualizar: Produccion.objects.bulk_update(a_actualizar, ['volumen_produccion', 'es_excedente'])
+            if a_crear: 
+                Produccion.objects.bulk_create(a_crear)
+            if a_actualizar: 
+                Produccion.objects.bulk_update(a_actualizar, ['volumen_produccion', 'es_excedente'])
         
         return JsonResponse({'exito': True, 'mensaje': 'Producción guardada correctamente.'})
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return JsonResponse({'exito': False, 'mensaje': str(e)}, status=500)
 
 def recalcular_excedentes_ot_completa(id_ot):
@@ -525,20 +558,23 @@ def buscar_productos_catalogo(request):
     """
     query = request.GET.get('q', '')
 
-    productos = Producto.objects.filter(
-        Q(id_partida__icontains=query) | Q(descripcion_concepto__icontains=query),
+    conceptos = ConceptoMaestro.objects.filter(
+        Q(partida_ordinaria__icontains=query) | 
+        Q(partida_extraordinaria__icontains=query) |
+        Q(descripcion__icontains=query),
         activo=True
-    )[:20]
+    ).select_related('unidad_medida')[:20]
 
     results = []
-    for p in productos:
+    for c in conceptos:
+        codigo = c.partida_ordinaria if c.partida_ordinaria else c.partida_extraordinaria
         results.append({
-            'id': p.id,
-            'text': f"{p.id_partida} - {p.descripcion_concepto}",
-            'partida': p.id_partida,
-            'unidad': p.id_unidad_medida.clave if p.id_unidad_medida else 'N/A',
-            'precio': float(p.precio_unitario_mn),
-            'precio_usd': float(p.precio_unitario_usd)
+            'id': c.id,
+            'text': f"{codigo} - {c.descripcion}",
+            'partida': codigo,
+            'unidad': c.unidad_medida.clave if c.unidad_medida else 'N/A',
+            'precio': float(c.precio_unitario_mn or 0),
+            'precio_usd': float(c.precio_unitario_usd or 0)
         })
     
     return JsonResponse({'results': results})
@@ -551,7 +587,7 @@ def vincular_partida_ot(request):
     """
 
     id_ot = request.POST.get('id_ot')
-    id_producto = request.POST.get('id_producto')
+    id_concepto = request.POST.get('id_producto') 
     volumen = request.POST.get('volumen', 0)
 
     try:
@@ -565,24 +601,31 @@ def vincular_partida_ot(request):
                 es_activo=True
             )
 
-        producto = Producto.objects.get(id=id_producto)
+        concepto = ConceptoMaestro.objects.get(id=id_concepto)
 
-        if not producto:
-            return JsonResponse({'exito': False, 'mensaje': 'Producto no encontrado. Verifique si existe en la sabana de productos'})
+        if not concepto:
+            return JsonResponse({'exito': False, 'mensaje': 'Concepto no encontrado.'})
         
-        if PartidaAnexoImportada.objects.filter(importacion_anexo=importacion, id_partida=producto.id_partida).exists():
-            return JsonResponse({'exito': False, 'mensaje': f'La partida {producto.id_partida} ya existe en esta OT.'})
+        codigo_partida = concepto.partida_ordinaria if concepto.partida_ordinaria else concepto.partida_extraordinaria
+
+        if PartidaAnexoImportada.objects.filter(
+            importacion_anexo=importacion, 
+            id_partida=codigo_partida,
+            descripcion_concepto=concepto.descripcion
+        ).exists():
+            return JsonResponse({'exito': False, 'mensaje': f'La partida {codigo_partida} con esta descripción ya existe en esta OT.'})
+
 
         ultimo_orden = PartidaAnexoImportada.objects.filter(importacion_anexo=importacion).count() + 1
         
         PartidaAnexoImportada.objects.create(
             importacion_anexo=importacion,
-            id_partida=producto.id_partida,
-            descripcion_concepto=producto.descripcion_concepto,
-            unidad_medida=producto.id_unidad_medida,
+            id_partida=codigo_partida,
+            descripcion_concepto=concepto.descripcion,
+            unidad_medida=concepto.unidad_medida,
             volumen_proyectado=volumen,
-            precio_unitario_mn=producto.precio_unitario_mn,
-            precio_unitario_usd=producto.precio_unitario_usd,
+            precio_unitario_mn=concepto.precio_unitario_mn,
+            precio_unitario_usd=concepto.precio_unitario_usd,
             orden_fila=ultimo_orden
         )
 
@@ -642,5 +685,3 @@ def guardar_archivo_mensual(request):
             'exito': False,
             'mensaje': f'Error interno al guardar evidencia: {str(e)}'
         }, status=500)
-
-

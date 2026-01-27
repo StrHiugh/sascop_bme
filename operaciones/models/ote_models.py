@@ -172,6 +172,7 @@ class PartidaAnexoImportada(models.Model):
     importacion_anexo = models.ForeignKey(ImportacionAnexo, on_delete=models.CASCADE, related_name='partidas')
     id_partida = models.CharField(max_length=10)
     descripcion_concepto = models.TextField()
+    anexo = models.CharField(max_length=10, null=True, blank=True)
     unidad_medida = models.ForeignKey(UnidadMedida, on_delete=models.CASCADE)
     volumen_proyectado = models.DecimalField(max_digits=18, decimal_places=6)
     precio_unitario_mn = models.DecimalField(max_digits=15, decimal_places=4)

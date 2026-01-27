@@ -5,7 +5,7 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
 from django.shortcuts import render, get_object_or_404
-from ..models import OTE, OTDetalle, PasoOt, ImportacionAnexo, PartidaAnexoImportada, UnidadMedida, Producto
+from ..models import OTE, OTDetalle, PasoOt, ImportacionAnexo, PartidaAnexoImportada, UnidadMedida, ConceptoMaestro
 from ..registro_actividad import registrar_actividad
 from operaciones.models.catalogos_models import Sitio, Estatus, ResponsableProyecto, Tipo
 from django.db.models import Case, When, Value, CharField,Q, ExpressionWrapper, Count,F, FloatField, IntegerField
@@ -990,6 +990,7 @@ def datatable_importaciones(request):
 def importar_anexo_ot(request):
     """
     Procesa el archivo Excel (.xlsx o .xlsm).
+    MODIFICADO: Ignora filas de 'Subtítulos' (sin unidad/precio) para evitar errores de 'nan'.
     """
     if request.method == "POST":
         ot_id = request.POST.get('ot_id')
@@ -1017,6 +1018,7 @@ def importar_anexo_ot(request):
                     for idx, row in df_temp.iterrows():
                         row_str = [str(x).strip().upper() for x in row.values]
                         
+                        match_anexo = 'ANEXO' in row_str
                         match_partida = 'PARTIDA' in row_str
                         match_concepto = 'CONCEPTO' in row_str
                         match_unidad = 'UNIDAD' in row_str
@@ -1027,6 +1029,9 @@ def importar_anexo_ot(request):
                             header_row_index = idx
                             target_sheet = sheet
                             found = True
+                            if not match_anexo:
+                                logs_busqueda.append(f"[{sheet}]: Se encontraron cabeceras pero falta la columna 'ANEXO'.")
+                                found = False 
                             break 
                     
                     if found: break 
@@ -1037,24 +1042,27 @@ def importar_anexo_ot(request):
                     continue
 
             if target_sheet is None:
-                msg_error = f"No se encontró tabla válida (PARTIDA, CONCEPTO, UNIDAD, VOLUMEN PTE, P.U. M.N.). Revisado: {', '.join(logs_busqueda)}"
+                msg_error = f"No se encontró tabla válida con columna 'ANEXO', PARTIDA, CONCEPTO, etc. Revisado: {', '.join(logs_busqueda)}"
                 return JsonResponse({'exito': False, 'tipo_aviso':'advertencia', 'detalles': msg_error})
 
             df = pd.read_excel(xls, sheet_name=target_sheet, header=header_row_index)
             df.columns = [str(c).strip().upper() for c in df.columns]
             
-            cols_req = ['PARTIDA', 'CONCEPTO', 'UNIDAD', 'VOLUMEN PTE', 'P.U. M.N.', 'P.U. USD']
+            cols_req = ['ANEXO', 'PARTIDA', 'CONCEPTO', 'UNIDAD', 'VOLUMEN PTE', 'P.U. M.N.', 'P.U. USD']
             missing_cols = [col for col in cols_req if col not in df.columns]
+            
             if missing_cols:
-                return JsonResponse({'exito': False, 'tipo_aviso':'advertencia', 'detalles': f'Faltan columnas: {", ".join(missing_cols)}'})
+                if 'ANEXO' in missing_cols:
+                    return JsonResponse({'exito': False, 'tipo_aviso':'advertencia', 'detalles': f'Falta la columna obligatoria: ANEXO'})
 
             def clean_str(val):
-                """Limpia strings generales manejando saltos de línea"""
                 if pd.isna(val) or val is None:
                     return ""
                 s = str(val).upper()
                 s = s.replace('\r\n', ' ').replace('\n', ' ').replace('\r', ' ').replace('\t', ' ')
-                return " ".join(s.split())
+                res = " ".join(s.split())
+                if res == 'NAN' or res == 'NONE': return ""
+                return res
 
             def limpiar_moneda(valor):
                 if pd.isna(valor): return 0.0
@@ -1067,94 +1075,109 @@ def importar_anexo_ot(request):
             for u in UnidadMedida.objects.all():
                 clave_norm = clean_str(u.clave)          
                 desc_norm = clean_str(u.descripcion)     
-                
                 unidades_lookup[clave_norm] = u.id
                 unidades_lookup[desc_norm] = u.id
 
-            productos_db = Producto.objects.filter(activo=True).select_related('id_unidad_medida')
-            
+            conceptos_db = ConceptoMaestro.objects.filter(activo=True).select_related('unidad_medida')
             catalogo_map = {}          
-            productos_por_codigo = {}  
+            conceptos_por_codigo = {}  
             conceptos_set = set()      
             
-            for prod in productos_db:
-                clave_p = clean_str(prod.id_partida)
-                clave_c = clean_str(prod.descripcion_concepto)
-                clave_u_id = prod.id_unidad_medida.id
+            for concept in conceptos_db:
+                val_partida = concept.partida_ordinaria if concept.partida_ordinaria else concept.partida_extraordinaria
+                clave_p = clean_str(val_partida)
+                clave_c = clean_str(concept.descripcion)
+                clave_u_id = concept.unidad_medida.id
                 
                 key = (clave_p, clave_c, clave_u_id)
-                catalogo_map[key] = prod
-                
-                productos_por_codigo[clave_p] = prod
+                catalogo_map[key] = concept
+                conceptos_por_codigo[clave_p] = concept
                 conceptos_set.add(clave_c)
 
             errores_validacion = []
             partidas_validas = []
 
             for index, row in df.iterrows():
+                raw_anexo = str(row.get('ANEXO', ''))
                 raw_codigo = str(row['PARTIDA'])
                 raw_concepto = str(row['CONCEPTO'])
                 raw_unidad = str(row['UNIDAD'])
                 
-                if (not raw_codigo or raw_codigo.lower() == 'nan' or raw_codigo.upper() == 'NONE' or
-                    not raw_concepto or raw_concepto.lower() == 'nan' or 
-                    not raw_unidad or raw_unidad.lower() == 'nan'): 
-                    continue 
-
+                # --- LIMPIEZA INICIAL ---
+                norm_anexo = clean_str(raw_anexo)
+                if not norm_anexo: norm_anexo = 'S/A'
+                
                 norm_codigo = clean_str(raw_codigo) 
                 norm_concepto = clean_str(raw_concepto)
                 norm_unidad_txt = clean_str(raw_unidad)
+
+                # --- FILTRO DE SUBTÍTULOS (LA SOLUCIÓN) ---
+                # Si no tiene CÓDIGO o no tiene CONCEPTO, saltamos.
+                if not norm_codigo or not norm_concepto:
+                    continue
+
+                # Si tiene código y concepto, PERO NO TIENE UNIDAD, asumimos que es un subtítulo/encabezado.
+                # Ejemplo: "1.1 CIMENTACIÓN" (sin unidad, sin precio).
+                if not norm_unidad_txt:
+                    continue 
+
+                # Validamos también que tenga precio unitario o volumen (opcional, pero ayuda a filtrar basura)
+                p_mn_check = limpiar_moneda(row.get('P.U. M.N.'))
+                vol_check = limpiar_moneda(row.get('VOLUMEN PTE'))
+                
+                # Si es una partida "real", debe tener Unidad. Si no la tiene, ya lo saltamos arriba.
+                # Ahora procedemos a buscar la unidad en el sistema.
+                
                 unidad_id_resuelto = unidades_lookup.get(norm_unidad_txt)
 
                 if not unidad_id_resuelto:
+                    # Si llegamos aquí, es porque SÍ tenía texto en la columna UNIDAD (ej. "PZA", "M3"),
+                    # pero ese texto no existe en la BD. Eso sí es un error real.
                     fila_error = row.copy()
                     fila_error['OBSERVACIONES_SISTEMA'] = f"Unidad '{raw_unidad}' no existe en el sistema."
                     errores_validacion.append(fila_error)
                     continue
 
+                # Validación contra Concepto Maestro
                 key_busqueda = (norm_codigo, norm_concepto, unidad_id_resuelto)
                 producto_encontrado = catalogo_map.get(key_busqueda)
 
                 if not producto_encontrado:
                     fila_error = row.copy()
                     razon = ""
-                    prod_candidato = productos_por_codigo.get(norm_codigo)
+                    prod_candidato = conceptos_por_codigo.get(norm_codigo)
                     
                     if prod_candidato:
                         errores_encontrados = []
-                        db_desc = clean_str(prod_candidato.descripcion_concepto)
+                        db_desc = clean_str(prod_candidato.descripcion)
                         if db_desc != norm_concepto:
                             errores_encontrados.append(f"DESCRIPCIÓN DIFERENTE.")
-                        if prod_candidato.id_unidad_medida.id != unidad_id_resuelto:
-                            db_unit = prod_candidato.id_unidad_medida.clave
+                        if prod_candidato.unidad_medida.id != unidad_id_resuelto:
+                            db_unit = prod_candidato.unidad_medida.clave
                             errores_encontrados.append(f"UNIDAD DIFERENTE. Excel: '{raw_unidad}' vs Catálogo: '{db_unit}'")
                         if not errores_encontrados:
-                            errores_encontrados.append("Inconsistencia interna en el catálogo (posible duplicidad).")
-                            
+                            errores_encontrados.append("Posible duplicidad en catálogo.")
                         razon = " | ".join(errores_encontrados)
                     else:
                         if norm_concepto in conceptos_set:
-                            razon = f"CÓDIGO INCORRECTO. La partida '{norm_codigo}' no existe, pero la descripción SÍ se encontró en otra partida."
+                            razon = f"CÓDIGO INCORRECTO. Partida '{norm_codigo}' no existe."
                         else:
-                            razon = f"NO ENCONTRADO. Ni la Partida '{norm_codigo}' ni la Descripción existen en el catálogo."
+                            razon = f"NO ENCONTRADO en catálogo."
 
                     fila_error['OBSERVACIONES_SISTEMA'] = razon
                     errores_validacion.append(fila_error)
                 else:
                     try:
-                        vol = limpiar_moneda(row.get('VOLUMEN PTE'))
-                        p_mn = limpiar_moneda(row.get('P.U. M.N.'))
-                        p_usd = limpiar_moneda(row.get('P.U. USD'))
-                        
                         partidas_validas.append({
                             'producto': producto_encontrado,
-                            'volumen': vol,
-                            'pu_mn': p_mn,
-                            'pu_usd': p_usd,
+                            'volumen': vol_check,
+                            'pu_mn': p_mn_check, 
+                            'pu_usd': limpiar_moneda(row.get('P.U. USD')),
                             'orden': index + 1,
                             'codigo': norm_codigo,
                             'concepto': norm_concepto,
-                            'unidad_obj': producto_encontrado.id_unidad_medida 
+                            'unidad_obj': producto_encontrado.unidad_medida,
+                            'anexo_row': norm_anexo
                         })
                     except Exception as e:
                         fila_error = row.copy()
@@ -1186,10 +1209,8 @@ def importar_anexo_ot(request):
                     output,
                     content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                 )
-                
                 folio_limpio = str(ot.orden_trabajo).replace('/', '-').replace('\\', '-').strip()
                 nombre_archivo = f"Errores_Importacion_{folio_limpio}.xlsx"
-                
                 response['Content-Disposition'] = f'attachment; filename="{nombre_archivo}"'
                 response['Access-Control-Expose-Headers'] = 'Content-Disposition'
                 response['X-Validation-Error'] = 'True' 
@@ -1218,15 +1239,17 @@ def importar_anexo_ot(request):
                         volumen_proyectado=p['volumen'],
                         precio_unitario_mn=p['pu_mn'],
                         precio_unitario_usd=p['pu_usd'],
-                        orden_fila=p['orden']
+                        orden_fila=p['orden'],
+                        anexo=p['anexo_row'] 
                     ) for p in partidas_validas
                 ]
                 
                 PartidaAnexoImportada.objects.bulk_create(objs_crear)
-                exito_recalc, msg_recalc = recalcular_excedentes_ot_completa(ot_id)
                 
+                exito_recalc, msg_recalc = recalcular_excedentes_ot_completa(ot_id)
                 if not exito_recalc:
                     print(f"Advertencia: Falló recálculo de excedentes: {msg_recalc}")
+
             msg_final = f'Importación completada. {len(objs_crear)} partidas registradas. {msg_recalc}'
             if exito_recalc:
                 msg_final += " Se han actualizado los semáforos de producción automáticamente."
@@ -1237,7 +1260,7 @@ def importar_anexo_ot(request):
             return JsonResponse({'exito': False, 'tipo_aviso':'advertencia', 'detalles': f'Error interno: {str(e)}'})
 
     return JsonResponse({'exito': False, 'tipo_aviso':'advertencia', 'detalles': 'Método no permitido'})
-
+    
 
 def dashboard_stacked_view(request):
     # -------------------------------------------------------------------------

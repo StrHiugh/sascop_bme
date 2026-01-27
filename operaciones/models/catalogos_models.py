@@ -166,7 +166,7 @@ class AnexoContrato(models.Model):
 
     def __str__(self):
         return f"{self.descripcion} ({self.contrato.numero_contrato})"
-
+    
 class SubAnexo(models.Model):
     anexo_maestro = models.ForeignKey(AnexoContrato, on_delete=models.CASCADE, related_name='sub_anexos')
     clave_anexo = models.CharField(max_length=50)
@@ -216,8 +216,6 @@ class ConceptoMaestro(models.Model):
             models.Index(fields=['partida_ordinaria']),
             models.Index(fields=['sub_anexo']),
         ]
-        unique_together = ['sub_anexo', 'partida_ordinaria'] 
 
     def __str__(self):
         return f"{self.partida_ordinaria} ({self.sub_anexo.clave_anexo})"
-        

@@ -25,7 +25,14 @@ ARCHIVO_EXCEL = 'ANEXO_C_PUES.xlsx'
 ID_ANEXO_MAESTRO = 1 
 
 HOJAS_OBJETIVO = [
-    "PUE´s BME" 
+    "PUE´s BME",
+    "Anexo C-2-CR",
+    "Anexo C-3-CR",
+    "Anexo C-4-CR",
+    "Anexo C-4-1",
+    "Anexo C-5-CR",
+    "Anexo C-5-1",
+    "Anexo C-6-CR" 
 ]
 
 COLUMNAS_REQUERIDAS = [
@@ -43,6 +50,16 @@ COLUMNAS_REQUERIDAS = [
     'ESTATUS',
     'COMENTARIO'
 ]
+
+# COLUMNAS_REQUERIDAS = [
+#     'ANEXO',
+#     'PARTIDA', 
+#     'CONCEPTO', 
+#     'UNIDAD', 
+#     'CANTIDADES DE REFERENCIA',
+#     'P.U. M.N.',
+#     'P.U. USD',
+# ]
 
 # ==========================================
 # 3. FUNCIONES DE LIMPIEZA
@@ -103,7 +120,6 @@ def encontrar_fila_encabezados(xls, hoja, columnas_buscadas):
         if set(columnas_clave).issubset(set(valores_fila)):
             return idx
     return None
-
 def importar_conceptos():
     print("🚀 INICIANDO IMPORTACIÓN OPTIMIZADA (BULK) - PUE's BME")
     print(f"📂 Archivo: {ARCHIVO_EXCEL}")
@@ -119,34 +135,17 @@ def importar_conceptos():
     try:
         print("📥 Cargando catálogos en memoria...")
         anexo_maestro = AnexoContrato.objects.get(id=ID_ANEXO_MAESTRO)
-        
         tipo_partida = Tipo.objects.get(id=7) 
-        print(f"✅ Tipo Partida seleccionado: {tipo_partida} (ID: 7)")
         
-        # 1. Cache de Unidades
-        unidades_cache = {
-            u.clave.strip().upper(): u 
-            for u in UnidadMedida.objects.all()
-        }
-
-        # 2. Cache de SubAnexos
-        subanexos_cache = {
-            s.clave_anexo.strip().upper(): s 
-            for s in SubAnexo.objects.filter(anexo_maestro=anexo_maestro)
-        }
-
-        # 3. Cache de Conceptos Existentes
-        # Incluimos también los que tienen sub_anexo=None si fuera posible rastrearlos,
-        # pero la query actual se limita a los hijos del anexo maestro.
+        unidades_cache = {u.clave.strip().upper(): u for u in UnidadMedida.objects.all()}
+        subanexos_cache = {s.clave_anexo.strip().upper(): s for s in SubAnexo.objects.filter(anexo_maestro=anexo_maestro)}
+        
+        # MODIFICACIÓN CLAVE: Ahora la llave incluye la descripción para distinguir partidas iguales
         conceptos_existentes = {
-            (c.sub_anexo_id, c.partida_ordinaria): c
-            for c in ConceptoMaestro.objects.filter(
-                sub_anexo__anexo_maestro=anexo_maestro
-            ).exclude(partida_ordinaria__isnull=True)
+            (c.sub_anexo_id, c.partida_ordinaria, str(c.descripcion).strip()): c
+            for c in ConceptoMaestro.objects.filter(sub_anexo__anexo_maestro=anexo_maestro).exclude(partida_ordinaria__isnull=True)
         }
-
-        print(f"✅ Cache listo: {len(unidades_cache)} Unidades, {len(subanexos_cache)} SubAnexos.")
-        print(f"✅ Conceptos previos en BD: {len(conceptos_existentes)}")
+        print(f"✅ Cache listo.")
 
     except ObjectDoesNotExist as e:
         print(f"❌ ERROR BD: {e}")
@@ -158,10 +157,6 @@ def importar_conceptos():
         print(f"❌ Error Excel: {e}")
         return
 
-    # ---------------------------------------------------------
-    # PASO 2: PROCESAMIENTO DE ARCHIVO
-    # ---------------------------------------------------------
-    
     batch_crear = []
     batch_actualizar = []
     errores = []
@@ -169,6 +164,9 @@ def importar_conceptos():
     llaves_procesadas_hoy = set()
     total_leidos = 0
 
+    # =========================================================
+    # ITERACIÓN POR HOJAS
+    # =========================================================
     for hoja in HOJAS_OBJETIVO:
         if hoja not in xls.sheet_names:
             print(f"⚠️  Hoja faltante: '{hoja}'")
@@ -177,6 +175,7 @@ def importar_conceptos():
         fila_header = encontrar_fila_encabezados(xls, hoja, COLUMNAS_REQUERIDAS)
         
         if fila_header is None:
+            # Aquí ya tenías la hoja, está bien
             msg = f"⛔ HOJA '{hoja}' OMITIDA: No se encontraron encabezados válidos."
             print(f"   {msg}")
             errores.append(msg)
@@ -192,7 +191,6 @@ def importar_conceptos():
         for index, row in df.iterrows():
             fila_excel = fila_header + index + 2
             
-            # --- Lectura y Limpieza de Campos Clave ---
             partida_ord_str = limpiar_texto(row.get('PARTIDA'))
             partida_ext_str = limpiar_texto(row.get('PARTIDA EXT'))
             concepto_str = limpiar_texto(row.get('CONCEPTO'))
@@ -201,54 +199,45 @@ def importar_conceptos():
             if not partida_ord_str and not partida_ext_str: continue 
             if partida_ord_str and partida_ord_str.upper() == 'PARTIDA': continue 
 
-            # --- Lógica de Anexo (DINÁMICA) ---
+            # --- Lógica de Anexo ---
             clave_anexo = limpiar_texto(row.get('ANEXO'))
             sub_anexo_obj = None
 
             if clave_anexo:
-                # 1. Si trae dato, lo buscamos en Cache
                 clave_clean = clave_anexo.upper()
                 sub_anexo_obj = subanexos_cache.get(clave_clean)
                 
                 if not sub_anexo_obj:
-                    # 2. Si no existe, LO CREAMOS (como solicitaste)
                     try:
                         print(f"   ✨ Creando nuevo SubAnexo: {clave_clean}")
                         sub_anexo_obj, _ = SubAnexo.objects.get_or_create(
                             anexo_maestro=anexo_maestro,
                             clave_anexo=clave_clean,
-                            defaults={
-                                'descripcion': f"Auto-generado desde importación ({hoja})",
-                                'activo': True
-                            }
+                            defaults={'descripcion': f"Auto-generado desde importación ({hoja})", 'activo': True}
                         )
-                        # Actualizamos el caché para que la siguiente fila no intente crearlo otra vez
                         subanexos_cache[clave_clean] = sub_anexo_obj
                     except Exception as e:
-                        msg = f"Error creando SubAnexo '{clave_clean}': {e}"
+                        msg = f"[{hoja}] Error creando SubAnexo '{clave_clean}': {e}"
                         if msg not in errores: errores.append(msg)
                         continue
             else:
-                # 3. Si NO trae dato, se queda como None
-                # Se guardará sin relación (huérfano)
                 sub_anexo_obj = None
 
-            # --- Resto de Campos ---
+            # --- Validar Unidad ---
             unidad_raw = row.get('UNIDAD')
             unidad_str = str(unidad_raw).strip().upper() if pd.notna(unidad_raw) else ""
             unidad_obj = unidades_cache.get(unidad_str)
             
             if not unidad_obj:
-                msg = f"Unidad '{unidad_str}' no existe (Fila {fila_excel})."
+                msg = f"[{hoja}] Fila {fila_excel}: Unidad '{unidad_str}' no existe."
                 if msg not in errores: errores.append(msg)
                 continue
 
             # Valores Numéricos
             cantidad = limpiar_moneda(row.get('CANTIDADES DE REFERENCIA'))
-            pu_mn = limpiar_moneda(row.get('P.U. MN') or row.get('P.U. M.N.') or row.get('P.U. PESOS'))
-            pu_usd = limpiar_moneda(row.get('P.U. USD') or row.get('P.U. DOLARES'))
+            pu_mn = limpiar_moneda(row.get('P.U. M.N.') or row.get('P.U. MN'))
+            pu_usd = limpiar_moneda(row.get('P.U. USD'))
             
-            # Campos Nuevos
             pte_creacion = limpiar_texto(row.get('PTE CREACION'))
             ot_creacion = limpiar_texto(row.get('OT CREACION'))
             fecha_auth = limpiar_fecha(row.get('FECHA SANCION'))
@@ -256,26 +245,23 @@ def importar_conceptos():
             comentario_str = limpiar_texto(row.get('COMENTARIO'))
 
             # --- Decidir CREATE o UPDATE ---
-            
             if partida_ord_str:
-                # La llave única incluye el ID del subanexo (que puede ser None)
                 sub_anexo_id = sub_anexo_obj.id if sub_anexo_obj else None
-                llave_unica = (sub_anexo_id, partida_ord_str)
+                # MODIFICACIÓN CLAVE: La llave única ahora incluye la descripción (concepto_str)
+                # Esto permite que existan Partida 1.01 (Desc A) y Partida 1.01 (Desc B) como registros diferentes.
+                llave_unica = (sub_anexo_id, partida_ord_str, concepto_str)
                 
-                if llave_unica in llaves_procesadas_hoy:
-                    continue
+                if llave_unica in llaves_procesadas_hoy: continue
                 llaves_procesadas_hoy.add(llave_unica)
                 
                 if llave_unica in conceptos_existentes:
-                    # UPDATE
                     obj = conceptos_existentes[llave_unica]
-                    obj.descripcion = concepto_str
+                    # Actualizamos datos (aunque la descripción sea igual, precios o extras podrían cambiar)
                     obj.unidad_medida = unidad_obj
                     obj.cantidad = cantidad
                     obj.precio_unitario_mn = pu_mn
                     obj.precio_unitario_usd = pu_usd
                     obj.id_tipo_partida = tipo_partida
-                    # Nuevos
                     obj.partida_extraordinaria = partida_ext_str
                     obj.pte_creacion = pte_creacion
                     obj.ot_creacion = ot_creacion
@@ -283,10 +269,8 @@ def importar_conceptos():
                     obj.estatus = estatus_str
                     obj.comentario = comentario_str
                     obj.activo = True
-                    
                     batch_actualizar.append(obj)
                 else:
-                    # CREATE
                     nuevo_obj = ConceptoMaestro(
                         sub_anexo=sub_anexo_obj,
                         partida_ordinaria=partida_ord_str,
@@ -345,14 +329,11 @@ def importar_conceptos():
             if batch_actualizar:
                 print(f"   🔄 Actualizando {len(batch_actualizar)} partidas existentes...")
                 ConceptoMaestro.objects.bulk_update(batch_actualizar, [
-                    'descripcion', 'unidad_medida', 'cantidad', 
+                    'unidad_medida', 'cantidad', 
                     'precio_unitario_mn', 'precio_unitario_usd', 
                     'id_tipo_partida', 'partida_extraordinaria',
                     'pte_creacion', 'ot_creacion', 'fecha_autorizacion',
-                    'estatus', 'comentario', 'activo', 
-                    # Importante: Si cambia el subanexo en una actualización, habría que agregarlo aquí
-                    # pero bulk_update no soporta FKs tan fácil si cambian de None a ID.
-                    # Para este caso asumimos que la partida no cambia de anexo.
+                    'estatus', 'comentario', 'activo'
                 ])
                 
         print("\n" + "="*60)
@@ -371,4 +352,4 @@ def importar_conceptos():
         if len(errores) > 20: print(f"   ... y {len(errores)-20} más.")
 
 if __name__ == "__main__":
-    importar_conceptos()
+    importar_conceptos()    
