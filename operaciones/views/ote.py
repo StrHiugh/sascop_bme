@@ -1017,7 +1017,6 @@ def importar_anexo_ot(request):
                     for idx, row in df_temp.iterrows():
                         row_str = [str(x).strip().upper() for x in row.values]
                         
-                        match_anexo = 'ANEXO' in row_str
                         match_partida = 'PARTIDA' in row_str
                         match_concepto = 'CONCEPTO' in row_str
                         match_unidad = 'UNIDAD' in row_str
@@ -1028,9 +1027,8 @@ def importar_anexo_ot(request):
                             header_row_index = idx
                             target_sheet = sheet
                             found = True
-                            if not match_anexo:
-                                logs_busqueda.append(f"[{sheet}]: Se encontraron cabeceras pero falta la columna 'ANEXO'.")
-                                found = False 
+                            if 'ANEXO' not in row_str:
+                                logs_busqueda.append(f"[{sheet}]: Se encontraron cabeceras pero falta columna 'ANEXO'.")
                             break 
                     
                     if found: break 
@@ -1041,7 +1039,7 @@ def importar_anexo_ot(request):
                     continue
 
             if target_sheet is None:
-                msg_error = f"No se encontró tabla válida con columna 'ANEXO', PARTIDA, CONCEPTO, etc. Revisado: {', '.join(logs_busqueda)}"
+                msg_error = f"No se encontró tabla válida con columna PARTIDA, CONCEPTO, UNIDAD, etc. Revisado: {', '.join(logs_busqueda)}"
                 return JsonResponse({'exito': False, 'tipo_aviso':'advertencia', 'detalles': msg_error})
 
             df = pd.read_excel(xls, sheet_name=target_sheet, header=header_row_index)
@@ -1053,6 +1051,8 @@ def importar_anexo_ot(request):
             if missing_cols:
                 if 'ANEXO' in missing_cols:
                     return JsonResponse({'exito': False, 'tipo_aviso':'advertencia', 'detalles': f'Falta la columna obligatoria: ANEXO'})
+
+            usar_filtro_ok = 'OK' in df.columns
 
             def clean_str(val):
                 if pd.isna(val) or val is None:
@@ -1097,6 +1097,11 @@ def importar_anexo_ot(request):
             partidas_validas = []
 
             for index, row in df.iterrows():
+                if usar_filtro_ok:
+                    val_ok = clean_str(row.get('OK'))
+                    if val_ok != 'OK':
+                        continue 
+
                 raw_anexo = str(row.get('ANEXO', ''))
                 raw_codigo = str(row['PARTIDA'])
                 raw_concepto = str(row['CONCEPTO'])
@@ -1204,7 +1209,10 @@ def importar_anexo_ot(request):
                 return response
 
             if not partidas_validas:
-                return JsonResponse({'exito': False, 'tipo_aviso':'advertencia', 'detalles': 'El archivo no contenía partidas válidas.'})
+                msg_vacio = 'El archivo no contenía partidas válidas.'
+                if usar_filtro_ok:
+                    msg_vacio += ' (Se detectó columna OK, pero ninguna fila tenía el valor "OK")'
+                return JsonResponse({'exito': False, 'tipo_aviso':'advertencia', 'detalles': msg_vacio})
 
             with transaction.atomic():
                 ImportacionAnexo.objects.filter(ot=ot, es_activo=True).update(es_activo=False)
@@ -1247,7 +1255,8 @@ def importar_anexo_ot(request):
             return JsonResponse({'exito': False, 'tipo_aviso':'advertencia', 'detalles': f'Error interno: {str(e)}'})
 
     return JsonResponse({'exito': False, 'tipo_aviso':'advertencia', 'detalles': 'Método no permitido'})
-    
+
+
 
 def dashboard_stacked_view(request):
     # -------------------------------------------------------------------------
