@@ -1103,7 +1103,6 @@ def importar_anexo_ot(request):
                 raw_concepto = str(row['CONCEPTO'])
                 raw_unidad = str(row['UNIDAD'])
                 
-                # --- LIMPIEZA INICIAL ---
                 norm_anexo = clean_str(raw_anexo)
                 if not norm_anexo: norm_anexo = 'S/A'
                 
@@ -1111,34 +1110,23 @@ def importar_anexo_ot(request):
                 norm_concepto = clean_str(raw_concepto)
                 norm_unidad_txt = clean_str(raw_unidad)
 
-                # --- FILTRO DE SUBTÍTULOS (LA SOLUCIÓN) ---
-                # Si no tiene CÓDIGO o no tiene CONCEPTO, saltamos.
                 if not norm_codigo or not norm_concepto:
                     continue
 
-                # Si tiene código y concepto, PERO NO TIENE UNIDAD, asumimos que es un subtítulo/encabezado.
-                # Ejemplo: "1.1 CIMENTACIÓN" (sin unidad, sin precio).
                 if not norm_unidad_txt:
                     continue 
 
-                # Validamos también que tenga precio unitario o volumen (opcional, pero ayuda a filtrar basura)
                 p_mn_check = limpiar_moneda(row.get('P.U. M.N.'))
                 vol_check = limpiar_moneda(row.get('VOLUMEN PTE'))
-                
-                # Si es una partida "real", debe tener Unidad. Si no la tiene, ya lo saltamos arriba.
-                # Ahora procedemos a buscar la unidad en el sistema.
                 
                 unidad_id_resuelto = unidades_lookup.get(norm_unidad_txt)
 
                 if not unidad_id_resuelto:
-                    # Si llegamos aquí, es porque SÍ tenía texto en la columna UNIDAD (ej. "PZA", "M3"),
-                    # pero ese texto no existe en la BD. Eso sí es un error real.
                     fila_error = row.copy()
                     fila_error['OBSERVACIONES_SISTEMA'] = f"Unidad '{raw_unidad}' no existe en el sistema."
                     errores_validacion.append(fila_error)
                     continue
 
-                # Validación contra Concepto Maestro
                 key_busqueda = (norm_codigo, norm_concepto, unidad_id_resuelto)
                 producto_encontrado = catalogo_map.get(key_busqueda)
 
