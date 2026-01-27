@@ -23,7 +23,6 @@ def obtener_sitios_con_ots_ejecutadas(request):
     """Obtener todos los sitios con ots activos y en ejecucion"""
     try:
         ots_activas = OTE.objects.filter(
-            id_estatus_ot_id=8, 
             id_tipo_id=4,       
             estatus=1           
         )
@@ -78,8 +77,7 @@ def ots_por_sitio_grid(request):
             Q(id_patio=id_sitio) | Q(id_intercom=id_sitio)
 
     queryset = OTE.objects.filter(
-        query,
-        id_estatus_ot_id=8,     
+        query,     
         id_tipo_id=4,            
         estatus=1,
         importaciones_anexo__es_activo=True
@@ -449,7 +447,7 @@ def guardar_produccion_masiva(request):
                 vol_autorizado = sum(
                     Decimal(str(mapa_autorizado.get(v, 0))) for v in variantes if v in mapa_autorizado
                 )
-                
+
                 vol_autorizado = round(vol_autorizado, 4)
 
                 base_hist = sum(mapa_historia_global[v] for v in variantes if v in mapa_historia_global)

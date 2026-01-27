@@ -990,7 +990,6 @@ def datatable_importaciones(request):
 def importar_anexo_ot(request):
     """
     Procesa el archivo Excel (.xlsx o .xlsm).
-    MODIFICADO: Ignora filas de 'Subtítulos' (sin unidad/precio) para evitar errores de 'nan'.
     """
     if request.method == "POST":
         ot_id = request.POST.get('ot_id')
