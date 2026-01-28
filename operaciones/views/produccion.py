@@ -366,7 +366,7 @@ def obtener_partidas_produccion(request):
                     'cma_dia': val_cma      
                 }
                 
-                suma_mes_visual += valor_visual
+                suma_mes_visual += val_te + val_cma
                 if es_exc: hay_excedente_visual = True
             else:
                 fila_grid[f'dia{d}'] = None
