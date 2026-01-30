@@ -120,26 +120,6 @@ class OTDetalle(models.Model):
     def __str__(self):
         return f"Detalle {self.id} - OT {self.id_ot.orden_trabajo}"
 
-class PartidaProyectada(models.Model):
-    """
-    Modelo para importar partidas proyectadas por OT desde Excel
-    """
-    id_ot = models.ForeignKey(OTE, on_delete=models.CASCADE, related_name='partidas_proyectadas')
-    id_partida = models.CharField(max_length=100, verbose_name="ID Partida") 
-    volumen_proyectado = models.DecimalField(max_digits=15, decimal_places=3, verbose_name="Volumen Proyectado")
-    volumen_real = models.DecimalField(max_digits=15, decimal_places=3, verbose_name="Volumen Real")
-    fecha_desde = models.DateField(verbose_name="Fecha Inicio Proyección")
-    fecha_hasta = models.DateField(verbose_name="Fecha Fin Proyección")
-
-    class Meta:
-        db_table = 'partida_proyectada'
-        verbose_name = 'Partida Proyectada'
-        verbose_name_plural = 'Partidas Proyectadas'
-        unique_together = ['id_ot', 'id_partida', 'fecha_desde']
-
-    def __str__(self):
-        return f"{self.id_ot.orden_trabajo} - {self.id_partida}"
-
 def generar_ruta_anexo(instance, filename):
     """
     Genera una ruta dinámica: operaciones/anexos_ot/OT_<id>/<filename>
@@ -186,3 +166,19 @@ class PartidaAnexoImportada(models.Model):
     def __str__(self):
         return f"{self.id_partida} - {self.descripcion_concepto[:30]}"
 
+class PartidaProyectada(models.Model):
+    """
+    Modelo para importar partidas proyectadas por OT desde Excel
+    """
+    ot = models.ForeignKey('OTE', on_delete=models.CASCADE, null=True, blank=True)
+    partida_anexo = models.ForeignKey('PartidaAnexoImportada', on_delete=models.CASCADE, related_name='programacion_diaria', null=True, blank=True)
+    fecha = models.DateField(null=True, blank=True)
+    volumen_programado = models.DecimalField(max_digits=15, decimal_places=6, default=0, null=True, blank=True)
+    
+    class Meta:
+        db_table = 'partida_proyectada'
+        verbose_name = "Partida Proyectada"
+        verbose_name_plural = "Partidas Proyectadas"
+
+    def __str__(self):
+        return f"{self.partida_anexo.id_partida} - {self.fecha}: {self.volumen_programado}"

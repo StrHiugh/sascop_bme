@@ -93,7 +93,8 @@
         overflow: hidden !important; 
         position: relative;
         display: block;
-    }
+        height: 700px;
+    }   
 
     .tui-grid-cell-content { width: 100%; height: 100%; display: flex; align-items: left; justify-content: left; }
     
@@ -137,6 +138,20 @@
         color: #f4f4f4 !important;
         cursor: not-allowed !important;
     }
+
+    .tui-grid-cell.celda-firmada {
+    background-color: #e2e6ea !important; 
+    color: #6c757d;
+    cursor: not-allowed;
+    background-image: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 5px,
+        rgba(0,0,0,0.03) 5px,
+        rgba(0,0,0,0.03) 10px
+    );
+}
+
 </style>
 
 <div class="bm-content">
@@ -191,7 +206,7 @@
                     
                     <div id="grid-produccion" class="grid-wrapper mb-3 border-top-0"></div> 
 
-                    <div class="row mt-2">
+                    {% comment %} <div class="row mt-2">
                         <div class="col-md-4">
                             <div class="kpi-box normal">
                                 <h6 class="text-muted text-uppercase mb-1" style="font-size: 0.8rem;">Volumen Autorizado (Anexo)</h6>
@@ -210,7 +225,7 @@
                                 <h5 class="mb-0 fw-bold text-success" id="kpi-status-text">SELECCIONA FILA</h5>
                             </div>
                         </div>
-                    </div>
+                    </div> {% endcomment %}
                 </div>
             </div>
         </div>

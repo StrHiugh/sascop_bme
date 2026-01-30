@@ -243,8 +243,14 @@ def obtener_partidas_produccion(request):
     archivo_url = ''
     try:
         reporte = ReporteMensual.objects.filter(id_ot_id=id_ot, mes=mes, anio=anio).first()
-        if reporte and reporte.archivo:
-            archivo_url = reporte.archivo
+        if reporte:
+            dias_bloqueados = list(ReporteDiario.objects.filter(
+                id_reporte_mensual=reporte,
+                id_estatus_id=17
+            ).values_list('fecha__day', flat=True))
+            
+            if reporte.archivo:
+                archivo_url = reporte.archivo
     except Exception:
         pass
 
@@ -374,14 +380,18 @@ def obtener_partidas_produccion(request):
         fila_grid['acumulado_mes'] = suma_mes_visual
         fila_grid['estatus_gpu'] = 'BLOQUEADO' if hay_excedente_visual else 'AUTORIZADO'
         data_final.append(fila_grid)
-
-    return JsonResponse(data_final, safe=False)
+    
+    respuesta = {
+        'partidas': data_final,
+        'dias_bloqueados': dias_bloqueados
+    }
+    return JsonResponse(respuesta)
 
 @login_required
 @require_http_methods(["POST"])
 def guardar_produccion_masiva(request):
     """
-    Guarda producción masiva.
+    Guarda producción masiva corrigiendo el cálculo del acumulado en días bloqueados.
     """
     try:
         data = json.loads(request.body)
@@ -398,6 +408,11 @@ def guardar_produccion_masiva(request):
                 id_ot_id=id_ot, mes=mes, anio=anio, defaults={'id_estatus_id': 1}
             )
 
+            dias_cerrados_set = set(ReporteDiario.objects.filter(
+                id_reporte_mensual=reporte_mensual,
+                id_estatus_id=17
+            ).values_list('fecha__day', flat=True))
+
             ot_actual = OTE.objects.get(id=id_ot) 
             id_principal = ot_actual.ot_principal if ot_actual.ot_principal else ot_actual.id
             familia_ots = list(OTE.objects.filter(Q(id=id_principal) | Q(ot_principal=id_principal)).values_list('id', flat=True)) 
@@ -406,7 +421,6 @@ def guardar_produccion_masiva(request):
             partidas_db = PartidaAnexoImportada.objects.in_bulk(ids_partidas_form)
             
             codigos_en_batch = set(p.id_partida for p in partidas_db.values())
-            
             mapa_autorizado = obtener_volumenes_consolidados(id_ot, list(codigos_en_batch))
 
             produccion_actual_qs = Produccion.objects.filter(
@@ -450,17 +464,14 @@ def guardar_produccion_masiva(request):
 
                 codigo = partida.id_partida
                 c_clean = codigo.strip()
-                
                 variantes = {codigo, c_clean, c_clean.rstrip('.'), c_clean + '.'}
 
                 vol_autorizado = sum(
                     Decimal(str(mapa_autorizado.get(v, 0))) for v in variantes if v in mapa_autorizado
                 )
-
                 vol_autorizado = round(vol_autorizado, 4)
 
                 base_hist = sum(mapa_historia_global[v] for v in variantes if v in mapa_historia_global)
-                
                 base_otros = mapa_otros_tiempos.get(id_p, Decimal(0))
                 
                 running_total = base_hist + base_otros
@@ -469,35 +480,40 @@ def guardar_produccion_masiva(request):
                 
                 for idx, vol in enumerate(valores_dia):
                     dia = idx + 1
-                    vol_input = Decimal(str(vol or 0))
                     
                     prod_obj = mapa_produccion_actual.get((id_p, dia))
                     vol_db = prod_obj.volumen_produccion if prod_obj else Decimal(0)
+                    
+                    vol_input = Decimal(str(vol or 0))
 
-                    if prod_obj or vol_input > 0:
-                        vol_para_calculo = vol_input if vol_input > 0 else vol_db
-                        running_total += vol_para_calculo
-                        
-                        es_excedente = round(running_total, 4) > vol_autorizado
-
-                        if prod_obj:
-                            if (prod_obj.volumen_produccion != vol_input) or (prod_obj.es_excedente != es_excedente):
-                                prod_obj.volumen_produccion = vol_input
-                                prod_obj.es_excedente = es_excedente
-                                a_actualizar.append(prod_obj)
-                        
-                        elif vol_input > 0:
-                            a_crear.append(Produccion(
-                                id_reporte_mensual=reporte_mensual,
-                                id_partida_anexo=partida, 
-                                fecha_produccion=date(anio, mes, dia),
-                                volumen_produccion=vol_input,
-                                tipo_tiempo=tipo_tiempo,
-                                es_excedente=es_excedente,
-                                id_estatus_cobro_id=1
-                            ))
+                    if dia in dias_cerrados_set:
+                        vol_para_calculo = vol_db
                     else:
-                        pass
+                        vol_para_calculo = vol_input
+
+                    running_total += vol_para_calculo
+                    
+                    es_excedente = round(running_total, 4) > vol_autorizado
+
+                    if dia in dias_cerrados_set:
+                        continue 
+
+                    if prod_obj:
+                        if (prod_obj.volumen_produccion != vol_para_calculo) or (prod_obj.es_excedente != es_excedente):
+                            prod_obj.volumen_produccion = vol_para_calculo
+                            prod_obj.es_excedente = es_excedente
+                            a_actualizar.append(prod_obj)
+                    
+                    elif vol_para_calculo > 0:
+                        a_crear.append(Produccion(
+                            id_reporte_mensual=reporte_mensual,
+                            id_partida_anexo=partida, 
+                            fecha_produccion=date(anio, mes, dia),
+                            volumen_produccion=vol_para_calculo,
+                            tipo_tiempo=tipo_tiempo,
+                            es_excedente=es_excedente,
+                            id_estatus_cobro_id=1
+                        ))
 
             if a_crear: 
                 Produccion.objects.bulk_create(a_crear)
@@ -509,7 +525,6 @@ def guardar_produccion_masiva(request):
         import traceback
         traceback.print_exc()
         return JsonResponse({'exito': False, 'mensaje': str(e)}, status=500)
-
 def recalcular_excedentes_ot_completa(id_ot):
     """
     Recorre toda la producción histórica de la familia de esa OT y 

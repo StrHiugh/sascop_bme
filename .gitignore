@@ -1,3 +1,4 @@
+# bme_subtec/settings.py
 __pycache__/
 *.pyc
 # db.sqlite3
@@ -5,7 +6,6 @@ venv/
 .env
 media/
 staticfiles/
-# Archivos temporales de Python
 __pycache__/
 *.py[cod]
 *.pyo

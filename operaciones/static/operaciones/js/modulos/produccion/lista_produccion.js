@@ -593,12 +593,13 @@ $(document).ready(function() {
 
         const elGridReportes = document.getElementById('grid-asistencia');
         if (elGridReportes) {
+            const alturaCalculada = 640;
             gridReportesDiarios = new tui.Grid({
                 el: elGridReportes,
                 scrollX: true,
                 scrollY: true,
-                bodyHeight: 350,
-                rowHeaders: ['rowNum'],
+                bodyHeight: alturaCalculada,
+                rowHeight: 50,
                 selectionUnit: 'cell', 
                 columnOptions: { resizable: true, frozenCount: 2 },
                 columns: [
@@ -638,13 +639,13 @@ $(document).ready(function() {
 
         const elGridProduccion = document.getElementById('grid-produccion');
         if (elGridProduccion) {
+            const alturaCalculada = 640;
             gridProduccion = new tui.Grid({
                 el: elGridProduccion,
                 scrollX: true,
                 scrollY: true,
-                bodyHeight: 450,
+                bodyHeight: alturaCalculada,
                 rowHeight: 50,
-                rowHeaders: ['rowNum'],
                 columnOptions: { resizable: true, frozenCount: 5 }, 
                 columns: [
                     { header: 'Partida', name: 'codigo',filter: 'select', width: 90, align: 'center' },
@@ -700,8 +701,12 @@ $(document).ready(function() {
             },
             success: function(data) {
                 const datosOTs = data.reportes_diarios || (Array.isArray(data) ? data : []);
+                
                 if (gridReportesDiarios) {
                     gridReportesDiarios.resetData(datosOTs);
+                    datosOTs.forEach((ot, index) => {
+                        bloquearCeldasReporteDiario(ot, parseInt(mes), parseInt(anio), index);
+                    });
                 }
             },
             error: function(xhr) { console.error("Error cargando OTs", xhr); }
@@ -723,10 +728,21 @@ $(document).ready(function() {
                 anio: anio,
                 tipo_tiempo: tipoTiempoActivo ? tipoTiempoActivo : 'TE'
             },
-            success: function(data) {
+            success: function(response) {
+                let data = [];
+                let diasBloqueados = [];
+
+                if (Array.isArray(response)) {
+                    data = response;
+                } else if (response.partidas) {
+                    data = response.partidas;
+                    diasBloqueados = response.dias_bloqueados || [];
+                }
+
                 if (gridProduccion) {
                     gridProduccion.resetData(data);
                     bloquearDiasFueraDeVigencia(ot, parseInt(mes), parseInt(anio));
+                    bloquearDiasFirmados(diasBloqueados);
                 }
 
                 if (data.length > 0) {
@@ -738,6 +754,16 @@ $(document).ready(function() {
             error: function(xhr) {
                 $('#kpi-status-text').text("ERROR CARGANDO PARTIDAS").addClass('text-danger');
             }
+        });
+    }
+
+    function bloquearDiasFirmados(dias) {
+        if (!dias || dias.length === 0) return;
+
+        dias.forEach(dia => {
+            const colName = `dia${dia}`;
+            gridProduccion.disableColumn(colName);
+            gridProduccion.addColumnClassName(colName, 'celda-firmada');
         });
     }
 
@@ -755,6 +781,33 @@ $(document).ready(function() {
             if (d > ultimoDiaMes || fechaActual < fechaInicio || fechaActual > fechaFin) {
                 gridProduccion.disableColumn(colName); 
                 gridProduccion.addColumnClassName(colName, 'celda-bloqueada');
+            }
+        }
+    }
+
+    function bloquearCeldasReporteDiario(ot, mes, anio, rowKey) {
+        if (!ot.inicio_v || !ot.fin_v) return;
+
+        const fechaInicio = crearFechaLocal(ot.inicio_v); 
+        const fechaFin = crearFechaLocal(ot.fin_v); 
+        const ultimoDiaMes = new Date(anio, mes, 0).getDate();
+
+        for (let d = 1; d <= DAYS_IN_MONTH; d++) {
+            const colName = `dia${d}`;
+            if (d > ultimoDiaMes) {
+                gridReportesDiarios.disableCell(rowKey, colName);
+                gridReportesDiarios.addCellClassName(rowKey, colName, 'celda-bloqueada');
+                continue;
+            }
+
+            const fechaActual = new Date(anio, mes - 1, d, 0, 0, 0);
+
+            if (fechaActual < fechaInicio || fechaActual > fechaFin) {
+                gridReportesDiarios.disableCell(rowKey, colName);
+                gridReportesDiarios.addCellClassName(rowKey, colName, 'celda-bloqueada');
+            } else {
+                gridReportesDiarios.enableCell(rowKey, colName);
+                gridReportesDiarios.removeCellClassName(rowKey, colName, 'celda-bloqueada');
             }
         }
     }

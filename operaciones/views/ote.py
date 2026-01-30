@@ -1097,16 +1097,10 @@ def importar_anexo_ot(request):
             partidas_validas = []
 
             for index, row in df.iterrows():
-                if usar_filtro_ok:
-                    val_ok = clean_str(row.get('OK'))
-                    if val_ok != 'OK':
-                        continue 
-
                 raw_anexo = str(row.get('ANEXO', ''))
                 raw_codigo = str(row['PARTIDA'])
                 raw_concepto = str(row['CONCEPTO'])
                 raw_unidad = str(row['UNIDAD'])
-                
                 norm_anexo = clean_str(raw_anexo)
                 if not norm_anexo: norm_anexo = 'S/A'
                 
@@ -1114,11 +1108,16 @@ def importar_anexo_ot(request):
                 norm_concepto = clean_str(raw_concepto)
                 norm_unidad_txt = clean_str(raw_unidad)
 
+                if usar_filtro_ok:
+                    val_ok = clean_str(row.get('OK'))
+                    if val_ok != 'OK':
+                        continue 
+                
+                if not norm_unidad_txt or norm_unidad_txt in ['-', '.', 'nan', 'NAN']:
+                    continue 
+                
                 if not norm_codigo or not norm_concepto:
                     continue
-
-                if not norm_unidad_txt:
-                    continue 
 
                 p_mn_check = limpiar_moneda(row.get('P.U. M.N.'))
                 vol_check = limpiar_moneda(row.get('VOLUMEN PTE'))
