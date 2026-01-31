@@ -241,6 +241,7 @@ def obtener_partidas_produccion(request):
         return JsonResponse([], safe=False)
 
     archivo_url = ''
+    dias_bloqueados = []
     try:
         reporte = ReporteMensual.objects.filter(id_ot_id=id_ot, mes=mes, anio=anio).first()
         if reporte:
