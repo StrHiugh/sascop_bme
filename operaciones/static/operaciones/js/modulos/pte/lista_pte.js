@@ -1336,8 +1336,8 @@ $(document).ready(function () {
                         </div>
                         <div class="col-md-3">
                             <div class="mb-3">
-                                <label for="oficioOT" class="form-label">Oficio de la OT:</label>
-                                <input type="text" class="form-control" id="oficioOT" placeholder="Ingrese el oficio de la OT" required>
+                                <label for="oficioOT" class="form-label">Folio de la OT:</label>
+                                <input type="text" class="form-control" id="oficioOT" placeholder="Ingrese el folio de la OT" required>
                             </div>
                         </div>
                     </div>

@@ -614,7 +614,8 @@ $(document).ready(function() {
                         renderer: { type: OpcionesRenderer }
                     }
                 ],
-                data: [] 
+                data: [] ,
+                draggable: true
             });
 
             gridReportesDiarios.on('click', (ev) => {
@@ -675,7 +676,8 @@ $(document).ready(function() {
                         renderer: { type: GpuStatusRenderer } 
                     }
                 ],
-                data: []
+                data: [],
+                draggable: true
             });
         }
     }

@@ -960,11 +960,11 @@ def crear_ot_desde_pte(request):
         ote = OTE.objects.create(
             id_tipo=tipo_ote,
             id_pte_header=pte,
-            orden_trabajo='PENDIENTE',
+            orden_trabajo=oficio_ot,
             descripcion_trabajo=pte.descripcion_trabajo,
             id_responsable_proyecto=pte.id_responsable_proyecto,
             responsable_cliente="POR DEFINIR", 
-            oficio_ot=oficio_ot,
+            oficio_ot="PENDIENTE",
             id_estatus_ot=estatus_ote_default,
             ot_principal=ot_principal if ot_principal else None,
             num_reprogramacion=num_reprogramacion if num_reprogramacion else None,
