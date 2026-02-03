@@ -1,10 +1,10 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
-from ..models import OTE, ImportacionAnexo, PartidaAnexoImportada, Produccion, ReporteMensual, Sitio, ReporteDiario, Estatus, ConceptoMaestro
+from ..models import OTE, ImportacionAnexo, PartidaAnexoImportada, Produccion, ReporteMensual, Sitio, ReporteDiario, Estatus, ConceptoMaestro, PartidaProyectada
 from django.http import JsonResponse
 from itertools import chain
-from django.db.models import Q, Case, F, When, IntegerField, Value, CharField, Sum
+from django.db.models import Q, Case, F, When, IntegerField, Value, CharField, Sum, OuterRef, Subquery, Max
 from django.db.models.functions import Coalesce
 from django.db import transaction
 from datetime import date
@@ -76,6 +76,14 @@ def ots_por_sitio_grid(request):
     query = Q(id_embarcacion=id_sitio) | Q(id_plataforma=id_sitio) | \
             Q(id_patio=id_sitio) | Q(id_intercom=id_sitio)
 
+    ultima_repro_fin = OTE.objects.filter(
+        ot_principal=OuterRef('id'),
+        id_tipo_id=5,
+        estatus=1
+    ).values('ot_principal').annotate(
+        max_fin=Max(Coalesce('fecha_termino_real', 'fecha_termino_programado'))
+    ).values('max_fin')
+
     queryset = OTE.objects.filter(
         query,     
         id_tipo_id=4,            
@@ -85,7 +93,13 @@ def ots_por_sitio_grid(request):
 
     queryset = queryset.annotate(
         inicio_vigencia=Coalesce('fecha_inicio_real', 'fecha_inicio_programado'),
-        fin_vigencia=Coalesce('fecha_termino_real', 'fecha_termino_programado')
+        fin_propio=Coalesce('fecha_termino_real', 'fecha_termino_programado'),
+        fin_repro=Subquery(ultima_repro_fin)
+    ).annotate(
+        fin_vigencia=Case(
+            When(fin_repro__gt=F('fin_propio'), then=F('fin_repro')),
+            default=F('fin_propio')
+        )
     ).filter(
         inicio_vigencia__lte=fecha_fin_mes,
         fin_vigencia__gte=fecha_inicio_mes
@@ -274,7 +288,6 @@ def obtener_partidas_produccion(request):
         return JsonResponse([], safe=False)
 
     partidas_consolidadas = {}
-    
     mapa_id_a_key = {}
 
     for p in todas_partidas:
@@ -304,7 +317,7 @@ def obtener_partidas_produccion(request):
         mapa_id_a_key[p.id] = key
 
     ids_totales_db = list(mapa_id_a_key.keys())
-    
+
     resumen_produccion = Produccion.objects.filter(
         id_reporte_mensual__id_ot_id=id_ot,
         id_reporte_mensual__mes=mes,
@@ -340,10 +353,33 @@ def obtener_partidas_produccion(request):
         if item['es_excedente']:
             produccion_mapa[master_key]['es_excedente'] = True
 
+    resumen_programacion = PartidaProyectada.objects.filter(
+        ot_id=id_ot,
+        partida_anexo_id__in=ids_totales_db,
+        fecha__year=anio,
+        fecha__month=mes
+    ).values('partida_anexo_id', 'fecha__day', 'volumen_programado')
+
+    programacion_mapa = {}
+
+    for item in resumen_programacion:
+        id_db = item['partida_anexo_id']
+        key_consolidada = mapa_id_a_key.get(id_db)
+        if not key_consolidada: continue
+
+        dia = item['fecha__day']
+        master_key = (key_consolidada, dia)
+        
+        vol_prog = float(item['volumen_programado'] or 0)
+        
+        programacion_mapa[master_key] = programacion_mapa.get(master_key, 0.0) + vol_prog
+
     data_final = []
+    
     for key, datos in partidas_consolidadas.items():
         
         suma_mes_visual = 0.0
+        suma_prog_mes_visual = 0.0
         hay_excedente_visual = False
         
         fila_grid = {
@@ -353,33 +389,40 @@ def obtener_partidas_produccion(request):
             'unidad': datos['unidad'],
             'vol_total_proyectado': datos['vol_total_proyectado'],
             'acumulado_mes': 0.0,
+            'acumulado_programado': 0.0,
             'archivo': datos['archivo'],
             'anexo': datos['anexo']
         }
 
         for d in range(1, 32):
-            info_dia = produccion_mapa.get((key, d))
+            master_key = (key, d)
             
-            if info_dia:
-                val_te = info_dia['TE']
-                val_cma = info_dia['CMA']
-                es_exc = info_dia['es_excedente']
-                
-                valor_visual = val_te if tipo_tiempo == 'TE' else val_cma
+            info_dia = produccion_mapa.get(master_key)
+            val_te = info_dia['TE'] if info_dia else 0.0
+            val_cma = info_dia['CMA'] if info_dia else 0.0
+            es_exc = info_dia['es_excedente'] if info_dia else False
+            val_prog = programacion_mapa.get(master_key, 0.0)
+            valor_visual = val_te if tipo_tiempo == 'TE' else val_cma
+            
+            if val_te == 0 and val_cma == 0 and val_prog == 0 and not es_exc:
+                fila_grid[f'dia{d}'] = None
+            else:
                 fila_grid[f'dia{d}'] = {
                     'valor': valor_visual,
+                    'programado': val_prog,
                     'es_excedente': es_exc,
                     'te_dia': val_te,
-                    'cma_dia': val_cma      
+                    'cma_dia': val_cma
                 }
-                
-                suma_mes_visual += val_te + val_cma
-                if es_exc: hay_excedente_visual = True
-            else:
-                fila_grid[f'dia{d}'] = None
+            
+            suma_mes_visual += val_te + val_cma
+            suma_prog_mes_visual += val_prog
+            if es_exc: hay_excedente_visual = True
         
         fila_grid['acumulado_mes'] = suma_mes_visual
+        fila_grid['acumulado_programado'] = suma_prog_mes_visual
         fila_grid['estatus_gpu'] = 'BLOQUEADO' if hay_excedente_visual else 'AUTORIZADO'
+        
         data_final.append(fila_grid)
     
     respuesta = {

@@ -104,50 +104,67 @@ class NativeSelectEditor {
 class ProduccionRenderer {
     constructor(props) {
         this.el = document.createElement('div');
+        this.el.className = 'd-flex flex-column justify-content-center align-items-end tui-grid-cell-content pe-2'; 
         this.el.style.width = '100%';
         this.el.style.height = '100%';
-        this.el.className = 'd-flex justify-content-center align-items-center tui-grid-cell-content';
+        this.el.style.lineHeight = '1.2';
         this.render(props);
     }
     
     getElement() { return this.el; }
     
     render(props) {
-        const valorOriginal = props.value;
+        const data = props.value;
         
-        let valorVisual = valorOriginal; 
+        let valorVisual = data; 
+        let programado = 0.0;
         let esExcedente = false;
         let teDia = 0.0;
         let cmaDia = 0.0;
-        if (valorOriginal && typeof valorOriginal === 'object') {
-            esExcedente = valorOriginal.es_excedente || false;
-            teDia = parseFloat(valorOriginal.te_dia || 0);
-            cmaDia = parseFloat(valorOriginal.cma_dia || 0);
-            valorVisual = valorOriginal.valor;
+
+        if (data && typeof data === 'object') {
+            valorVisual = data.valor;
+            programado = parseFloat(data.programado || 0);  
+            esExcedente = data.es_excedente || false;
+            teDia = parseFloat(data.te_dia || 0);
+            cmaDia = parseFloat(data.cma_dia || 0);
         } 
 
+        let valNum = parseFloat(valorVisual);
+        if (isNaN(valNum)) valNum = 0;
         const displayValue = (valorVisual !== null && valorVisual !== undefined && valorVisual !== '') 
-            ? numberFormatter.format(Number(valorVisual))
+            ? numberFormatter.format(valNum)
             : '';
 
-        this.el.innerText = displayValue;
-        this.el.className = 'd-flex justify-content-center align-items-center tui-grid-cell-content';
+        let htmlContent = `<span class="val-real">${displayValue}</span>`;
         
+        if (programado > 0) {
+            htmlContent += `<span class="prog-text">P: ${numberFormatter.format(programado)}</span>`;
+        }
+        
+        this.el.innerHTML = htmlContent;
+
         const diaNum = props.columnInfo.name.replace('dia', '');
         const totalDia = teDia + cmaDia;
         const fmt = (n) => numberFormatter.format(n);
         
-        let tooltipText = `Día: ${diaNum}\n` +
-                            `-------------------\n` +
-                            `Ejecutado TE:  ${fmt(teDia)}\n` +
-                            `Ejecutado CMA: ${fmt(cmaDia)}\n` +
-                            `-------------------\n` +
-                            `Total Día:     ${fmt(totalDia)}`;
-
+        const diferencia = valNum - programado;
+        const signoDiff = diferencia > 0 ? '+' : '';
+        
+        let tooltipText = `📅 Día: ${diaNum}\n` +
+                        `-------------------\n` +
+                        `🎯 Programado:  ${fmt(programado)}\n` +
+                        `📊 Ejecutado:   ${fmt(totalDia)} (TE+CMA)\n` +
+                        `-------------------\n` +
+                        `Diff: ${signoDiff}${fmt(diferencia)}\n\n` +
+                        `Detalle:\n` + 
+                        `TE:  ${fmt(teDia)}\n` +
+                        `CMA: ${fmt(cmaDia)}`;
         if (esExcedente) {
-            this.el.classList.add('text-danger', 'fw-bold');
-            this.el.style.backgroundColor = '#fff5f5';
+            this.el.classList.add('celda-excedente-moderna');
             tooltipText = "⚠️ VOLUMEN EXCEDENTE ⚠️\n\n" + tooltipText;
+        } else if (valNum > 0 && programado > 0 && valNum >= programado) {
+            this.el.classList.add('text-success'); 
         }
 
         this.el.title = tooltipText;
@@ -159,18 +176,37 @@ class ProduccionEditor {
         const el = document.createElement('input');
         el.type = 'text';
         el.className = 'form-control form-control-sm text-end'; 
+        
+        this.originalData = props.value; 
+
         let valor = props.value;
         if (valor && typeof valor === 'object') {
             valor = valor.valor !== undefined ? valor.valor : ''; 
         }
+        
         if ((typeof valor === 'object' && valor !== null) || String(valor) === '[object Object]') {
             valor = '';
         }
+        
         el.value = (valor !== null && valor !== undefined) ? String(valor) : '';
         this.el = el;
     }
+
     getElement() { return this.el; }
-    getValue() { return this.el.value; }
+
+    getValue() { 
+        const nuevoValor = this.el.value;
+        
+        if (this.originalData && typeof this.originalData === 'object') {
+            return {
+                ...this.originalData, 
+                valor: nuevoValor,    
+            };
+        }
+        
+        return nuevoValor; 
+    }
+
     mounted() { this.el.select(); }
 }
 
@@ -634,6 +670,15 @@ $(document).ready(function() {
             name: `dia${i+1}`,
             width: 60,
             align: 'right',
+            formatter: ({ value }) => {
+                if (value && typeof value === 'object') {
+                    return value.valor !== undefined && value.valor !== null ? String(value.valor) : '';
+                }
+                return value !== undefined && value !== null ? String(value) : '';
+            },
+            copyOptions: {
+                useFormattedValue: true
+            },
             editor: { type: ProduccionEditor }, 
             renderer: { type: ProduccionRenderer } 
         }));
@@ -678,6 +723,22 @@ $(document).ready(function() {
                 ],
                 data: [],
                 draggable: true
+            });
+
+            gridProduccion.on('beforeChange', (ev) => {
+                ev.changes.forEach(change => {
+                    const { rowKey, columnName, nextValue } = change;
+                    const rowData = gridProduccion.getRow(rowKey);
+                    const oldValue = rowData[columnName];
+                    if (oldValue && typeof oldValue === 'object') {
+                        if (typeof nextValue !== 'object') {
+                            change.nextValue = {
+                                ...oldValue,
+                                valor: nextValue
+                            };
+                        }
+                    }
+                });
             });
         }
     }

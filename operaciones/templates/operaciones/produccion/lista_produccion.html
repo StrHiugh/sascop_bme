@@ -149,8 +149,60 @@
             transparent 5px,
             rgba(0,0,0,0.03) 5px,
             rgba(0,0,0,0.03) 10px
-    );
-}
+        );
+    }
+    
+    .celda-produccion-container {
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+        align-items: flex-end !important;
+        width: 100%;
+        height: 100%;
+        padding-right: 8px;
+        line-height: 1.1 !important;
+    }
+
+    .prog-text {
+        font-size: 10px !important;
+        color: #888 !important;
+        margin-top: 1px !important;
+        display: block;
+        white-space: nowrap;
+    }
+
+    .val-real {
+        font-size: 13px !important;
+        font-weight: 600 !important;
+        color: #333 !important;
+        display: block;
+    }
+
+    .tui-grid-cell-has-input .tui-grid-cell-content {
+        padding: 0 !important;
+    }
+
+    .tui-grid-row-even > td {
+        background-color: #f8f8f8;
+    }
+
+    .celda-excedente-moderna {
+        background: linear-gradient(to bottom, #fff0f0 0%, #ffe0e0 100%) !important;
+    }
+
+    .celda-excedente-moderna .val-real {
+        color: #8a0000 !important;
+        font-weight: 600 !important;
+        font-size: 13px !important;
+        text-shadow: 0px 1px 0px rgba(255,255,255,0.5); 
+    }
+
+    .celda-excedente-moderna .prog-text {
+        color: #cc0000 !important;
+        font-weight: 600 !important;
+        font-size: 10px !important;
+
+    }
 
 </style>
 

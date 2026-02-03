@@ -5,7 +5,7 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
 from django.shortcuts import render, get_object_or_404
-from ..models import OTE, OTDetalle, PasoOt, ImportacionAnexo, PartidaAnexoImportada, UnidadMedida, ConceptoMaestro
+from ..models import OTE, OTDetalle, PasoOt, ImportacionAnexo, PartidaAnexoImportada, UnidadMedida, ConceptoMaestro, PartidaProyectada
 from ..registro_actividad import registrar_actividad
 from operaciones.models.catalogos_models import Sitio, Estatus, ResponsableProyecto, Tipo
 from django.db.models import Case, When, Value, CharField,Q, ExpressionWrapper, Count,F, FloatField, IntegerField
@@ -1039,28 +1039,59 @@ def importar_anexo_ot(request):
                     continue
 
             if target_sheet is None:
-                msg_error = f"No se encontró tabla válida con columna PARTIDA, CONCEPTO, UNIDAD, etc. Revisado: {', '.join(logs_busqueda)}"
+                msg_error = f"No se encontró tabla válida con columna PARTIDA, CONCEPTO, UNIDAD, VOLUMEN PTE, P.U. M.N. Revisado: {', '.join(logs_busqueda)}"
                 return JsonResponse({'exito': False, 'tipo_aviso':'advertencia', 'detalles': msg_error})
 
             df = pd.read_excel(xls, sheet_name=target_sheet, header=header_row_index)
-            df.columns = [str(c).strip().upper() for c in df.columns]
             
-            cols_req = ['ANEXO', 'PARTIDA', 'CONCEPTO', 'UNIDAD', 'VOLUMEN PTE', 'P.U. M.N.', 'P.U. USD']
+            columnas_fecha = []
+            mapa_renombre = {}
+
+            for col in df.columns:
+                es_fecha = False
+                fecha_obj = None
+                
+                if isinstance(col, (datetime, date)):
+                    es_fecha = True
+                    fecha_obj = col
+                    if isinstance(fecha_obj, datetime):
+                        fecha_obj = fecha_obj.date()
+                
+                elif isinstance(col, str):
+                    try:
+                        fecha_obj = pd.to_datetime(col, dayfirst=True).date()
+                        es_fecha = True
+                    except:
+                        pass
+                
+                if es_fecha and fecha_obj:
+                    columnas_fecha.append({'col_name': col, 'fecha': fecha_obj})
+                else:
+                    mapa_renombre[col] = str(col).strip().upper()
+            df.rename(columns=mapa_renombre, inplace=True)
+
+            cols_req = ['ANEXO', 'PARTIDA', 'CONCEPTO', 'UNIDAD', 'VOLUMEN PTE']
+            tiene_pu_mn = 'P.U. M.N.' in df.columns or 'P.U.M.N.' in df.columns
+            
             missing_cols = [col for col in cols_req if col not in df.columns]
             
             if missing_cols:
                 if 'ANEXO' in missing_cols:
-                    return JsonResponse({'exito': False, 'tipo_aviso':'advertencia', 'detalles': f'Falta la columna obligatoria: ANEXO'})
+                    return JsonResponse({'exito': False, 'tipo_aviso':'advertencia', 'detalles': 'Falta la columna obligatoria: ANEXO'})
+                return JsonResponse({'exito': False, 'tipo_aviso':'advertencia', 'detalles': f'Faltan columnas: {missing_cols}'})
+            
+            if not tiene_pu_mn:
+                return JsonResponse({'exito': False, 'tipo_aviso':'advertencia', 'detalles': 'Falta columna P.U. M.N.'})
 
+            col_pu_mn = 'P.U. M.N.' if 'P.U. M.N.' in df.columns else 'P.U.M.N.'
             usar_filtro_ok = 'OK' in df.columns
 
             def clean_str(val):
-                if pd.isna(val) or val is None:
-                    return ""
+                if pd.isna(val) or val is None: return ""
                 s = str(val).upper()
                 s = s.replace('\r\n', ' ').replace('\n', ' ').replace('\r', ' ').replace('\t', ' ')
                 res = " ".join(s.split())
-                if res == 'NAN' or res == 'NONE': return ""
+                if res in ['NAN', 'NONE']: return ""
                 return res
 
             def limpiar_moneda(valor):
@@ -1095,37 +1126,35 @@ def importar_anexo_ot(request):
 
             errores_validacion = []
             partidas_validas = []
+            
+            hay_programacion_diaria = False
 
             for index, row in df.iterrows():
                 raw_anexo = str(row.get('ANEXO', ''))
                 raw_codigo = str(row['PARTIDA'])
                 raw_concepto = str(row['CONCEPTO'])
                 raw_unidad = str(row['UNIDAD'])
-                norm_anexo = clean_str(raw_anexo)
-                if not norm_anexo: norm_anexo = 'S/A'
-                
+                norm_anexo = clean_str(raw_anexo) or 'S/A'
                 norm_codigo = clean_str(raw_codigo) 
                 norm_concepto = clean_str(raw_concepto)
                 norm_unidad_txt = clean_str(raw_unidad)
 
                 if usar_filtro_ok:
                     val_ok = clean_str(row.get('OK'))
-                    if val_ok != 'OK':
-                        continue 
+                    if val_ok != 'OK': continue 
                 
-                if not norm_unidad_txt or norm_unidad_txt in ['-', '.', 'nan', 'NAN']:
-                    continue 
-                
-                if not norm_codigo or not norm_concepto:
-                    continue
+                if not norm_unidad_txt or norm_unidad_txt in ['-', '.', 'NAN']: continue 
+                if not norm_codigo or not norm_concepto: continue
 
-                p_mn_check = limpiar_moneda(row.get('P.U. M.N.'))
+                p_mn_check = limpiar_moneda(row.get(col_pu_mn))
                 vol_check = limpiar_moneda(row.get('VOLUMEN PTE'))
                 
                 unidad_id_resuelto = unidades_lookup.get(norm_unidad_txt)
 
                 if not unidad_id_resuelto:
                     fila_error = row.copy()
+                    for cf in columnas_fecha:
+                        if cf['col_name'] in fila_error: fila_error[cf['col_name']] = str(fila_error[cf['col_name']])
                     fila_error['OBSERVACIONES_SISTEMA'] = f"Unidad '{raw_unidad}' no existe en el sistema."
                     errores_validacion.append(fila_error)
                     continue
@@ -1141,23 +1170,41 @@ def importar_anexo_ot(request):
                     if prod_candidato:
                         errores_encontrados = []
                         db_desc = clean_str(prod_candidato.descripcion)
-                        if db_desc != norm_concepto:
+                        if db_desc != norm_concepto: 
                             errores_encontrados.append(f"DESCRIPCIÓN DIFERENTE.")
                         if prod_candidato.unidad_medida.id != unidad_id_resuelto:
                             db_unit = prod_candidato.unidad_medida.clave
                             errores_encontrados.append(f"UNIDAD DIFERENTE. Excel: '{raw_unidad}' vs Catálogo: '{db_unit}'")
-                        if not errores_encontrados:
+                        if not errores_encontrados: 
                             errores_encontrados.append("Posible duplicidad en catálogo.")
                         razon = " | ".join(errores_encontrados)
                     else:
-                        if norm_concepto in conceptos_set:
+                        if norm_concepto in conceptos_set: 
                             razon = f"CÓDIGO INCORRECTO. Partida '{norm_codigo}' no existe."
-                        else:
+                        else: 
                             razon = f"NO ENCONTRADO en catálogo."
 
+                    for cf in columnas_fecha:
+                        if cf['col_name'] in fila_error: fila_error[cf['col_name']] = str(fila_error[cf['col_name']])
                     fila_error['OBSERVACIONES_SISTEMA'] = razon
                     errores_validacion.append(fila_error)
                 else:
+                    schedule_data = []
+                    
+                    for col_info in columnas_fecha:
+                        nombre_col_original = col_info['col_name']
+                        fecha_real = col_info['fecha']
+                        
+                        val_fecha = row.get(nombre_col_original)
+                        vol_prog = limpiar_moneda(val_fecha)
+                        
+                        if vol_prog > 0:
+                            schedule_data.append({
+                                'fecha': fecha_real,
+                                'volumen': vol_prog
+                            })
+                            hay_programacion_diaria = True
+
                     try:
                         partidas_validas.append({
                             'producto': producto_encontrado,
@@ -1168,7 +1215,8 @@ def importar_anexo_ot(request):
                             'codigo': norm_codigo,
                             'concepto': norm_concepto,
                             'unidad_obj': producto_encontrado.unidad_medida,
-                            'anexo_row': norm_anexo
+                            'anexo_row': norm_anexo,
+                            'schedule': schedule_data
                         })
                     except Exception as e:
                         fila_error = row.copy()
@@ -1209,8 +1257,7 @@ def importar_anexo_ot(request):
 
             if not partidas_validas:
                 msg_vacio = 'El archivo no contenía partidas válidas.'
-                if usar_filtro_ok:
-                    msg_vacio += ' (Se detectó columna OK, pero ninguna fila tenía el valor "OK")'
+                if usar_filtro_ok: msg_vacio += ' (Se detectó columna OK, pero ninguna fila tenía el valor "OK")'
                 return JsonResponse({'exito': False, 'tipo_aviso':'advertencia', 'detalles': msg_vacio})
 
             with transaction.atomic():
@@ -1238,16 +1285,34 @@ def importar_anexo_ot(request):
                     ) for p in partidas_validas
                 ]
                 
-                PartidaAnexoImportada.objects.bulk_create(objs_crear)
+                partidas_creadas = PartidaAnexoImportada.objects.bulk_create(objs_crear)
+                
+                if hay_programacion_diaria:
+                    objs_proyeccion = []
+                    
+                    for partida_db, data_original in zip(partidas_creadas, partidas_validas):
+                        
+                        schedule = data_original.get('schedule', [])
+                        
+                        for item_prog in schedule:
+                            objs_proyeccion.append(PartidaProyectada(
+                                ot=ot,
+                                partida_anexo=partida_db,
+                                fecha=item_prog['fecha'],
+                                volumen_programado=item_prog['volumen']
+                            ))
+                    
+                    if objs_proyeccion:
+                        PartidaProyectada.objects.bulk_create(objs_proyeccion)
                 
                 exito_recalc, msg_recalc = recalcular_excedentes_ot_completa(ot_id)
                 if not exito_recalc:
                     print(f"Advertencia: Falló recálculo de excedentes: {msg_recalc}")
 
             msg_final = f'Importación completada. {len(objs_crear)} partidas registradas. {msg_recalc}'
-            if exito_recalc:
-                msg_final += " Se han actualizado los semáforos de producción automáticamente."
-
+            if hay_programacion_diaria:
+                msg_final += " Se detectó y guardó la programación diaria (fechas)."
+            
             return JsonResponse({'exito': True, 'tipo_aviso':'exito', 'detalles': msg_final})
 
         except Exception as e:
