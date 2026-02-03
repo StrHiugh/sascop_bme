@@ -660,6 +660,8 @@ $(document).ready(function() {
                     if (!otSeleccionada || otSeleccionada.id_ot !== rowData.id_ot) {
                         otSeleccionada = rowData;
                         cargarDetalleProduccion(otSeleccionada);
+                        console.log(otSeleccionada);
+                        $('#lbl-ot-seleccionada').text(otSeleccionada.ot);
                     }
                 }
             });
