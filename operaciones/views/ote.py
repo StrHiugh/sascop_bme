@@ -113,15 +113,13 @@ def datatable_ot(request):
 
     if search_value:
         ots = ots.filter(
-            Q(descripcion_trabajo__icontains=search_value) |
             Q(oficio_ot__icontains=search_value) |
             Q(orden_trabajo__icontains=search_value) 
         )
         
     if filtro_buscar:
         ots = ots.filter(
-            Q(descripcion_trabajo__icontains=filtro_buscar) |
-            Q(oficio_ot__icontains=filtro_buscar) |
+            Q(id_pte_header__oficio_pte__icontains=filtro_buscar) |
             Q(orden_trabajo__icontains=filtro_buscar)             
         )
     
@@ -283,6 +281,7 @@ def obtener_datos_ot(request):
             'id_embarcacion': ot.id_embarcacion,
             'id_plataforma': ot.id_plataforma,
             'id_intercom': ot.id_intercom,
+            'id_cliente': ot.id_cliente_id,
             'id_patio': ot.id_patio,
             'descripcion_tipo':ot.id_tipo.descripcion,
             'estatus_ot':ot.id_estatus_ot_id,

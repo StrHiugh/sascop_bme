@@ -86,8 +86,8 @@ $(document).ready(function () {
                 "orderable": true,
             },
             {
-                "data": "oficio_ot",
-                "title": "Oficio OT",
+                "data": "pte_padre",
+                "title": "PTE proveniente",
                 "orderable": true,
             },
             {
@@ -443,9 +443,72 @@ $(document).ready(function () {
         cargarResponsablesProyecto();
         cargarOTsPrincipales(null);
         const modalElement = document.getElementById('modalCrearOT');
+        $(modalElement).one('shown.bs.modal', function () {
+            setTimeout(() => {
+                const $select = $('#ot_principal');
+                const $container = $select.next('.select2-container');
+                if (!$select.prop('disabled')) {
+                    $select.select2('focus'); 
+                }
+                $container.addClass('resaltar-atencion');
+                $select.one('select2:open change', function() {
+                    $container.removeClass('resaltar-atencion');
+                });
+            }, 1000);
+        });
         const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
         modal.show();
     }
+
+    $(document).on('change', '#ot_principal', function () {
+        const idOtPadre = $(this).val();
+        if (!idOtPadre) return;
+
+        BMAjax(urlObtenerDatos, { id: idOtPadre }, "GET")
+            .done(function (respuesta) {
+                if (respuesta.exito) {
+                    const ot = respuesta.datos;
+                    $("#orden_trabajo").val(ot.orden_trabajo); 
+                    $("#oficio_solicitud").val(ot.oficio_solicitud);
+                    $("#descripcion_trabajo").val(ot.descripcion_trabajo);
+                    $("#oficio_ot").val(ot.oficio_ot);
+                    $("#comentario_general").val(ot.comentario);
+                    $("#responsable_cliente").val(ot.responsable_cliente);
+                    $("#monto_mxn").val(ot.monto_mxn || "0.00");
+                    $("#monto_usd").val(ot.monto_usd || "0.00");
+                    //$("#plazo_dias").val(ot.plazo_dias || "0");
+                    if (ot.id_cliente) {
+                        $("#id_cliente").val(ot.id_cliente).trigger('change');
+                    }
+                    if (ot.responsable_proyecto) {
+                        if ($('#responsable_proyecto option[value="' + ot.responsable_proyecto + '"]').length > 0) {
+                            $("#responsable_proyecto").val(ot.responsable_proyecto).trigger('change');
+                        } else {
+                            cargarResponsablesProyecto().done(function() {
+                                $("#responsable_proyecto").val(ot.responsable_proyecto).trigger('change');
+                            });
+                        }
+                    }
+                    $("#id_frente").val(ot.id_frente).trigger('change');
+                    toggleFrenteFields().then(function () {
+                        if (ot.id_embarcacion) $("#id_embarcacion").val(ot.id_embarcacion).trigger('change');
+                        if (ot.id_patio) $("#id_patio").val(ot.id_patio).trigger('change');
+                        if (ot.id_plataforma) $("#id_plataforma").val(ot.id_plataforma).trigger('change');
+                        if (ot.id_intercom) $("#id_intercom").val(ot.id_intercom).trigger('change');
+                    });
+
+                    aviso("exito", "Datos precargados desde la OT Principal.");
+
+                } else {
+                    aviso("advertencia", "No se pudieron obtener los datos de la OT Principal.");
+                }
+            })
+            .fail(function () {
+                aviso("error", "Error de conexión al buscar datos de la OT Principal.");
+            })
+            .always(function () {
+            });
+    });
 
     function cargarClientes() {
         return $.ajax({
