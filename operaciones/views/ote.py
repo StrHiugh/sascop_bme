@@ -1006,7 +1006,7 @@ def importar_anexo_ot(request):
 
             target_sheet = None
             header_row_index = -1
-            sheet_names = sorted(xls.sheet_names, key=lambda x: 0 if 'ANEXO C' in x.upper() else 1)
+            sheet_names = sorted(xls.sheet_names, key=lambda x: 0 if ('ANEXO C' in x.upper() or 'RECURSOS' in x.upper()) else 1)
             logs_busqueda = []
 
             for sheet in sheet_names:
