@@ -282,7 +282,7 @@ def obtener_partidas_produccion(request):
         importacion_anexo__es_activo=True
     ).select_related(
         'unidad_medida'
-    ).order_by('importacion_anexo__ot__id', 'orden_fila')
+    ).order_by('id')
 
     if not todas_partidas:
         return JsonResponse([], safe=False)
