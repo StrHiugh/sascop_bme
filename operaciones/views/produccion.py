@@ -693,7 +693,7 @@ def vincular_partida_ot(request):
             precio_unitario_mn=concepto.precio_unitario_mn,
             precio_unitario_usd=concepto.precio_unitario_usd,
             orden_fila=ultimo_orden,
-            anexo=concepto.sub_anexo.clave_anexo,
+            anexo=concepto.sub_anexo.clave_anexo if concepto.sub_anexo else None,
         )
 
         return JsonResponse({'exito': True, 'mensaje': 'Partida vinculada correctamente'})
