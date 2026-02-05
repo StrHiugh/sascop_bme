@@ -8,6 +8,40 @@ const currencyFormatter = new Intl.NumberFormat('es-MX', {
     maximumFractionDigits: 2 
 });
 
+const moneyFormatter = new Intl.NumberFormat('es-MX', {
+    style: 'currency',
+    currency: 'MXN',
+    minimumFractionDigits: 2
+});
+
+let storeTotales = { aut_mn: 0, aut_usd: 0, ejec_mn: 0, ejec_usd: 0 };
+
+function actualizarKPIsFinancieros(totales) {
+    storeTotales = totales || { aut_mn: 0, aut_usd: 0, ejec_mn: 0, ejec_usd: 0 };
+    $('#lbl-aut-mn').text(moneyFormatter.format(storeTotales.aut_mn));
+    $('#lbl-aut-usd').text(moneyFormatter.format(storeTotales.aut_usd));
+    $('#lbl-ejec-mn').text(moneyFormatter.format(storeTotales.ejec_mn));
+    $('#lbl-ejec-usd').text(moneyFormatter.format(storeTotales.ejec_usd));
+
+    calcularHomologado();
+}
+
+function calcularHomologado() {
+    const tc = parseFloat($('#input-tc-kpi').val()) || 0;
+    
+    // Autorizado Homologado = MN + (USD * TC)
+    const totalAut = storeTotales.aut_mn + (storeTotales.aut_usd * tc);
+    // Ejecutado Homologado = MN + (USD * TC)
+    const totalEjec = storeTotales.ejec_mn + (storeTotales.ejec_usd * tc);
+
+    $('#lbl-total-hom-aut').text(moneyFormatter.format(totalAut));
+    $('#lbl-total-hom-ejec').text(moneyFormatter.format(totalEjec));
+}
+
+$('#input-tc-kpi').on('input change', function() {
+    calcularHomologado();
+});
+
 class StatusRenderer {
     constructor(props) {
         this.el = document.createElement('div');
@@ -781,7 +815,7 @@ $(document).ready(function() {
     function cargarDetalleProduccion(ot) {
         const mes = $('#filtro-mes').val();
         const anio = $('#filtro-anio').val();
-
+        $('.lbl-tipo-tiempo-kpi').text(tipoTiempoActivo);
         $('#kpi-status-text').text("CARGANDO PARTIDAS...").removeClass('text-success text-danger').addClass('text-warning');
         
         $.ajax({
@@ -796,13 +830,17 @@ $(document).ready(function() {
             success: function(response) {
                 let data = [];
                 let diasBloqueados = [];
+                let totales = { aut_mn: 0, aut_usd: 0, ejec_mn: 0, ejec_usd: 0 };
 
                 if (Array.isArray(response)) {
                     data = response;
                 } else if (response.partidas) {
                     data = response.partidas;
                     diasBloqueados = response.dias_bloqueados || [];
+                    if(response.totales) totales = response.totales;
                 }
+
+                actualizarKPIsFinancieros(totales);
 
                 if (gridProduccion) {
                     gridProduccion.resetData(data);
@@ -810,11 +848,6 @@ $(document).ready(function() {
                     bloquearDiasFirmados(diasBloqueados);
                 }
 
-                if (data.length > 0) {
-                    $('#kpi-status-text').text(`OT: ${ot.ot} CARGADA`).removeClass('text-warning').addClass('text-primary');
-                } else {
-                    $('#kpi-status-text').text(`LA OT ${ot.ot} NO TIENE ANEXO IMPORTADO`).removeClass('text-primary').addClass('text-danger');
-                }
             },
             error: function(xhr) {
                 $('#kpi-status-text').text("ERROR CARGANDO PARTIDAS").addClass('text-danger');

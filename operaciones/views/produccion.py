@@ -289,6 +289,8 @@ def obtener_partidas_produccion(request):
 
     partidas_consolidadas = {}
     mapa_id_a_key = {}
+    total_aut_mn = 0.0
+    total_aut_usd = 0.0
 
     for p in todas_partidas:
         anexo_clean = p.anexo.strip() if p.anexo else 'S/A'
@@ -298,7 +300,12 @@ def obtener_partidas_produccion(request):
         key = (anexo_clean, codigo_clean, desc_clean)
         
         vol_registro = float(p.volumen_proyectado or 0)
+        pu_mn = float(p.precio_unitario_mn or 0)
+        pu_usd = float(p.precio_unitario_usd or 0)
 
+        total_aut_mn += vol_registro * pu_mn
+        total_aut_usd += vol_registro * pu_usd
+        
         if key not in partidas_consolidadas:
             partidas_consolidadas[key] = {
                 'id_principal': p.id,
@@ -307,6 +314,8 @@ def obtener_partidas_produccion(request):
                 'concepto': p.descripcion_concepto,
                 'unidad': p.unidad_medida.clave if p.unidad_medida else 'N/A',
                 'vol_total_proyectado': vol_registro,
+                'pu_mn': pu_mn,   
+                'pu_usd': pu_usd, 
                 'anexo': anexo_clean,
                 'archivo': archivo_url
             }
@@ -375,7 +384,9 @@ def obtener_partidas_produccion(request):
         programacion_mapa[master_key] = programacion_mapa.get(master_key, 0.0) + vol_prog
 
     data_final = []
-    
+    total_ejec_mn = 0.0
+    total_ejec_usd = 0.0
+
     for key, datos in partidas_consolidadas.items():
         
         suma_mes_visual = 0.0
@@ -422,12 +433,21 @@ def obtener_partidas_produccion(request):
         fila_grid['acumulado_mes'] = suma_mes_visual
         fila_grid['acumulado_programado'] = suma_prog_mes_visual
         fila_grid['estatus_gpu'] = 'BLOQUEADO' if hay_excedente_visual else 'AUTORIZADO'
-        
+        total_ejec_mn += suma_mes_visual * datos['pu_mn']
+        total_ejec_usd += suma_mes_visual * datos['pu_usd']
         data_final.append(fila_grid)
     
+    totales_financieros = {
+        'aut_mn': total_aut_mn,
+        'aut_usd': total_aut_usd,
+        'ejec_mn': total_ejec_mn,
+        'ejec_usd': total_ejec_usd
+    }
+
     respuesta = {
         'partidas': data_final,
-        'dias_bloqueados': dias_bloqueados
+        'dias_bloqueados': dias_bloqueados,
+        'totales': totales_financieros
     }
     return JsonResponse(respuesta)
 
