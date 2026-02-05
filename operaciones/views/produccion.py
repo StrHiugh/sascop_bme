@@ -304,7 +304,6 @@ def obtener_partidas_produccion(request):
         pu_usd = float(p.precio_unitario_usd or 0)
 
         total_aut_mn += vol_registro * pu_mn
-        print(f"vol_registro: {vol_registro}, pu_mn: {pu_mn}, total_aut_mn: {total_aut_mn}")
         total_aut_usd += vol_registro * pu_usd
         
         if key not in partidas_consolidadas:
@@ -657,7 +656,7 @@ def buscar_productos_catalogo(request):
         codigo = c.partida_ordinaria if c.partida_ordinaria else c.partida_extraordinaria
         results.append({
             'id': c.id,
-            'text': f"{codigo} - {c.descripcion}",
+            'text': f"{codigo} - {c.descripcion} - {c.sub_anexo.clave_anexo if c.sub_anexo else 'S/A'}",
             'partida': codigo,
             'unidad': c.unidad_medida.clave if c.unidad_medida else 'N/A',
             'precio': float(c.precio_unitario_mn or 0),
