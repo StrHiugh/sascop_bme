@@ -304,6 +304,7 @@ def obtener_partidas_produccion(request):
         pu_usd = float(p.precio_unitario_usd or 0)
 
         total_aut_mn += vol_registro * pu_mn
+        print(f"vol_registro: {vol_registro}, pu_mn: {pu_mn}, total_aut_mn: {total_aut_mn}")
         total_aut_usd += vol_registro * pu_usd
         
         if key not in partidas_consolidadas:
@@ -697,7 +698,8 @@ def vincular_partida_ot(request):
         if PartidaAnexoImportada.objects.filter(
             importacion_anexo=importacion, 
             id_partida=codigo_partida,
-            descripcion_concepto=concepto.descripcion
+            descripcion_concepto=concepto.descripcion,
+            anexo=concepto.sub_anexo.clave_anexo if concepto.sub_anexo else None,
         ).exists():
             return JsonResponse({'exito': False, 'mensaje': f'La partida {codigo_partida} con esta descripción ya existe en esta OT.'})
 
