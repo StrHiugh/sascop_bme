@@ -705,7 +705,7 @@ $(document).ready(function() {
             header: `${i+1}`,
             name: `dia${i+1}`,
             width: 60,
-            align: 'right',
+            align: 'center',
             formatter: ({ value }) => {
                 if (value && typeof value === 'object') {
                     return value.valor !== undefined && value.valor !== null ? String(value.valor) : '';
