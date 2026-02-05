@@ -1187,15 +1187,15 @@ $(document).ready(function () {
                                     <div class="form-check form-switch">
                                         <input class="form-check-input" type="checkbox" id="checkSoloActualizar" name="solo_actualizar">
                                         <label class="form-check-label fw-bold" for="checkSoloActualizar">
-                                            Solo cargar proyección
+                                            Actualizar Anexo/Proyección
                                         </label>
                                     </div>
                                     <div class="text-muted text-12px mt-1 ms-1">
                                         <small>
                                             <i class="fas fa-info-circle"></i> 
-                                            Actívalo si ya cargaste el Anexo C y solo quieres subir la sabana calendarizada con volúmenes proyectados ligada a las partidas existentes.
+                                            Actívalo si ya cargaste el Anexo C y solo quieres actualizar el anexo existente o la sabana calendarizada con volúmenes proyectados.
                                             <br>
-                                            Desactívalo para cargar un Anexo C o Sabana de recursos nueva desde cero.
+                                            Desactívalo para cargar un Anexo C o Sabana de recursos nuevo.
                                         </small>
                                     </div>
                                 </div>
