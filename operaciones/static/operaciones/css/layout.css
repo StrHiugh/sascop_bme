@@ -1380,3 +1380,8 @@ table.dataTable tbody tr.fila-por-definir:hover td {
     animation: pulse-border 2s infinite;
     border: 1px solid #4ec0e7 !important;
 }
+
+.form-check-input:checked {
+    background-color: #4ec0e7;
+    border-color: #4ec0e7;
+}

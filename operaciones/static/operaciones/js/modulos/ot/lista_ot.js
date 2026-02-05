@@ -1170,7 +1170,7 @@ $(document).ready(function () {
                     <div class="modal-dialog modal-dialog-centered">
                         <div class="modal-content">
                             <div class="modal-header">
-                                <h5 class="modal-title"><i class="fas fa-file-excel text-success me-2"></i>Importar Anexo C</h5>
+                                <h5 class="modal-title"><i class="fas fa-file-excel text-secondary me-2"></i>Importar Anexo C</h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                             <div class="modal-body">
@@ -1179,10 +1179,26 @@ $(document).ready(function () {
                                     <div class="mb-3">
                                         <label for="archivoAnexo" class="form-label">Seleccione el archivo Excel (.xlsx)</label>
                                         <input class="form-control" type="file" id="archivoAnexo" name="archivo" accept=".xlsx, .xls, .xlsm">
-                                        <div class="form-text text-muted" style="font-size: 12px;">
-                                            Asegúrese que el archivo contenga las columnas: PARTIDA, CONCEPTO, UNIDAD, VOLUMEN PTE, P.U.M.N., P.U.USD
+                                        <div class="text-muted text-12px mt-1 ms-1" style="font-size: 12px;">
+                                            <i class="fas fa-info-circle"></i> Asegúrese que el archivo contenga las columnas: PARTIDA, CONCEPTO, UNIDAD, VOLUMEN PTE, P.U.M.N., P.U.USD
                                         </div>
                                     </div>
+                                    <div class="alert alert-light border mb-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="checkSoloActualizar" name="solo_actualizar">
+                                        <label class="form-check-label fw-bold" for="checkSoloActualizar">
+                                            Solo cargar proyección
+                                        </label>
+                                    </div>
+                                    <div class="text-muted text-12px mt-1 ms-1">
+                                        <small>
+                                            <i class="fas fa-info-circle"></i> 
+                                            Actívalo si ya cargaste el Anexo C y solo quieres subir la sabana calendarizada con volúmenes proyectados ligada a las partidas existentes.
+                                            <br>
+                                            Desactívalo para cargar un Anexo C o Sabana de recursos nueva desde cero.
+                                        </small>
+                                    </div>
+                                </div>
                                 </form>
                             </div>
                             <div class="modal-footer">
@@ -1205,8 +1221,9 @@ $(document).ready(function () {
         const formData = new FormData($('#formImportarAnexo')[0]);
         const otId = $('#import_ot_id').val();
         const fileInput = $('#archivoAnexo')[0];
+        const soloActualizar = $('#checkSoloActualizar').is(':checked');
         formData.append('csrfmiddlewaretoken', $('input[name="csrfmiddlewaretoken"]').val());
-
+        formData.append('modo_actualizacion', soloActualizar ? 'true' : 'false');
         if (fileInput.files.length === 0) {
             aviso("advertencia", "Debe seleccionar un archivo");
             return;
@@ -1352,7 +1369,7 @@ function fnHTMLTablaDetallePTE(otId) {
                     </div>
                     <div class="tab-pane fade" id="importaciones_${otId}" role="tabpanel" aria-labelledby="importaciones-tab_${otId}">
                         <div class="actions-toolbar mb-2 d-flex justify-content-end">
-                            <button class="btn btn-sm btn-success btn-importar-excel shadow-sm" data-ot="${otId}">
+                            <button class="btn btn-sm btn-primary btn-importar-excel shadow-sm" data-ot="${otId}">
                                 <i class="fas fa-file-upload me-2"></i>Importar Anexo C inicial
                             </button>
                         </div>
@@ -1384,7 +1401,7 @@ function fnHTMLTablaDetallePTE(otId) {
                     </div>
                     <div class="tab-pane fade" id="importaciones_${otId}" role="tabpanel" aria-labelledby="importaciones-tab_${otId}">
                         <div class="actions-toolbar mb-2 d-flex justify-content-end">
-                            <button class="btn btn-sm btn-success btn-importar-excel shadow-sm" data-ot="${otId}">
+                            <button class="btn btn-sm btn-primary btn-importar-excel shadow-sm" data-ot="${otId}">
                                 <i class="fas fa-file-upload me-2"></i>Importar Anexo C modificado
                             </button>
                         </div>

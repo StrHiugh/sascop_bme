@@ -993,7 +993,8 @@ def importar_anexo_ot(request):
     if request.method == "POST":
         ot_id = request.POST.get('ot_id')
         archivo = request.FILES.get('archivo')
-        
+        modo_actualizacion = request.POST.get('modo_actualizacion') == 'true'
+
         if not ot_id or not archivo:
             return JsonResponse({'exito': False, 'tipo_aviso':'advertencia', 'detalles': 'Faltan datos (OT o Archivo)'})
 
@@ -1260,60 +1261,103 @@ def importar_anexo_ot(request):
                 return JsonResponse({'exito': False, 'tipo_aviso':'advertencia', 'detalles': msg_vacio})
 
             with transaction.atomic():
-                ImportacionAnexo.objects.filter(ot=ot, es_activo=True).update(es_activo=False)
-                
-                nueva_importacion = ImportacionAnexo.objects.create(
-                    ot=ot,
-                    archivo_excel=archivo,
-                    usuario_carga=request.user if request.user.is_authenticated else None,
-                    total_registros=len(partidas_validas),
-                    es_activo=True
-                )
-                
-                objs_crear = [
-                    PartidaAnexoImportada(
-                        importacion_anexo=nueva_importacion,
-                        id_partida=p['codigo'],
-                        descripcion_concepto=p['concepto'],
-                        unidad_medida=p['unidad_obj'],
-                        volumen_proyectado=p['volumen'],
-                        precio_unitario_mn=p['pu_mn'],
-                        precio_unitario_usd=p['pu_usd'],
-                        orden_fila=p['orden'],
-                        anexo=p['anexo_row'] 
-                    ) for p in partidas_validas
-                ]
-                
-                partidas_creadas = PartidaAnexoImportada.objects.bulk_create(objs_crear)
-                
-                if hay_programacion_diaria:
+                importacion_activa = ImportacionAnexo.objects.filter(ot_id=ot, es_activo=True).first()
+
+                if modo_actualizacion:
+                    if not importacion_activa:
+                        return JsonResponse({
+                            'exito': False, 
+                            'tipo_aviso': 'advertencia', 
+                            'detalles': 'No se puede actualizar: No existe un Anexo cargado previamente. Desactive la casilla para cargar desde cero.'
+                        })
+
+                    partidas_db = PartidaAnexoImportada.objects.filter(importacion_anexo=importacion_activa)
+                    mapa_partidas_db = { p.id_partida.strip().upper(): p for p in partidas_db }
+
                     objs_proyeccion = []
+                    partidas_vinculadas = 0
                     
-                    for partida_db, data_original in zip(partidas_creadas, partidas_validas):
-                        
-                        schedule = data_original.get('schedule', [])
-                        
-                        for item_prog in schedule:
-                            objs_proyeccion.append(PartidaProyectada(
-                                ot=ot,
-                                partida_anexo=partida_db,
-                                fecha=item_prog['fecha'],
-                                volumen_programado=item_prog['volumen']
-                            ))
+                    for data_excel in partidas_validas:
+                        codigo_excel = data_excel['codigo'].strip().upper()
+
+                        if codigo_excel in mapa_partidas_db:
+                            partida_existente = mapa_partidas_db[codigo_excel]
+                            
+                            if partida_existente.unidad_medida != data_excel['unidad_obj']:
+                                continue
+
+                            schedule = data_excel.get('schedule', [])
+                            
+                            if schedule:
+                                partidas_vinculadas += 1
+                                for item_prog in schedule:
+                                    objs_proyeccion.append(PartidaProyectada(
+                                        ot=ot,
+                                        partida_anexo=partida_existente,
+                                        fecha=item_prog['fecha'],
+                                        volumen_programado=item_prog['volumen']
+                                    ))
+                    
+                    if partidas_vinculadas == 0:
+                        transaction.set_rollback(True) 
+                        return JsonResponse({
+                            'exito': False, 
+                            'tipo_aviso': 'error', 
+                            'detalles': 'Error: Ningún código de partida del Excel coincide con las partidas registradas en la OT. Verifique que está subiendo el archivo correcto.'
+                        })
+
+                    PartidaProyectada.objects.filter(partida_anexo__importacion_anexo=importacion_activa).delete()
                     
                     if objs_proyeccion:
                         PartidaProyectada.objects.bulk_create(objs_proyeccion)
-                
-                exito_recalc, msg_recalc = recalcular_excedentes_ot_completa(ot_id)
-                if not exito_recalc:
-                    print(f"Advertencia: Falló recálculo de excedentes: {msg_recalc}")
+                    
+                    msg_final = f'Actualización exitosa. Se reemplazó la programación de {partidas_vinculadas} partidas.'
+                else:
+                    ImportacionAnexo.objects.filter(ot=ot, es_activo=True).update(es_activo=False)
+                    
+                    nueva_importacion = ImportacionAnexo.objects.create(
+                        ot=ot,
+                        archivo_excel=archivo,
+                        usuario_carga=request.user if request.user.is_authenticated else None,
+                        total_registros=len(partidas_validas),
+                        es_activo=True
+                    )
+                    
+                    objs_crear = [
+                        PartidaAnexoImportada(
+                            importacion_anexo=nueva_importacion,
+                            id_partida=p['codigo'],
+                            descripcion_concepto=p['concepto'],
+                            unidad_medida=p['unidad_obj'],
+                            volumen_proyectado=p['volumen'],
+                            precio_unitario_mn=p['pu_mn'],
+                            precio_unitario_usd=p['pu_usd'],
+                            orden_fila=p['orden'],
+                            anexo=p['anexo_row'] 
+                        ) for p in partidas_validas
+                    ]
+                    
+                    partidas_creadas = PartidaAnexoImportada.objects.bulk_create(objs_crear)
+                    
+                    if hay_programacion_diaria:
+                        objs_proyeccion = []
+                        for partida_db, data_original in zip(partidas_creadas, partidas_validas):
+                            schedule = data_original.get('schedule', [])
+                            for item_prog in schedule:
+                                objs_proyeccion.append(PartidaProyectada(
+                                    ot=ot,
+                                    partida_anexo=partida_db,
+                                    fecha=item_prog['fecha'],
+                                    volumen_programado=item_prog['volumen']
+                                ))
+                        
+                        if objs_proyeccion:
+                            PartidaProyectada.objects.bulk_create(objs_proyeccion)
 
-            msg_final = f'Importación completada. {len(objs_crear)} partidas registradas. {msg_recalc}'
-            if hay_programacion_diaria:
-                msg_final += " Se detectó y guardó la programación diaria (fechas)."
+                    msg_final = f'Nueva importación creada. {len(objs_crear)} partidas registradas.'
             
+            exito_recalc, msg_recalc = recalcular_excedentes_ot_completa(ot_id)
             return JsonResponse({'exito': True, 'tipo_aviso':'exito', 'detalles': msg_final})
-
         except Exception as e:
             return JsonResponse({'exito': False, 'tipo_aviso':'advertencia', 'detalles': f'Error interno: {str(e)}'})
 
