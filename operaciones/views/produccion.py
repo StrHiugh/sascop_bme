@@ -277,12 +277,26 @@ def obtener_partidas_produccion(request):
         estatus=1
     ).values_list('id', flat=True))
 
-    todas_partidas = PartidaAnexoImportada.objects.filter(
+    qs_partidas = PartidaAnexoImportada.objects.filter(
         importacion_anexo__ot_id__in=familia_ots_ids,
         importacion_anexo__es_activo=True
     ).select_related(
         'unidad_medida'
-    ).order_by('id')
+    )
+
+    todas_partidas = list(qs_partidas)
+
+    def sort_key_partidas(p):
+        val_anexo = p.anexo.strip().upper() if p.anexo else "ZZZZ"
+        raw_code = p.id_partida.strip()
+        try:
+            val_code = [int(part) for part in raw_code.split('.') if part.isdigit()]
+        except:
+            val_code = raw_code.split('.')
+        
+        return (val_anexo, val_code)
+
+    todas_partidas.sort(key=sort_key_partidas)
 
     if not todas_partidas:
         return JsonResponse([], safe=False)
