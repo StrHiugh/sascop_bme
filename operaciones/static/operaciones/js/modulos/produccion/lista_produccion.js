@@ -445,7 +445,7 @@ $(document).ready(function() {
             success: function(response) {
                 if (response.exito) {
                     aviso("exito", `Sábana de ${tipoTiempoActivo} guardada correctamente`);
-                    cargarDetalleProduccion(otSeleccionada);
+                    // cargarDetalleProduccion(otSeleccionada);
                 } else {
                     aviso("error", response.mensaje);
                 }
