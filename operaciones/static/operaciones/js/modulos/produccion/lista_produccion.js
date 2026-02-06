@@ -29,9 +29,7 @@ function actualizarKPIsFinancieros(totales) {
 function calcularHomologado() {
     const tc = parseFloat($('#input-tc-kpi').val()) || 0;
     
-    // Autorizado Homologado = MN + (USD * TC)
     const totalAut = storeTotales.aut_mn + (storeTotales.aut_usd * tc);
-    // Ejecutado Homologado = MN + (USD * TC)
     const totalEjec = storeTotales.ejec_mn + (storeTotales.ejec_usd * tc);
 
     $('#lbl-total-hom-aut').text(moneyFormatter.format(totalAut));

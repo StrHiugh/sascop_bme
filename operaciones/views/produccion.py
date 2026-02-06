@@ -799,7 +799,6 @@ def guardar_archivo_mensual(request):
             'mensaje': f'Error interno al guardar evidencia: {str(e)}'
         }, status=500)
 
-# En tu archivo views.py (o donde tengas la función obtener_guardias_mes)
 
 @login_required
 def obtener_guardias_mes(request):
