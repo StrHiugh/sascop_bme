@@ -694,7 +694,6 @@ $(document).ready(function() {
                     if (!otSeleccionada || otSeleccionada.id_ot !== rowData.id_ot) {
                         otSeleccionada = rowData;
                         cargarDetalleProduccion(otSeleccionada);
-                        console.log(otSeleccionada);
                         $('#lbl-ot-seleccionada').text(otSeleccionada.ot);
                     }
                 }
@@ -958,7 +957,7 @@ $(document).ready(function() {
             data: { id_sitio: idSitio },
             success: function(res) {
                 if(res.supers.length === 0) {
-                    aviso("info", "No hay superintendentes asignados a este sitio en la BD.");
+                    aviso("advertencia", "No hay superintendentes asignados a este sitio en la BD.");
                 }
                 res.supers.forEach(s => {
                     $('#select-super-a, #select-super-b').append(new Option(s.nombre, s.id));
@@ -977,7 +976,7 @@ $(document).ready(function() {
         };
 
         if(!data.id_super_a || !data.id_super_b || !data.fecha_inicio_a) {
-            return aviso("error", "Todos los campos son obligatorios");
+            return aviso("advertencia", "Todos los campos son obligatorios");
         }
 
         $.ajax({
@@ -988,7 +987,7 @@ $(document).ready(function() {
             success: function() {
                 aviso("exito", "Ciclo configurado. Calculando guardias...");
                 bootstrap.Modal.getInstance(document.getElementById('modalConfigGuardia')).hide();
-                pintarGuardiasEnGrid(); // Recalcular visuales
+                pintarGuardiasEnGrid(); 
             }
         });
     });
