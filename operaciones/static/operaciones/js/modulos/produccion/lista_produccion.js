@@ -745,8 +745,9 @@ $(document).ready(function() {
                     { 
                         header: 'Acumulado Mes', 
                         name: 'acumulado_mes', 
-                        width: 100, 
+                        width: 130, 
                         align: 'right',
+                        filter: 'select',
                         formatter: formatearNumero
                     },
                     { 
