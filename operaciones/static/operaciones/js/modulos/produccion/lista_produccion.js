@@ -816,7 +816,6 @@ $(document).ready(function() {
     function cargarDetalleProduccion(ot) {
         const mes = $('#filtro-mes').val();
         const anio = $('#filtro-anio').val();
-        $('.lbl-tipo-tiempo-kpi').text(tipoTiempoActivo);
         $('#kpi-status-text').text("CARGANDO PARTIDAS...").removeClass('text-success text-danger').addClass('text-warning');
         
         $.ajax({
