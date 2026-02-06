@@ -751,6 +751,22 @@ $(document).ready(function() {
                         formatter: formatearNumero
                     },
                     { 
+                        header: 'Producido M.N.', 
+                        name: 'monto_mn', 
+                        width: 130, 
+                        align: 'right',
+                        filter: 'select',
+                        formatter: formatearDinero
+                    },
+                    { 
+                        header: 'Producido USD', 
+                        name: 'monto_usd', 
+                        width: 130, 
+                        align: 'right',
+                        filter: 'select',
+                        formatter: formatearDinero
+                    },
+                    { 
                         header: 'Estatus Partida', 
                         name: 'estatus_gpu', 
                         width: 130, 
@@ -912,6 +928,10 @@ $(document).ready(function() {
 
     function formatearNumero({ value }) {
         return value ? numberFormatter.format(Number(value)) : '';
+    }
+
+    function formatearDinero({ value }) {
+        return value ? moneyFormatter.format(Number(value)) : '';
     }
 
     $('#select-sitio, #filtro-mes, #filtro-anio').on('change', function() {

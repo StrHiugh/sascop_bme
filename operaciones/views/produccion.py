@@ -416,7 +416,9 @@ def obtener_partidas_produccion(request):
             'acumulado_mes': 0.0,
             'acumulado_programado': 0.0,
             'archivo': datos['archivo'],
-            'anexo': datos['anexo']
+            'anexo': datos['anexo'],
+            'monto_mn': 0.0,
+            'monto_usd': 0.0
         }
 
         for d in range(1, 32):
@@ -427,6 +429,7 @@ def obtener_partidas_produccion(request):
             val_cma = info_dia['CMA'] if info_dia else 0.0
             es_exc = info_dia['es_excedente'] if info_dia else False
             val_prog = programacion_mapa.get(master_key, 0.0)
+            
             valor_visual = val_te if tipo_tiempo == 'TE' else val_cma
             
             if val_te == 0 and val_cma == 0 and val_prog == 0 and not es_exc:
@@ -447,8 +450,16 @@ def obtener_partidas_produccion(request):
         fila_grid['acumulado_mes'] = suma_mes_visual
         fila_grid['acumulado_programado'] = suma_prog_mes_visual
         fila_grid['estatus_gpu'] = 'BLOQUEADO' if hay_excedente_visual else 'AUTORIZADO'
-        total_ejec_mn += suma_mes_visual * datos['pu_mn']
-        total_ejec_usd += suma_mes_visual * datos['pu_usd']
+        
+        fila_monto_mn = suma_mes_visual * datos['pu_mn']
+        fila_monto_usd = suma_mes_visual * datos['pu_usd']
+
+        fila_grid['monto_mn'] = fila_monto_mn
+        fila_grid['monto_usd'] = fila_monto_usd
+        
+        total_ejec_mn += fila_monto_mn
+        total_ejec_usd += fila_monto_usd
+
         data_final.append(fila_grid)
     
     totales_financieros = {
