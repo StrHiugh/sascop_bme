@@ -1,13 +1,13 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
-from ..models import OTE, ImportacionAnexo, PartidaAnexoImportada, Produccion, ReporteMensual, Sitio, ReporteDiario, Estatus, ConceptoMaestro, PartidaProyectada
+from ..models import OTE, ImportacionAnexo, PartidaAnexoImportada, Produccion, ReporteMensual, Sitio, ReporteDiario, Estatus, ConceptoMaestro, PartidaProyectada, CicloGuardia, Superintendente
 from django.http import JsonResponse
 from itertools import chain
 from django.db.models import Q, Case, F, When, IntegerField, Value, CharField, Sum, OuterRef, Subquery, Max
 from django.db.models.functions import Coalesce
 from django.db import transaction
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 import calendar
 import json
@@ -798,3 +798,88 @@ def guardar_archivo_mensual(request):
             'exito': False,
             'mensaje': f'Error interno al guardar evidencia: {str(e)}'
         }, status=500)
+
+# En tu archivo views.py (o donde tengas la función obtener_guardias_mes)
+
+@login_required
+def obtener_guardias_mes(request):
+    """ 
+    Calcula matemáticamente quién está de guardia en el mes solicitado.
+    """
+    id_sitio = request.GET.get('id_sitio')
+    try:
+        mes = int(request.GET.get('mes'))
+        anio = int(request.GET.get('anio'))
+    except:
+        return JsonResponse({'guardias': []})
+
+    try:
+        ciclo = CicloGuardia.objects.get(sitio_id=id_sitio)
+    except CicloGuardia.DoesNotExist:
+        return JsonResponse({'guardias': []})   
+
+    fecha_inicio_mes = date(anio, mes, 1)
+    if mes == 12:
+        fecha_fin_mes = date(anio + 1, 1, 1) - timedelta(days=1)
+    else:
+        fecha_fin_mes = date(anio, mes + 1, 1) - timedelta(days=1)
+
+    guardias_visuales = []
+    bloque_actual = None 
+    
+    for dia in range(1, fecha_fin_mes.day + 1):
+        fecha_actual = date(anio, mes, dia)
+        
+        delta = (fecha_actual - ciclo.fecha_inicio_super_a).days
+            
+        turno_idx = (delta // 14) % 2 
+        super_activo = ciclo.super_a if turno_idx == 0 else ciclo.super_b
+        
+        if bloque_actual is None:
+            bloque_actual = {
+                'nombre': super_activo.nombre,
+                'color': super_activo.color,
+                'inicio': dia,
+                'fin': dia
+            }
+        elif bloque_actual['nombre'] == super_activo.nombre:
+            bloque_actual['fin'] = dia
+        else:
+            guardias_visuales.append(bloque_actual)
+            bloque_actual = {
+                'nombre': super_activo.nombre,
+                'color': super_activo.color,
+                'inicio': dia,
+                'fin': dia
+            }
+            
+    if bloque_actual:
+        guardias_visuales.append(bloque_actual)
+
+    return JsonResponse({'guardias': guardias_visuales})
+
+@login_required
+def obtener_supers_por_sitio(request):
+    """ Retorna los supers asignados a un sitio """
+    id_sitio = request.GET.get('id_sitio')
+    supers = Superintendente.objects.filter(sitio_asignado_id=id_sitio, activo=True).values('id', 'nombre')
+    return JsonResponse({'supers': list(supers)})
+
+@login_required
+@require_http_methods(["POST"])
+def configurar_ciclo_guardia(request):
+    """ Guarda o actualiza la configuración 14x14 del frente """
+    data = json.loads(request.body)
+    
+    id_sitio = data.get('id_sitio')
+    
+    CicloGuardia.objects.update_or_create(
+        sitio_id=id_sitio,
+        defaults={
+            'super_a_id': data.get('id_super_a'),
+            'super_b_id': data.get('id_super_b'),
+            'fecha_inicio_super_a': data.get('fecha_inicio_a')
+        }
+    )
+    
+    return JsonResponse({'exito': True})

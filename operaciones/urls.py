@@ -67,7 +67,11 @@ urlpatterns = [
     path('produccion/vincular_partida_ot/', produccion.vincular_partida_ot, name='vincular_partida_ot'),
     path('produccion/guardar_reportes_diarios_masiva/', produccion.guardar_reportes_diarios_masiva, name='guardar_reportes_diarios_masiva'),
     path('produccion/guardar_archivo_mensual/', produccion.guardar_archivo_mensual, name='guardar_archivo_mensual'),
-    
+    path('produccion/obtener_supers_por_sitio/', produccion.obtener_supers_por_sitio, name='obtener_supers_por_sitio'),
+    path('produccion/configurar_ciclo_guardia/', produccion.configurar_ciclo_guardia, name='configurar_ciclo_guardia'),
+    path('produccion/obtener_guardias_mes/', produccion.obtener_guardias_mes, name='obtener_guardias_mes'),
+
+
     #URLs para PRODUCTOS 
     path('catalogos/producto/', catalogos.lista_producto, name='lista_producto'),
     path('catalogos/producto/datatable_producto/', catalogos.datatable_producto, name='datatable_producto'),

@@ -824,6 +824,7 @@ $(document).ready(function() {
                         bloquearCeldasReporteDiario(ot, parseInt(mes), parseInt(anio), index);
                     });
                 }
+                pintarGuardiasEnGrid();
             },
             error: function(xhr) { console.error("Error cargando OTs", xhr); }
         });
@@ -863,6 +864,10 @@ $(document).ready(function() {
                     bloquearDiasFueraDeVigencia(ot, parseInt(mes), parseInt(anio));
                     bloquearDiasFirmados(diasBloqueados);
                 }
+
+                setTimeout(() => {
+                    pintarGuardiasEnGrid();
+                }, 200);
 
             },
             error: function(xhr) {
@@ -942,6 +947,107 @@ $(document).ready(function() {
         cargarDatosTablero();
     });
 
+    $('#btn-config-guardias').on('click', function() {
+        const idSitio = $('#select-sitio').val();
+        if(!idSitio) return aviso("advertencia", "Selecciona un sitio primero");
+
+        $('#select-super-a, #select-super-b').empty();
+
+        $.ajax({
+            url: urlObtenerSupers,
+            data: { id_sitio: idSitio },
+            success: function(res) {
+                if(res.supers.length === 0) {
+                    aviso("info", "No hay superintendentes asignados a este sitio en la BD.");
+                }
+                res.supers.forEach(s => {
+                    $('#select-super-a, #select-super-b').append(new Option(s.nombre, s.id));
+                });
+                new bootstrap.Modal(document.getElementById('modalConfigGuardia')).show();
+            }
+        });
+    });
+
+    $('#btn-guardar-ciclo').on('click', function() {
+        const data = {
+            id_sitio: $('#select-sitio').val(),
+            id_super_a: $('#select-super-a').val(),
+            id_super_b: $('#select-super-b').val(),
+            fecha_inicio_a: $('#input-inicio-ciclo').val()
+        };
+
+        if(!data.id_super_a || !data.id_super_b || !data.fecha_inicio_a) {
+            return aviso("error", "Todos los campos son obligatorios");
+        }
+
+        $.ajax({
+            url: urlConfigGuardia,
+            type: 'POST',
+            data: JSON.stringify(data),
+            headers: { 'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val() },
+            success: function() {
+                aviso("exito", "Ciclo configurado. Calculando guardias...");
+                bootstrap.Modal.getInstance(document.getElementById('modalConfigGuardia')).hide();
+                pintarGuardiasEnGrid(); // Recalcular visuales
+            }
+        });
+    });
+
+    function pintarGuardiasEnGrid() {
+        const idSitio = $('#select-sitio').val();
+        const mes = $('#filtro-mes').val();
+        const anio = $('#filtro-anio').val();
+
+        if(!idSitio) return;
+        const $grids = $('#grid-produccion, #grid-asistencia');
+        for(let i=1; i<=31; i++) {
+            $grids.find(`th[data-column-name="dia${i}"]`).css({
+                'border-top': '', 'background-color': ''
+            }).attr('title', '');
+        }
+
+        $.ajax({
+            url: urlObtenerGuardias,
+            data: { id_sitio: idSitio, mes: mes, anio: anio },
+            success: function(response) {
+                const guardias = response.guardias;
+                
+                guardias.forEach(g => {
+                    for (let d = g.inicio; d <= g.fin; d++) {
+                        const $headerCells = $grids.find(`th[data-column-name="dia${d}"]`);
+                        
+                        if ($headerCells.length) {
+                            $headerCells.css({
+                                'border-top': `10px solid ${g.color}`,
+                                'background-color': hexToRgba(g.color, 0.1)
+                            });
+                            $headerCells.attr('title', `👮 ${g.nombre}`);
+                        }
+                    }
+                });
+            },
+            error: function(e) {
+                console.error("Error obteniendo guardias", e);
+            }
+        });
+    }
+
+    function hexToRgba(hex, alpha) {
+        if (!hex) return `rgba(0,0,0,${alpha})`;
+        let r = 0, g = 0, b = 0;
+        if (hex.length === 4) {
+            r = parseInt(hex[1] + hex[1], 16);
+            g = parseInt(hex[2] + hex[2], 16);
+            b = parseInt(hex[3] + hex[3], 16);
+        } else if (hex.length === 7) {
+            r = parseInt(hex.slice(1, 3), 16);
+            g = parseInt(hex.slice(3, 5), 16);
+            b = parseInt(hex.slice(5, 7), 16);
+        }
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+
+
     $('button[data-bs-toggle="tab"]').on('shown.bs.tab', function (event) {
         if(event.target.id === 'asistencia-tab' && gridReportesDiarios) {
             gridReportesDiarios.refreshLayout();
@@ -949,6 +1055,7 @@ $(document).ready(function() {
         
         if(event.target.id === 'produccion-tab' && gridProduccion) {
             gridProduccion.refreshLayout();
+            pintarGuardiasEnGrid();
         }
     });
 

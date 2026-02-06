@@ -50,6 +50,10 @@
             <button class="btn btn-primary btn-sm ms-2" id="btn-actualizar-tablero" title="Recargar Datos">
                 <i class="fas fa-sync-alt"></i>
             </button>
+
+            <button class="btn btn-outline-dark btn-sm ms-2" id="btn-config-guardias" title="Configurar Ciclo 14x14">
+                <i class="fas fa-cog me-1"></i>Guardias
+            </button>
         </div>
     </div>
 </div>
@@ -410,6 +414,45 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="modalConfigGuardia" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Configurar Ciclo de Guardia</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                
+                <div class="row">
+                    <div class="alert alert-primary py-2 mb-3">
+                        <small><i class="fas fa-info-circle"></i> Configura el ciclo 1 vez. El sistema calculará los relevos automáticamente cada 14 días.</small>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <label class="form-label fw-bold">Superintendente A</label>
+                        <select id="select-super-a" class="form-select"></select>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <label class="form-label fw-bold">Superintendente B</label>
+                        <select id="select-super-b" class="form-select"></select>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Fecha de Inicio de Guardia (Super A)</label>
+                    <input type="date" id="input-inicio-ciclo" class="form-control">
+                    <div class="form-text">Selecciona el día que inicia su guardia.</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="btn-guardar-ciclo">
+                    <i class="fas fa-save me-1"></i> Guardar Configuración
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -423,5 +466,8 @@
     var urlBuscarProductosCatalogo = "{% url 'operaciones:buscar_productos_catalogo' %}";
     var urlVincularPartidaOT = "{% url 'operaciones:vincular_partida_ot' %}";
     var urlGuardarArchivoMensual = "{% url 'operaciones:guardar_archivo_mensual' %}";
+    var urlObtenerSupers = "{% url 'operaciones:obtener_supers_por_sitio' %}";
+    var urlConfigGuardia = "{% url 'operaciones:configurar_ciclo_guardia' %}";
+    var urlObtenerGuardias = "{% url 'operaciones:obtener_guardias_mes' %}";
 </script>
 {% endblock %}

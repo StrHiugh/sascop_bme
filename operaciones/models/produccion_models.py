@@ -132,3 +132,31 @@ class EstimacionDetalle(models.Model):
 
     def __str__(self):
         return f"Detalle Estimación {self.id} - Prod {self.id_produccion.id}"
+
+class Superintendente(models.Model):
+    nombre = models.CharField(max_length=150)
+    sitio_asignado = models.ForeignKey('Sitio', on_delete=models.SET_NULL, null=True, blank=True)
+    color = models.CharField(max_length=7, default="#3498db")
+    activo = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = 'superintendente'
+
+    def __str__(self):
+        return self.nombre
+
+class CicloGuardia(models.Model):
+    """
+    Define los cambios de guardia en base a la fecha de inicio inicial del super A 
+    """
+    sitio = models.OneToOneField('Sitio', on_delete=models.CASCADE)
+    super_a = models.ForeignKey(Superintendente, on_delete=models.CASCADE, related_name='ciclos_a')
+    super_b = models.ForeignKey(Superintendente, on_delete=models.CASCADE, related_name='ciclos_b')
+    
+    fecha_inicio_super_a = models.DateField(help_text="Fecha en que inició guardia el Super A")
+
+    class Meta:
+        db_table = 'guardias'
+
+    def __str__(self):
+        return f"Ciclo {self.sitio}: {self.super_a} / {self.super_b}"
