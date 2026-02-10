@@ -14,14 +14,25 @@ const moneyFormatter = new Intl.NumberFormat('es-MX', {
     minimumFractionDigits: 2
 });
 
-let storeTotales = { aut_mn: 0, aut_usd: 0, ejec_mn: 0, ejec_usd: 0 };
+let storeTotales = { 
+    aut_mn: 0, aut_usd: 0, ejec_mn: 0, ejec_usd: 0,
+    acum_mn: 0, acum_usd: 0, resta_mn: 0, resta_usd: 0
+};
 
 function actualizarKPIsFinancieros(totales) {
-    storeTotales = totales || { aut_mn: 0, aut_usd: 0, ejec_mn: 0, ejec_usd: 0 };
+    storeTotales = totales || { 
+        aut_mn: 0, aut_usd: 0, ejec_mn: 0, ejec_usd: 0,
+        acum_mn: 0, acum_usd: 0, resta_mn: 0, resta_usd: 0
+    };
     $('#lbl-aut-mn').text(moneyFormatter.format(storeTotales.aut_mn));
     $('#lbl-aut-usd').text(moneyFormatter.format(storeTotales.aut_usd));
     $('#lbl-ejec-mn').text(moneyFormatter.format(storeTotales.ejec_mn));
     $('#lbl-ejec-usd').text(moneyFormatter.format(storeTotales.ejec_usd));
+
+    $('#lbl-acum-mn').text(moneyFormatter.format(storeTotales.acum_mn || 0));
+    $('#lbl-acum-usd').text(moneyFormatter.format(storeTotales.acum_usd || 0));
+    $('#lbl-resta-mn').text(moneyFormatter.format(storeTotales.resta_mn || 0));
+    $('#lbl-resta-usd').text(moneyFormatter.format(storeTotales.resta_usd || 0));
 
     calcularHomologado();
 }

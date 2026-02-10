@@ -7,7 +7,7 @@ from itertools import chain
 from django.db.models import Q, Case, F, When, IntegerField, Value, CharField, Sum, OuterRef, Subquery, Max
 from django.db.models.functions import Coalesce
 from django.db import transaction
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 from decimal import Decimal
 import calendar
 import json
@@ -301,10 +301,28 @@ def obtener_partidas_produccion(request):
     if not todas_partidas:
         return JsonResponse([], safe=False)
 
+    ids_totales_db = [p.id for p in todas_partidas]
+    
+    last_day = calendar.monthrange(anio, mes)[1]
+    fecha_limite = date(anio, mes, last_day)
+
+    qs_acumulado = Produccion.objects.filter(
+        id_partida_anexo_id__in=ids_totales_db,
+        fecha_produccion__lte=fecha_limite
+    ).values('id_partida_anexo_id').annotate(vol_total=Sum('volumen_produccion')).order_by()
+
+    mapa_acumulado_vol = {}
+    for item in qs_acumulado:
+        p_id = item['id_partida_anexo_id']
+        vol = item['vol_total'] or 0.0
+        mapa_acumulado_vol[p_id] = float(vol)
+
     partidas_consolidadas = {}
     mapa_id_a_key = {}
     total_aut_mn = 0.0
     total_aut_usd = 0.0
+    total_acum_mn = 0.0
+    total_acum_usd = 0.0
 
     for p in todas_partidas:
         anexo_clean = p.anexo.strip() if p.anexo else 'S/A'
@@ -319,7 +337,10 @@ def obtener_partidas_produccion(request):
 
         total_aut_mn += vol_registro * pu_mn
         total_aut_usd += vol_registro * pu_usd
-        
+        vol_hist = float(mapa_acumulado_vol.get(p.id, 0.0) or 0.0)
+        total_acum_mn += vol_hist * pu_mn
+        total_acum_usd += vol_hist * pu_usd
+
         if key not in partidas_consolidadas:
             partidas_consolidadas[key] = {
                 'id_principal': p.id,
@@ -339,7 +360,8 @@ def obtener_partidas_produccion(request):
         
         mapa_id_a_key[p.id] = key
 
-    ids_totales_db = list(mapa_id_a_key.keys())
+    # Recalculamos ids_totales_db solo si fuera necesario, pero ya lo tenemos arriba como lista
+    # ids_totales_db = list(mapa_id_a_key.keys()) 
 
     resumen_produccion = Produccion.objects.filter(
         id_reporte_mensual__id_ot_id=id_ot,
@@ -462,11 +484,18 @@ def obtener_partidas_produccion(request):
 
         data_final.append(fila_grid)
     
+    por_ejecutar_mn = total_aut_mn - total_acum_mn
+    por_ejecutar_usd = total_aut_usd - total_acum_usd
+
     totales_financieros = {
         'aut_mn': total_aut_mn,
         'aut_usd': total_aut_usd,
         'ejec_mn': total_ejec_mn,
-        'ejec_usd': total_ejec_usd
+        'ejec_usd': total_ejec_usd,
+        'acum_mn': total_acum_mn,
+        'acum_usd': total_acum_usd,
+        'resta_mn': por_ejecutar_mn,
+        'resta_usd': por_ejecutar_usd
     }
 
     respuesta = {
