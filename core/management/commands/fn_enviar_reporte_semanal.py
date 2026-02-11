@@ -27,17 +27,18 @@ class Command(BaseCommand):
 
       lista_correos = [
          "gregorio021@outlook.com",
-         # "Jfcp@bluemarine.com.mx",
-         # "Svr@bluemarine.com.mx",
-         # "ejs@bluemarine.com.mx",
-         # "jesg@bluemarine.com.mx",
-         # "apg@bluemarine.com.mx",
-         # "rmg@bluemarine.com.mx",
-         # "gdg@bluemarine.com.mx",
-         # "Acch@bluemarine.com.mx",
-         # "afcv@bluemarine.com.mx",
+         "Jfcp@bluemarine.com.mx",
+         "Svr@bluemarine.com.mx",
+         "ejs@bluemarine.com.mx",
+         "jesg@bluemarine.com.mx",
+         "apg@bluemarine.com.mx",
+         "rmg@bluemarine.com.mx",
+         "gdg@bluemarine.com.mx",
+         "Acch@bluemarine.com.mx",
+         "afcv@bluemarine.com.mx",
          "jarpa@bluemarine.com.mx",
-         "fbhp@bluemarine.com.mx"
+         "fbhp@bluemarine.com.mx",
+         "jmrm@bluemarine.com.mx"
       ]
 
       datos_correo = {
