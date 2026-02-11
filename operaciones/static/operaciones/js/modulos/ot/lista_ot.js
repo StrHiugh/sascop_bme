@@ -368,7 +368,8 @@ $(document).ready(function () {
                 $("#descripcion_trabajo").val(ot.descripcion_trabajo);
                 $("#id_frente").val(ot.id_frente);
                 $("#plazo_dias").val(ot.plazo_dias);
-                $("#id_tipo").val(ot.id_tipo_id);
+                $('#id_tipo').val('4').trigger('change'); 
+                $('#id_tipo option[value="5"]').prop('disabled', true);
                 $("#total_homologado").val(ot.total_homologado);
                 $("#oficio_ot").val(ot.oficio_ot);
                 $("#comentario_general").val(ot.comentario);
@@ -382,9 +383,24 @@ $(document).ready(function () {
                 $("#plazo_dias").val(ot.plazo_dias || "0");
                 toggleFrenteFields().then(function () {
                     if (ot.id_embarcacion) $("#id_embarcacion").val(ot.id_embarcacion).trigger('change');
-                    if (ot.id_patio) $("#id_patio").val(ot.id_patio).trigger('change');
                     if (ot.id_plataforma) $("#id_plataforma").val(ot.id_plataforma).trigger('change');
                     if (ot.id_intercom) $("#id_intercom").val(ot.id_intercom).trigger('change');
+                    if (ot.id_frente == '1') {
+                        if (ot.id_patio) $("#id_patio").val(ot.id_patio).trigger('change');
+                        $('#check_fase_patio').prop('checked', false).trigger('change');
+                    } else {
+                        if (ot.id_patio) {
+                            $('#check_fase_patio').prop('checked', true).trigger('change');
+                            $("#id_patio_fase").val(ot.id_patio).trigger('change');
+                            
+                            if (ot.fecha_inicio_patio) $("#fecha_inicio_patio").val(ot.fecha_inicio_patio);
+                            if (ot.fecha_fin_patio) $("#fecha_fin_patio").val(ot.fecha_fin_patio);
+                        } else {
+                            $('#check_fase_patio').prop('checked', false).trigger('change');
+                        }
+                    }
+                    if (ot.fecha_inicio_patio) $("#fecha_inicio_patio").val(ot.fecha_inicio_patio);
+                    if (ot.fecha_fin_patio) $("#fecha_fin_patio").val(ot.fecha_fin_patio);
                 });
 
                 cargarResponsablesProyecto().done(function () {
@@ -439,6 +455,7 @@ $(document).ready(function () {
         $('#id_tipo').addClass('pe-none bg-light');
         $('#id_frente').val('').trigger('change'); 
         $('#id_embarcacion, #id_plataforma, #id_intercom, #id_patio').empty();
+        $('#check_fase_patio').prop('checked', false).prop('disabled', false).trigger('change');
         cargarClientes();
         cargarResponsablesProyecto();
         cargarOTsPrincipales(null);
@@ -762,6 +779,27 @@ $(document).ready(function () {
             $('#ot_principal').val('');
         } else {
             cargarOTsPrincipales(window.ot_actual);
+        }
+    });
+
+    $('#check_fase_patio').on('change', function() {
+        const isChecked = $(this).is(':checked');
+        const $contenedoresPatio = $('.contenedor-fase-patio');
+        const $selectPatio = $('#id_patio_fase');
+
+        if (isChecked) {
+            $contenedoresPatio.removeAttr('hidden');
+            $selectPatio.prop('required', true);
+            
+            // Cargar patios si está vacío
+            if ($selectPatio.children('option').length <= 1) {
+                cargarSitios(3, '#id_patio_fase'); 
+            }
+        } else {
+            $contenedoresPatio.attr('hidden', true);
+            $selectPatio.prop('required', false).val(null).trigger('change');
+            $('#fecha_inicio_patio').val('');
+            $('#fecha_fin_patio').val('');
         }
     });
 
@@ -1856,12 +1894,17 @@ function toggleFrenteFields() {
     const $divIntercom = $('#id_intercom').closest('.mb-3');
     const $divPatio = $('#id_patio').closest('.mb-3');
 
+    const $checkPatio = $('#check_fase_patio');
+    const $divCheckContainer = $('#div-check-patio');
+
     $divEmbarcacion.attr('hidden', true);
     $divPlataforma.attr('hidden', true);
     $divIntercom.attr('hidden', true);
     $divPatio.attr('hidden', true);
+    $divCheckContainer.attr('hidden', true);
 
-    $('#id_embarcacion, #id_plataforma, #id_intercom, #id_patio').prop('disabled', true);
+
+    $('#id_embarcacion, #id_plataforma, #id_intercom, #id_patio, #id_patio_fase').prop('disabled', true);
 
     let promises = [];
 
@@ -1869,21 +1912,33 @@ function toggleFrenteFields() {
         $divEmbarcacion.removeAttr('hidden');
         $divPlataforma.removeAttr('hidden');
         $divIntercom.removeAttr('hidden');
+
+        $divCheckContainer.removeAttr('hidden');
+        $checkPatio.prop('disabled', false); 
+        $('#id_patio_fase').prop('disabled', false);
+        
         promises.push(cargarSitios(6, '#id_embarcacion'));
         promises.push(cargarSitios(7, '#id_plataforma'));
         promises.push(cargarSitios(5, '#id_intercom'));
+        promises.push(cargarSitios(3, '#id_patio_fase')); 
 
     } else if (frenteId == '1') {   
         $divPatio.removeAttr('hidden');
         $divPlataforma.removeAttr('hidden');
         $divIntercom.removeAttr('hidden');
+
         promises.push(cargarSitios(3, '#id_patio'));
         promises.push(cargarSitios(7, '#id_plataforma'));
         promises.push(cargarSitios(5, '#id_intercom'));
 
     } else if (frenteId == '4') {   
         $divPlataforma.removeAttr('hidden');
+
+        $divCheckContainer.removeAttr('hidden');
+        $checkPatio.prop('disabled', false); 
+        $('#id_patio_fase').prop('disabled', false);
         promises.push(cargarSitios(7, '#id_plataforma'));
+        promises.push(cargarSitios(3, '#id_patio_fase')); 
     }
 
     return Promise.all(promises);

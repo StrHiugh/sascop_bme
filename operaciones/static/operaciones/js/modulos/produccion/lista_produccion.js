@@ -383,7 +383,8 @@ $(document).ready(function() {
         const payload = {
             reportes: reportes,
             mes: $('#filtro-mes').val(),
-            anio: $('#filtro-anio').val()
+            anio: $('#filtro-anio').val(),
+            id_sitio: idSitio
         };
 
         iniciarLoader();
@@ -442,6 +443,7 @@ $(document).ready(function() {
             anio: $('#filtro-anio').val(),
             tipo_tiempo: tipoTiempoActivo,
             partidas: partidasProcesadas,
+            id_sitio: $('#select-sitio').val()
         };
 
         iniciarLoader();
@@ -454,7 +456,7 @@ $(document).ready(function() {
             success: function(response) {
                 if (response.exito) {
                     aviso("exito", `Sábana de ${tipoTiempoActivo} guardada correctamente`);
-                    // cargarDetalleProduccion(otSeleccionada);
+                    cargarDetalleProduccion(otSeleccionada);
                 } else {
                     aviso("error", response.mensaje);
                 }
@@ -850,7 +852,8 @@ $(document).ready(function() {
                 id_ot: ot.id_ot, 
                 mes: mes, 
                 anio: anio,
-                tipo_tiempo: tipoTiempoActivo ? tipoTiempoActivo : 'TE'
+                tipo_tiempo: tipoTiempoActivo ? tipoTiempoActivo : 'TE',
+                id_sitio: $('#select-sitio').val()
             },
             success: function(response) {
                 let data = [];

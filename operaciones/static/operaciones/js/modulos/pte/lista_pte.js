@@ -1315,8 +1315,7 @@ $(document).ready(function () {
                             <div class="mb-3">
                                 <label for="tipoOT" class="form-label">Tipo de OT:</label>
                                 <select class="form-select" id="tipoOT" required>
-                                    <option value="" selected disabled>Seleccione el tipo</option>
-                                    <option value="4">INICIAL</option>
+                                    <option value="4" selected >INICIAL</option>
                                     <option value="5">REPROGRAMACIÓN</option>
                                 </select>
                             </div>

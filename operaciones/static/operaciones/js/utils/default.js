@@ -12,35 +12,35 @@ function aviso(tipo_aviso, parametros) {
             titulo: "¡Éxito!",
             tipo: "success",
             icono: "fa fa-check-circle",
-            color: "#5cb85c",
+            color: "#95c93d",
             colorClaro: "#dff0d8"
         },
         "error": {
             titulo: "Error",
             tipo: "error",
             icono: "fa fa-exclamation-circle",
-            color: "#d9534f",
+            color: "#f05523",
             colorClaro: "#f2dede"
         },
         "advertencia": {
             titulo: "Advertencia",
             tipo: "warning",
             icono: "fa fa-exclamation-triangle",
-            color: "#f0ad4e",
+            color: "#fad91f",
             colorClaro: "#fcf8e3"
         },
         "proceso": {
             titulo: "Procesando",
             tipo: "info",
             icono: "fa fa-info-circle",
-            color: "#5bc0de",
+            color: "#51c2eb",
             colorClaro: "#d9edf7"
         },
         "default": {
             titulo: "Aviso",
             tipo: "info",
             icono: "fa fa-info-circle",
-            color: "#5bc0de",
+            color: "#51c2eb",
             colorClaro: "#d9edf7"
         }
     };

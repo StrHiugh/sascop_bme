@@ -27,7 +27,7 @@ def obtener_sitios_con_ots_ejecutadas(request):
             estatus=1           
         )
 
-        ots_con_sitio_calculado = ots_activas.annotate(
+        ids_principales = ots_activas.annotate(
             sitio_real_id=Case(
                 When(id_frente_id__in=[1, 3], then=F('id_patio')),
                 When(id_frente_id__in=[2, 6], then=F('id_embarcacion')),
@@ -36,18 +36,23 @@ def obtener_sitios_con_ots_ejecutadas(request):
                 default=None,
                 output_field=IntegerField()
             )
-        )
+        ).values_list('sitio_real_id', flat=True)
 
-        ids_sitios = ots_con_sitio_calculado.filter(
-            sitio_real_id__isnull=False
-        ).values_list('sitio_real_id', flat=True).distinct()
+        ids_patios_fase = ots_activas.filter(
+            id_patio__isnull=False
+        ).values_list('id_patio', flat=True)
+
+        todos_los_sitios_ids = set(ids_principales) | set(ids_patios_fase)
+        
+        todos_los_sitios_ids.discard(None)
 
         sitios = Sitio.objects.filter(
-            id__in=ids_sitios,
+            id__in=todos_los_sitios_ids,
             activo=True
         ).values('id', 'descripcion').order_by('id')
         
         return JsonResponse(list(sitios), safe=False)
+        
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
@@ -66,6 +71,7 @@ def ots_por_sitio_grid(request):
 
     try:
         mes, anio = int(mes), int(anio)
+        id_sitio_int = int(id_sitio)
     except ValueError:
         return JsonResponse({'reportes_diarios': [], 'produccion': []})
     
@@ -110,7 +116,8 @@ def ots_por_sitio_grid(request):
     reportes_data = ReporteDiario.objects.filter(
         id_reporte_mensual__id_ot_id__in=ids_ots,
         id_reporte_mensual__mes=mes,
-        id_reporte_mensual__anio=anio
+        id_reporte_mensual__anio=anio,
+        id_sitio_id=id_sitio_int
     ).values(
         'id_reporte_mensual__id_ot_id', 
         'fecha__day',                   
@@ -122,7 +129,6 @@ def ots_por_sitio_grid(request):
         key = (r['id_reporte_mensual__id_ot_id'], r['fecha__day'])
         mapa_asistencia[key] = r['id_estatus__descripcion']
 
-
     reportes_mensuales = ReporteMensual.objects.filter(
         id_ot_id__in=ids_ots,
         mes=mes,
@@ -130,15 +136,47 @@ def ots_por_sitio_grid(request):
     ).values('id_ot_id', 'archivo')
     
     mapa_archivos = {rm['id_ot_id']: rm['archivo'] for rm in reportes_mensuales}
+    
     data_reportes = []
+    
     for ot in queryset:
+        dias_bloqueados = []
+        vigencia_inicio = ot.inicio_vigencia
+        vigencia_fin = ot.fin_vigencia
+        
+        if ot.requiere_patio and ot.id_patio == id_sitio_int:
+            f_ini = ot.fecha_inicio_patio
+            f_fin = ot.fecha_fin_patio
+            
+            if f_ini: vigencia_inicio = f_ini
+            if f_fin: vigencia_fin = f_fin
+            
+            se_muestra = True
+            
+            if f_fin and f_fin < fecha_inicio_mes:
+                se_muestra = False
+            
+            if f_ini and f_ini > fecha_fin_mes:
+                se_muestra = False
+            
+            if not se_muestra:
+                continue
+
+            for d in range(1, ultimo_dia + 1):
+                fecha_dia = date(anio, mes, d)
+                if f_ini and fecha_dia < f_ini:
+                    dias_bloqueados.append(d)
+                elif f_fin and fecha_dia > f_fin:
+                    dias_bloqueados.append(d)
+
         fila = {
             'id_ot': ot.id,
             'ot': ot.orden_trabajo,
             'desc': ot.descripcion_trabajo,
-            'inicio_v': ot.inicio_vigencia.isoformat() if ot.inicio_vigencia else None,
-            'fin_v': ot.fin_vigencia.isoformat() if ot.fin_vigencia else None,
-            'archivo': mapa_archivos.get(ot.id,'')
+            'inicio_v': vigencia_inicio.isoformat() if vigencia_inicio else None,
+            'fin_v': vigencia_fin.isoformat() if vigencia_fin else None,
+            'archivo': mapa_archivos.get(ot.id,''),
+            'dias_bloqueados': dias_bloqueados
         }
 
         for d in range(1, 32):
@@ -158,10 +196,15 @@ def guardar_reportes_diarios_masiva(request):
         data = json.loads(request.body)
         filas = data.get('reportes', [])
         mes, anio = int(data.get('mes')), int(data.get('anio'))
+        id_sitio = data.get('id_sitio')
 
         if not filas:
             return JsonResponse({'exito': True, 'mensaje': 'Sin datos para guardar'})
+        
+        if not id_sitio:
+            return JsonResponse({'exito': False, 'mensaje': 'El sitio es obligatorio para guardar reportes.'})
 
+        sitio_obj = Sitio.objects.get(id=id_sitio)
         estatus_qs = Estatus.objects.filter(nivel_afectacion=4)
         mapa_estatus = {e.descripcion: e for e in estatus_qs}
 
@@ -179,7 +222,10 @@ def guardar_reportes_diarios_masiva(request):
 
                 reportes_existentes = {
                     r.fecha.day: r 
-                    for r in ReporteDiario.objects.filter(id_reporte_mensual=reporte_mensual)
+                    for r in ReporteDiario.objects.filter(
+                        id_reporte_mensual=reporte_mensual,
+                        id_sitio=sitio_obj
+                    )
                 }
                 
                 a_crear, a_actualizar, ids_borrar = [], [], []
@@ -205,7 +251,8 @@ def guardar_reportes_diarios_masiva(request):
                                 id_reporte_mensual=reporte_mensual,
                                 fecha=fecha_dia,
                                 id_estatus=estatus_obj,
-                                bloqueado=False
+                                bloqueado=False,
+                                id_sitio=sitio_obj
                             ))
                     elif reporte_obj:
                         ids_borrar.append(reporte_obj.id)
@@ -217,7 +264,6 @@ def guardar_reportes_diarios_masiva(request):
 
     except Exception as e:
         return JsonResponse({'exito': False, 'mensaje': str(e)}, status=500)
-
 
 def obtener_volumenes_consolidados(id_ot_actual, ids_partidas_codigos):
     """
@@ -245,12 +291,14 @@ def obtener_partidas_produccion(request):
     mes = request.GET.get('mes')
     anio = request.GET.get('anio')
     tipo_tiempo = request.GET.get('tipo_tiempo', 'TE')
+    id_sitio = request.GET.get('id_sitio') 
 
     if not id_ot or not mes or not anio:
         return JsonResponse([], safe=False)
 
     try:
         mes, anio = int(mes), int(anio)
+        id_sitio_int = int(id_sitio) if id_sitio else None
     except ValueError:
         return JsonResponse([], safe=False)
 
@@ -261,7 +309,8 @@ def obtener_partidas_produccion(request):
         if reporte:
             dias_bloqueados = list(ReporteDiario.objects.filter(
                 id_reporte_mensual=reporte,
-                id_estatus_id=17
+                id_estatus_id=17,
+                id_sitio_id=id_sitio_int
             ).values_list('fecha__day', flat=True))
             
             if reporte.archivo:
@@ -269,7 +318,33 @@ def obtener_partidas_produccion(request):
     except Exception:
         pass
 
-    ot_actual = OTE.objects.get(id=id_ot)
+    try:
+        ot_actual = OTE.objects.get(id=id_ot)
+    except OTE.DoesNotExist:
+        return JsonResponse([], safe=False)
+
+    last_day = calendar.monthrange(anio, mes)[1]
+    
+    if ot_actual.requiere_patio and id_sitio_int and ot_actual.id_patio == id_sitio_int:
+        f_ini = ot_actual.fecha_inicio_patio
+        f_fin = ot_actual.fecha_fin_patio
+        
+        for d in range(1, last_day + 1):
+            fecha_dia = date(anio, mes, d)
+            esta_fuera_rango = False
+            
+            if f_ini and fecha_dia < f_ini:
+                esta_fuera_rango = True
+            
+            if f_fin and fecha_dia > f_fin:
+                esta_fuera_rango = True
+            
+            if esta_fuera_rango and d not in dias_bloqueados:
+                dias_bloqueados.append(d)
+    
+
+    dias_bloqueados.sort()
+
     id_principal = ot_actual.ot_principal if ot_actual.ot_principal else ot_actual.id
     
     familia_ots_ids = list(OTE.objects.filter(
@@ -299,11 +374,10 @@ def obtener_partidas_produccion(request):
     todas_partidas.sort(key=sort_key_partidas)
 
     if not todas_partidas:
-        return JsonResponse([], safe=False)
+        return JsonResponse({'partidas': [], 'dias_bloqueados': dias_bloqueados, 'totales': {}})
 
     ids_totales_db = [p.id for p in todas_partidas]
     
-    last_day = calendar.monthrange(anio, mes)[1]
     fecha_limite = date(anio, mes, last_day)
 
     qs_acumulado = Produccion.objects.filter(
@@ -360,14 +434,12 @@ def obtener_partidas_produccion(request):
         
         mapa_id_a_key[p.id] = key
 
-    # Recalculamos ids_totales_db solo si fuera necesario, pero ya lo tenemos arriba como lista
-    # ids_totales_db = list(mapa_id_a_key.keys()) 
-
     resumen_produccion = Produccion.objects.filter(
         id_reporte_mensual__id_ot_id=id_ot,
         id_reporte_mensual__mes=mes,
         id_reporte_mensual__anio=anio,
-        id_partida_anexo_id__in=ids_totales_db
+        id_partida_anexo_id__in=ids_totales_db,
+        id_sitio_produccion_id = id_sitio_int
     ).values(
         'id_partida_anexo_id', 
         'fecha_produccion__day', 
@@ -517,11 +589,17 @@ def guardar_produccion_masiva(request):
         mes, anio = int(data.get('mes')), int(data.get('anio'))
         filas = data.get('partidas', [])
         tipo_tiempo = data.get('tipo_tiempo', 'TE')
+        id_sitio_reporte = data.get('id_sitio')
 
         if not filas:
             return JsonResponse({'exito': True, 'mensaje': 'Sin datos para guardar'})
 
         with transaction.atomic():
+
+            sitio_obj = None
+            if id_sitio_reporte:
+                sitio_obj = Sitio.objects.filter(id=id_sitio_reporte).first()
+
             reporte_mensual, _ = ReporteMensual.objects.get_or_create(
                 id_ot_id=id_ot, mes=mes, anio=anio, defaults={'id_estatus_id': 1}
             )
@@ -543,7 +621,8 @@ def guardar_produccion_masiva(request):
 
             produccion_actual_qs = Produccion.objects.filter(
                 id_reporte_mensual=reporte_mensual, 
-                tipo_tiempo=tipo_tiempo
+                tipo_tiempo=tipo_tiempo,
+                id_sitio_produccion_id = id_sitio_reporte
             )
             mapa_produccion_actual = {
                 (p.id_partida_anexo_id, p.fecha_produccion.day): p 
@@ -617,9 +696,10 @@ def guardar_produccion_masiva(request):
                         continue 
 
                     if prod_obj:
-                        if (prod_obj.volumen_produccion != vol_para_calculo) or (prod_obj.es_excedente != es_excedente):
+                        if (prod_obj.volumen_produccion != vol_para_calculo) or (prod_obj.es_excedente != es_excedente) or (prod_obj.id_sitio_produccion_id != sitio_obj):
                             prod_obj.volumen_produccion = vol_para_calculo
                             prod_obj.es_excedente = es_excedente
+                            prod_obj.id_sitio_produccion = sitio_obj
                             a_actualizar.append(prod_obj)
                     
                     elif vol_para_calculo > 0:
@@ -630,19 +710,21 @@ def guardar_produccion_masiva(request):
                             volumen_produccion=vol_para_calculo,
                             tipo_tiempo=tipo_tiempo,
                             es_excedente=es_excedente,
-                            id_estatus_cobro_id=1
+                            id_estatus_cobro_id=1,
+                            id_sitio_produccion=sitio_obj
                         ))
 
             if a_crear: 
                 Produccion.objects.bulk_create(a_crear)
             if a_actualizar: 
-                Produccion.objects.bulk_update(a_actualizar, ['volumen_produccion', 'es_excedente'])
+                Produccion.objects.bulk_update(a_actualizar, ['volumen_produccion', 'es_excedente', 'id_sitio_produccion'])
         
         return JsonResponse({'exito': True, 'mensaje': 'Producción guardada correctamente.'})
     except Exception as e:
         import traceback
         traceback.print_exc()
         return JsonResponse({'exito': False, 'mensaje': str(e)}, status=500)
+
 def recalcular_excedentes_ot_completa(id_ot):
     """
     Recorre toda la producción histórica de la familia de esa OT y 
