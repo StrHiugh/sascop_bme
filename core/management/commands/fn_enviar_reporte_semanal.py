@@ -54,7 +54,7 @@ class Command(BaseCommand):
             return
 
          buffer_grafica = fn_generar_grafica_buffer(resultados)
-         pdf_bytes = fn_generar_pdf_reporte(buffer_grafica, texto_periodo)
+         pdf_bytes = fn_generar_pdf_reporte(buffer_grafica, texto_periodo, resultados)
          buffer_grafica.close()
 
          adjunto_pdf = ("Reporte_Semanal_SASCOP.pdf", pdf_bytes, "application/pdf")
