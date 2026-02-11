@@ -49,14 +49,17 @@ $(document).ready(function () {
                 "orderable": true,
                 "className": "text-center",
                 "render": function(data, type, row) {
-                    const eventoClasses = {
-                        'CREAR': 'bg-success',
-                        'MODIFICAR': 'bg-warning',
-                        'ELIMINAR': 'bg-danger',
-                        'ACTUALIZAR': 'bg-info',
-                        'REGISTRAR': 'bg-primary'
+                    const eventoColors = {
+                        'CREAR': '#95c93d',       
+                        'MODIFICAR': '#fad91f',   
+                        'ELIMINAR': '#f05523',    
+                        'ACTUALIZAR': '#55c0e9',  
+                        'REGISTRAR': '#55c0e9'    
                     };
-                    return `<span class="badge ${eventoClasses[data] || 'bg-secondary'}">${data}</span>`;
+                    
+                    const color = eventoColors[data] || '#54565a';
+                    
+                    return `<span class="badge text-white" style="background-color: ${color};">${data}</span>`;
                 }
             },
             {

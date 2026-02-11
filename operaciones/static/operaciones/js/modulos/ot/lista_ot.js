@@ -56,8 +56,8 @@ $(document).ready(function () {
                             <div class="position-relative">
                                 <a class="table-icon detalle-pte position-relative" title="Ver detalles (${row.count_reprogramaciones} reprogramaciones)">
                                     <i class="fas fa-plus-square"></i>
-                                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-circle bg-warning text-white"
-                                        style="font-size: 10px; width: 14px; height: 14px; padding: 0; line-height: 14px;">
+                                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-circle text-white"
+                                        style="font-size: 10px; width: 14px; height: 14px; padding: 0; line-height: 14px; background-color: #f05523;">
                                         ${row.count_reprogramaciones}
                                     </span>
                                 </a>
@@ -107,9 +107,9 @@ $(document).ready(function () {
                 "title": "Progreso",
                 "width": "20%",
                 "render": function(data, type, row) {
-                    let color = 'bg-success';
-                    if (data < 25) color = 'bg-danger';
-                    else if (data < 75) color = 'bg-warning';
+                    let color = '#95c93d'; 
+                    if (data < 25) color = '#f05523'; 
+                    else if (data < 75) color = '#fad91f'; 
                     
                     const porcentaje = isNaN(data) ? 0 : Math.max(0, Math.min(100, data));
                     const tooltip = `Tiempo: ${row.progreso_tiempo}% | Pasos: ${row.progreso_pasos}%`;
@@ -117,15 +117,15 @@ $(document).ready(function () {
                     return `
                         <div title="${tooltip}" data-bs-toggle="tooltip">
                             <div class="progress" style="height: 18px; cursor: pointer;">
-                                <div class="progress-bar ${color}" 
+                                <div class="progress-bar" 
                                     role="progressbar" 
-                                    style="width: ${porcentaje}%" 
+                                    style="width: ${porcentaje}%; background-color: ${color};" 
                                     aria-valuenow="${porcentaje}">
                                 </div>
                             </div>
                             <div class="text-center mt-1" style="font-size: 13px;">
-                                <span class="badge bg-success">${row.dias_transcurridos}/${row.plazo_total}dP</span>
-                                <span class="badge bg-secondary">${row.dias_transcurridos_real}/${row.plazo_total_real}dR</span>
+                                <span class="badge text-white" style="background-color: #95c93d;">${row.dias_transcurridos}/${row.plazo_total}dP</span>
+                                <span class="badge text-white" style="background-color: #54565a;">${row.dias_transcurridos_real}/${row.plazo_total_real}dR</span>
                                 <span class="ms-2">${porcentaje}%</span>
                                 <span class="ms-2 text-muted">(${row.pasos_completados}/${row.total_pasos})</span>
                             </div>
@@ -139,18 +139,19 @@ $(document).ready(function () {
                 "title": "Progreso Tiempo",
                 "visible": false,
                 "render": function(data, type, row) {
-                    let color = 'bg-primary';
-                    if (row.dias_restantes <= 7 && data < 100) color = 'bg-danger';
-                    else if (row.dias_restantes <= 14) color = 'bg-warning';
+                    let color = '#55c0e9'; 
+                    
+                    if (row.dias_restantes <= 7 && data < 100) color = '#f05523';
+                    else if (row.dias_restantes <= 14) color = '#fad91f';       
                     
                     const porcentaje = isNaN(data) ? 0 : Math.max(0, Math.min(100, data));
                     
                     return `
                         <div title="${row.dias_transcurridos} días transcurridos | ${row.dias_restantes} días restantes">
                             <div class="progress" style="height: 15px;">
-                                <div class="progress-bar ${color}" 
+                                <div class="progress-bar" 
                                     role="progressbar" 
-                                    style="width: ${porcentaje}%">
+                                    style="width: ${porcentaje}%; background-color: ${color};">
                                 </div>
                             </div>
                             <div class="text-center" style="font-size: 10px;">
@@ -165,18 +166,18 @@ $(document).ready(function () {
                 "title": "Progreso Pasos", 
                 "visible": false,
                 "render": function(data, type, row) {
-                    let color = 'bg-success';
-                    if (data < 25) color = 'bg-danger';
-                    else if (data < 75) color = 'bg-warning';
+                    let color = '#95c93d'; 
+                    if (data < 25) color = '#f05523'; 
+                    else if (data < 75) color = '#fad91f'; 
                     
                     const porcentaje = isNaN(data) ? 0 : Math.max(0, Math.min(100, data));
                     
                     return `
                         <div title="${row.pasos_completados} de ${row.total_pasos} pasos completados">
                             <div class="progress" style="height: 15px;">
-                                <div class="progress-bar ${color}" 
+                                <div class="progress-bar" 
                                     role="progressbar" 
-                                    style="width: ${porcentaje}%">
+                                    style="width: ${porcentaje}%; background-color: ${color};">
                                 </div>
                             </div>
                             <div class="text-center" style="font-size: 10px;">
@@ -192,41 +193,44 @@ $(document).ready(function () {
                 "orderable": false,
                 "className": "text-center",
                 "render": function (data, type, row) {
-                    const estatusClasses = {
-                        'POR DEFINIR': 'bg-secondary',
-                        'ASIGNADA': 'bg-primary',
-                        'CANCELADA': 'bg-danger',
-                        'DIFERIDA': 'bg-warning',
-                        'DIFERIDA(SIN INICIAR)': 'bg-warning',
-                        'EN EJECUCION': 'bg-info',
-                        'SUSPENDIDA': 'bg-warning',
-                        'TERMINADA': 'bg-success',
-                        'POR CANCELAR': 'bg-danger'
+                    const estatusColors = {
+                        'POR DEFINIR': '#54565a',            
+                        'ASIGNADA': '#fad91f',               
+                        'CANCELADA': '#f05523',              
+                        'DIFERIDA': '#f05523',               
+                        'EN EJECUCION': '#55c0e9',           
+                        'SUSPENDIDA': '#54565a',             
+                        'TERMINADA': '#95c93d',              
+                        'POR CANCELAR': '#f05523'            
                     };
+
+                    const btnColor = estatusColors[data] || '#54565a';
 
                     if (row.estatus_numero === 1) {
                         return `
                             <div class="dropdown">
-                                <button class="btn btn-sm ${estatusClasses[data] || 'bg-secondary'} dropdown-toggle text-white w-100" 
+                                <button class="btn btn-sm dropdown-toggle text-white w-100" 
+                                        style="background-color: ${btnColor}; border-color: ${btnColor};"
                                         type="button" data-bs-toggle="dropdown" data-bs-display="static" 
                                         aria-expanded="false">
                                     ${data}
                                 </button>
                                 <ul class="dropdown-menu w-100" style="max-height: 200px; overflow-y: auto;">
-                                    <li><a class="dropdown-item cambiar-estatus-option" data-estatus="5">ASIGNADA</a></li>
-                                    <li><a class="dropdown-item cambiar-estatus-option" data-estatus="8">EN EJECUCION</a></li>
-                                    <li><a class="dropdown-item cambiar-estatus-option" data-estatus="9">SUSPENDIDA</a></li>
-                                    <li><a class="dropdown-item cambiar-estatus-option" data-estatus="7">DIFERIDA</a></li>
-                                    <li><a class="dropdown-item cambiar-estatus-option" data-estatus="16">DIFERIDA(SIN INICIAR)</a></li>
-                                    <li><a class="dropdown-item cambiar-estatus-option" data-estatus="10">TERMINADA</a></li>
-                                    <li><a class="dropdown-item cambiar-estatus-option" data-estatus="11">POR CANCELAR</a></li>
-                                    <li><a class="dropdown-item cambiar-estatus-option" data-estatus="6">CANCELADA</a></li>
+                                    <li><a class="dropdown-item cambiar-estatus-option" href="#" data-estatus="5">ASIGNADA</a></li>
+                                    <li><a class="dropdown-item cambiar-estatus-option" href="#" data-estatus="8">EN EJECUCION</a></li>
+                                    <li><a class="dropdown-item cambiar-estatus-option" href="#" data-estatus="9">SUSPENDIDA</a></li>
+                                    <li><a class="dropdown-item cambiar-estatus-option" href="#" data-estatus="7">DIFERIDA</a></li>
+                                    <li><a class="dropdown-item cambiar-estatus-option" href="#" data-estatus="16">DIFERIDA(SIN INICIAR)</a></li>
+                                    <li><a class="dropdown-item cambiar-estatus-option" href="#" data-estatus="10">TERMINADA</a></li>
+                                    <li><a class="dropdown-item cambiar-estatus-option" href="#" data-estatus="11">POR CANCELAR</a></li>
+                                    <li><a class="dropdown-item cambiar-estatus-option" href="#" data-estatus="6">CANCELADA</a></li>
                                 </ul>
                                 <input type="hidden" class="ot-id" value="${row.id}">
                             </div>
                         `;
                     } else {
-                        return `<button class="btn btn-sm ${estatusClasses[data] || 'bg-secondary'} text-white w-100" 
+                        return `<button class="btn btn-sm text-white w-100" 
+                                        style="background-color: ${btnColor}; border-color: ${btnColor};"
                                         type="button" data-bs-toggle="dropdown" data-bs-display="static" 
                                         aria-expanded="false">
                                     ${data}
@@ -1562,12 +1566,12 @@ function initTablaDetalleOT(otId) {
                 "className": "text-center",
                 "width": "10%",
                 "render": function(data, type, row) {
-                    const estatusClasses = {
-                        '1': 'bg-warning',      // PENDIENTE
-                        '2': 'bg-primary',      // PROCESO
-                        '3': 'bg-success',      // COMPLETADO
-                        '4': 'bg-danger',       // CANCELADO
-                        '14': 'bg-secondary'    // NO APLICA
+                    const estatusColors = {
+                        '1': '#fad91f',   
+                        '2': '#55c0e9',   
+                        '3': '#95c93d',   
+                        '4': '#f05523',   
+                        '14': '#54565a'   
                     };
                     
                     const estatusTextos = {
@@ -1577,22 +1581,22 @@ function initTablaDetalleOT(otId) {
                         '4': 'CANCELADO',
                         '14': 'NO APLICA'
                     };
-                    
                     const textoActual = estatusTextos[data] || 'PENDIENTE';
-                    const claseActual = estatusClasses[data] || 'bg-warning';
+                    const colorActual = estatusColors[data] || '#fad91f';
                     
                     return `
                         <div class="dropdown">
-                            <button class="btn btn-sm ${claseActual} dropdown-toggle text-white w-100" 
+                            <button class="btn btn-sm dropdown-toggle text-white w-100" 
+                                    style="background-color: ${colorActual}; border-color: ${colorActual};"
                                     type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 ${textoActual}
                             </button>
                             <ul class="dropdown-menu w-100">
-                                <li><a class="dropdown-item cambiar-estatus-paso-option" data-estatus="1">PENDIENTE</a></li>
-                                <li><a class="dropdown-item cambiar-estatus-paso-option" data-estatus="2">PROCESO</a></li>
-                                <li><a class="dropdown-item cambiar-estatus-paso-option" data-estatus="3">COMPLETADO</a></li>
-                                <li><a class="dropdown-item cambiar-estatus-paso-option" data-estatus="4">CANCELADO</a></li>
-                                <li><a class="dropdown-item cambiar-estatus-paso-option" data-estatus="14">NO APLICA</a></li>
+                                <li><a class="dropdown-item cambiar-estatus-paso-option" href="#" data-estatus="1">PENDIENTE</a></li>
+                                <li><a class="dropdown-item cambiar-estatus-paso-option" href="#" data-estatus="2">PROCESO</a></li>
+                                <li><a class="dropdown-item cambiar-estatus-paso-option" href="#" data-estatus="3">COMPLETADO</a></li>
+                                <li><a class="dropdown-item cambiar-estatus-paso-option" href="#" data-estatus="4">CANCELADO</a></li>
+                                <li><a class="dropdown-item cambiar-estatus-paso-option" href="#" data-estatus="14">NO APLICA</a></li>
                             </ul>
                             <input type="hidden" class="paso-id" value="${row.id}">
                         </div>
@@ -1614,7 +1618,7 @@ function initTablaDetalleOT(otId) {
                         return `
                             <a class="table-icon ver-archivo" 
                                 title="Cambiar archivo" 
-                                data-id="${row.id}"  >
+                                data-id="${row.id}">
                                 <i class="fas fa-upload text-secondary"></i>
                             </a>
                             <a class="table-icon ver-archivo-externo" 
@@ -1624,7 +1628,7 @@ function initTablaDetalleOT(otId) {
                                 data-bs-toggle="tooltip"
                                 data-bs-placement="top"
                                 data-id="${row.id}">
-                                    <i class="fas fa-eye text-success"></i>
+                                <i class="fas fa-eye" style="color: #f05523;"></i>
                             </a>
                         `;
                     } else {
@@ -1707,9 +1711,9 @@ function initTablaReprogramaciones(otId) {
                 "title": "Progreso",
                 "width": "20%",
                 "render": function(data, type, row) {
-                    let color = 'bg-success';
-                    if (data < 25) color = 'bg-danger';
-                    else if (data < 75) color = 'bg-warning';
+                    let color = '#95c93d'; 
+                    if (data < 25) color = '#f05523';      
+                    else if (data < 75) color = '#fad91f'; 
                     
                     const porcentaje = isNaN(data) ? 0 : Math.max(0, Math.min(100, data));
                     const tooltip = `Tiempo: ${row.progreso_tiempo}% | Pasos: ${row.progreso_pasos}%`;
@@ -1717,15 +1721,15 @@ function initTablaReprogramaciones(otId) {
                     return `
                         <div title="${tooltip}" data-bs-toggle="tooltip">
                             <div class="progress" style="height: 18px; cursor: pointer;">
-                                <div class="progress-bar ${color}" 
+                                <div class="progress-bar" 
                                     role="progressbar" 
-                                    style="width: ${porcentaje}%" 
+                                    style="width: ${porcentaje}%; background-color: ${color};" 
                                     aria-valuenow="${porcentaje}">
                                 </div>
                             </div>
                             <div class="text-center mt-1" style="font-size: 13px;">
-                                <span class="badge bg-success">${row.dias_transcurridos}/${row.plazo_total}dP</span>
-                                <span class="badge bg-secondary">${row.dias_transcurridos_real}/${row.plazo_total_real}dR</span>
+                                <span class="badge text-white" style="background-color: #95c93d;">${row.dias_transcurridos}/${row.plazo_total}dP</span>
+                                <span class="badge text-white" style="background-color: #54565a;">${row.dias_transcurridos_real}/${row.plazo_total_real}dR</span>
                                 <span class="ms-2">${porcentaje}%</span>
                                 <span class="ms-2 text-muted">(${row.pasos_completados}/${row.total_pasos})</span>
                             </div>
@@ -1741,41 +1745,45 @@ function initTablaReprogramaciones(otId) {
                 "className": "text-center",
                 "width": "5%",
                 "render": function (data, type, row) {
-                    const estatusClasses = {
-                        'POR DEFINIR': 'bg-secondary',
-                        'ASIGNADA': 'bg-primary',
-                        'CANCELADA': 'bg-danger',
-                        'DIFERIDA': 'bg-warning',
-                        'DIFERIDA(SIN INICIAR)': 'bg-warning',
-                        'EN EJECUCION': 'bg-info',
-                        'SUSPENDIDA': 'bg-warning',
-                        'TERMINADA': 'bg-success',
-                        'POR CANCELAR': 'bg-danger'
+                    // Mapa de colores para Estatus de OT
+                    const estatusColors = {
+                        'POR DEFINIR': '#54565a',            
+                        'ASIGNADA': '#fad91f',               
+                        'CANCELADA': '#f05523',              
+                        'DIFERIDA': '#f05523',               
+                        'EN EJECUCION': '#55c0e9',           
+                        'SUSPENDIDA': '#54565a',             
+                        'TERMINADA': '#95c93d',              
+                        'POR CANCELAR': '#f05523'            
                     };
+
+                    const btnColor = estatusColors[data] || '#54565a'; 
 
                     if (row.estatus_numero === 1) {
                         return `
                             <div class="dropdown">
-                                <button class="btn btn-sm ${estatusClasses[data] || 'bg-secondary'} dropdown-toggle text-white w-100" 
+                                <button class="btn btn-sm dropdown-toggle text-white w-100" 
+                                        style="background-color: ${btnColor}; border-color: ${btnColor};"
                                         type="button" data-bs-toggle="dropdown" data-bs-display="static" 
                                         aria-expanded="false">
                                     ${data}
                                 </button>
-                                <ul class="dropdown-menu w-100">
-                                    <li><a class="dropdown-item cambiar-estatus-option" data-estatus="5">ASIGNADA</a></li>
-                                    <li><a class="dropdown-item cambiar-estatus-option" data-estatus="8">EN EJECUCION</a></li>
-                                    <li><a class="dropdown-item cambiar-estatus-option" data-estatus="9">SUSPENDIDA</a></li>
-                                    <li><a class="dropdown-item cambiar-estatus-option" data-estatus="7">DIFERIDA</a></li>
-                                    <li><a class="dropdown-item cambiar-estatus-option" data-estatus="16">DIFERIDA(SIN INICIAR)</a></li>
-                                    <li><a class="dropdown-item cambiar-estatus-option" data-estatus="10">TERMINADA</a></li>
-                                    <li><a class="dropdown-item cambiar-estatus-option" data-estatus="11">POR CANCELAR</a></li>
-                                    <li><a class="dropdown-item cambiar-estatus-option" data-estatus="6">CANCELADA</a></li>
+                                <ul class="dropdown-menu w-100" style="max-height: 200px; overflow-y: auto;">
+                                    <li><a class="dropdown-item cambiar-estatus-option" href="#" data-estatus="5">ASIGNADA</a></li>
+                                    <li><a class="dropdown-item cambiar-estatus-option" href="#" data-estatus="8">EN EJECUCION</a></li>
+                                    <li><a class="dropdown-item cambiar-estatus-option" href="#" data-estatus="9">SUSPENDIDA</a></li>
+                                    <li><a class="dropdown-item cambiar-estatus-option" href="#" data-estatus="7">DIFERIDA</a></li>
+                                    <li><a class="dropdown-item cambiar-estatus-option" href="#" data-estatus="16">DIFERIDA(SIN INICIAR)</a></li>
+                                    <li><a class="dropdown-item cambiar-estatus-option" href="#" data-estatus="10">TERMINADA</a></li>
+                                    <li><a class="dropdown-item cambiar-estatus-option" href="#" data-estatus="11">POR CANCELAR</a></li>
+                                    <li><a class="dropdown-item cambiar-estatus-option" href="#" data-estatus="6">CANCELADA</a></li>
                                 </ul>
                                 <input type="hidden" class="ot-id" value="${row.id}">
                             </div>
                         `;
                     } else {
-                        return `<button class="btn btn-sm ${estatusClasses[data] || 'bg-secondary'} text-white w-100" 
+                        return `<button class="btn btn-sm text-white w-100" 
+                                        style="background-color: ${btnColor}; border-color: ${btnColor};"
                                         type="button" data-bs-toggle="dropdown" data-bs-display="static" 
                                         aria-expanded="false">
                                     ${data}

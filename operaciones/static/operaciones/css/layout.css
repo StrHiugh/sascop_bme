@@ -27,7 +27,7 @@ html, body {
     max-width: 250px;
     font-family: "Roboto";
     font-size: 13px;
-    background: #434c5b;
+    background: #54565a;
     box-shadow: 0px 20px 20px -10px rgba(144, 152, 158, 0.7);
     transition: all 0.3s ease;
     z-index: 1000;
@@ -37,7 +37,7 @@ html, body {
 }
 
 #bm-header {
-    background: #434c5b;
+    background: #54565a;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     padding: 0;
 }
@@ -52,7 +52,7 @@ html, body {
 .sidebar-toggle {
     background: transparent;
     border: none;
-    color:  #434c5b;
+    color:  #54565a;
     cursor: pointer;
     padding: 0.5rem;
     border-radius: 4px;
@@ -65,11 +65,18 @@ html, body {
     background: rgba(255, 255, 255, 0.1);
 }
 
+.sidebar-footer {
+    background: #54565a;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 1rem;
+    margin-top: auto;
+}
+
 .header-brand {
-    margin-left: 0.75rem;
+    margin-left: 1rem;
     color: white;
     font-weight: 600;
-    font-size: 1.1rem;
+    font-size: 2rem;
 }
 
 .profile-image {
@@ -83,8 +90,8 @@ html, body {
 }
 
 .sidebar-logo {
-    width: 100px;
-    height: 90px;
+    width: 120px;
+    height: 110px;
     display: block;
     margin: 0 auto;
     padding-top: 5px;
@@ -218,19 +225,20 @@ html, body {
 }
 
 .submenu .nav-link {
-  color: #d9d9d9; 
+    color: #d9d9d9; 
 }
 
 .nav-link:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.08);
     border-left-color: #69707c;
+    color: #ececec;
+
 }
 
 .nav-link.active {
-    background-color: #69707c;
+    background-color: #f05523;
     color: #ffffff;
-    border-left-color: #69707c;
+    border-left-color: #f05523;
     font-weight: 500;
 }
 
@@ -444,13 +452,6 @@ html, body {
     font-weight: 600;
 }
 
-.sidebar-footer {
-    background: #434c5b;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 1rem;
-    margin-top: auto;
-}
-
 .footer-content {
     text-align: center;
 }
@@ -643,6 +644,17 @@ html, body {
     font-size: 1.5rem;
     font-weight: 600;
     margin-bottom: 0.5rem;
+    color: #f05523;
+}
+
+.header-title-section h1 {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #f05523;
 }
 
 .header-modulo-scroll {
@@ -778,7 +790,7 @@ html, body {
     
 }
 .breadcrumb-item.active {
-    color: #4ec0e7; 
+    color: #f05523; 
     font-weight: 600; 
 }
 
@@ -788,19 +800,24 @@ html, body {
 }
 
 .breadcrumb-item a:hover {
-    color: #4ec0e7; 
+    color: #f05523; 
 }
 
 .btn.btn-primary{
-    background-color: #4ec0e7;
-    border-color: #4ec0e7;
+    background-color: #f05523;
+    border-color: #f05523;
+}
+
+.btn.btn-secondary{
+    background-color: #54565a;
+    border-color: #54565a;
 }
 
 .alert.alert-primary{
-    color: #45463c;
+    color: #54565a;
     font-weight: 600;
-    background-color: #f9ffe3;
-    border-color: #f2f897;
+    background-color: #fad91f21;
+    border-color: #f05523;
 }
 
 .table > thead > tr > th {
@@ -954,20 +971,20 @@ table .table-icon i.disabled:hover {
 }
 
 #tabla_paginate .paginate_button.page-item.active .page-link {
-    background-color: #4ec0e7 !important;
-    border-color: #4ec0e7 !important;
+    background-color: #f05523 !important;
+    border-color: #f05523 !important;
     color: white !important;
 }
 
 #tabla_paginate .paginate_button.page-item.active .page-link:hover {
-    background-color: #4ec0e7 !important;
-    border-color: #4ec0e7 !important;
+    background-color: #f05523 !important;
+    border-color: #f05523 !important;
     color: white !important;
 }
 
 
 .dataTables_paginate .paginate_button.page-item .page-link {
-    color: #4ec0e7 !important;
+    color: #f05523 !important;
     border: 1px solid #dee2e6;
     border-radius: 6px;
     margin: 0 2px;
@@ -976,20 +993,20 @@ table .table-icon i.disabled:hover {
 
 .dataTables_paginate .paginate_button.page-item .page-link:hover {
     background-color: #e9f7fb !important;
-    border-color: #4ec0e7 !important;
+    border-color: #f05523 !important;
     color: #007ea8 !important;
 }
 
 .dataTables_paginate .paginate_button.page-item.active .page-link {
-    background-color: #4ec0e7 !important;
-    border-color: #4ec0e7 !important;
+    background-color: #f05523 !important;
+    border-color: #f05523 !important;
     color: #fff !important;
     font-weight: bold;
 }
 
 .dataTables_paginate .paginate_button.page-item.active .page-link:hover {
-    background-color: #38aed4 !important;
-    border-color: #38aed4 !important;
+    background-color: #f05523 !important;
+    border-color: #f05523 !important;
     color: #fff !important;
 }
 
@@ -1008,7 +1025,7 @@ table .table-icon i.disabled:hover {
 
 .detalle-pte-container {
     background-color: #f8f9fa;
-    border-left: 4px solid #38aed4;
+    border-left: 4px solid #f05523;
 }
 
 .detalle-pte-content {
@@ -1353,7 +1370,7 @@ table.dataTable tbody tr.fila-por-definir:hover td {
 }
 
 .select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
-    background-color: #38aed4;
+    background-color: #f05523;
     color: white;
 }
 
@@ -1363,12 +1380,12 @@ table.dataTable tbody tr.fila-por-definir:hover td {
 
 @keyframes pulse-border {
     0% {
-        box-shadow: 0 0 0 0 #45aacc;
-        border-color: #4ec0e7;
+        box-shadow: 0 0 0 0 #f05523;
+        border-color: #f05523;
     }
     70% {
         box-shadow: 0 0 0 10px rgba(255, 193, 7, 0);
-        border-color: #4ec0e7;
+        border-color: #f05523;
     }
     100% {
         box-shadow: 0 0 0 0 rgba(255, 193, 7, 0);
@@ -1378,10 +1395,15 @@ table.dataTable tbody tr.fila-por-definir:hover td {
 
 .resaltar-atencion .select2-selection {
     animation: pulse-border 2s infinite;
-    border: 1px solid #4ec0e7 !important;
+    border: 1px solid #f05523 !important;
 }
 
 .form-check-input:checked {
-    background-color: #4ec0e7;
-    border-color: #4ec0e7;
+    background-color: #f05523;
+    border-color: #f05523;
+}
+
+.dataTables_processing .loader-dot, 
+.dataTables_processing > div > div {
+    background-color: #f05523 !important;
 }
