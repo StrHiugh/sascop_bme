@@ -86,7 +86,7 @@ def fn_obtener_resumen_actividad_por_usuario(fecha_inicio, fecha_fin):
             output_field=CharField(),
          )
       )
-      .order_by("-total_actividades")[:10]
+      .order_by("-total_actividades")[:14]
    )
    return resultados
 

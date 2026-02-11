@@ -26,7 +26,7 @@ class Command(BaseCommand):
       self.stdout.write(f"Periodo calculado: {texto_periodo}")
 
       lista_correos = [
-         "gregorio021@outlook.com"
+         "gregorio021@outlook.com",
          # "Jfcp@bluemarine.com.mx",
          # "Svr@bluemarine.com.mx",
          # "ejs@bluemarine.com.mx",
@@ -36,8 +36,8 @@ class Command(BaseCommand):
          # "gdg@bluemarine.com.mx",
          # "Acch@bluemarine.com.mx",
          # "afcv@bluemarine.com.mx",
-         # "jarpa@bluemarine.com.mx",
-         # "fbhp@bluemarine.com.mx"
+         "jarpa@bluemarine.com.mx",
+         "fbhp@bluemarine.com.mx"
       ]
 
       datos_correo = {
@@ -48,7 +48,6 @@ class Command(BaseCommand):
 
       try:
          resultados = fn_obtener_resumen_actividad_por_usuario(fecha_inicio_str, fecha_fin_str)
-
          if not resultados:
             self.stdout.write(self.style.WARNING("No hay datos de actividad para este periodo."))
             return
