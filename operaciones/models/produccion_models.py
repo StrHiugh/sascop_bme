@@ -51,10 +51,10 @@ class ReporteDiario(models.Model):
     id_estatus = models.ForeignKey(Estatus, on_delete=models.CASCADE, limit_choices_to={'nivel_afectacion': 6}, default=1, verbose_name="Estatus Operativo")
     comentario = models.CharField(max_length=255, blank=True, null=True, help_text="Observación breve del día")
     bloqueado = models.BooleanField(default=False)
-
+    id_sitio = models.ForeignKey(Sitio, on_delete=models.CASCADE, null=True, blank=True)
     class Meta:
         db_table = 'reporte_diario_detalle'
-        unique_together = ['id_reporte_mensual', 'fecha']
+        unique_together = ['id_reporte_mensual', 'fecha', 'id_sitio']
         indexes = [models.Index(fields=['fecha'])]
 
     def __str__(self):
@@ -77,7 +77,7 @@ class Produccion(models.Model):
 
     class Meta:
         db_table = 'produccion'
-        unique_together = ['id_partida_anexo', 'fecha_produccion', 'tipo_tiempo']
+        unique_together = ['id_partida_anexo', 'fecha_produccion', 'tipo_tiempo', 'id_sitio_produccion']
         indexes = [
             models.Index(fields=['fecha_produccion']),
             models.Index(fields=['id_partida_anexo']),

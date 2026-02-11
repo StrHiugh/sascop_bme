@@ -303,6 +303,9 @@ def obtener_datos_ot(request):
             'monto_mxn': ot.monto_mxn,
             'monto_usd': ot.monto_usd,
             'plazo_dias': ot.plazo_dias,
+            'requiere_patio': ot.requiere_patio,
+            'fecha_inicio_patio': ot.fecha_inicio_patio.isoformat() if ot.fecha_inicio_patio else None,
+            'fecha_fin_patio': ot.fecha_fin_patio.isoformat() if ot.fecha_fin_patio else None,
             
         }
         
@@ -550,13 +553,43 @@ def editar_ot(request):
         ot.oficio_ot = request.POST.get('oficio_ot', ot.oficio_ot)
         ot.id_tipo_id = request.POST.get('id_tipo', ot.id_tipo_id)
         ot.comentario = request.POST.get('comentario_general')
-        ot.id_frente_id = request.POST.get('id_frente')
+        ot.id_responsable_proyecto_id = request.POST.get('responsable_proyecto', ot.id_responsable_proyecto_id)
+        
         ot.id_embarcacion = request.POST.get('id_embarcacion')
         ot.id_plataforma = request.POST.get('id_plataforma')
         ot.id_intercom = request.POST.get('id_intercom')
-        ot.id_patio = request.POST.get('id_patio')
         ot.plazo_dias = request.POST.get('plazo_dias')
-        ot.id_responsable_proyecto_id = request.POST.get('responsable_proyecto', ot.id_responsable_proyecto_id)
+
+        final_id_patio = None
+        requiere_patio = False
+
+        id_frente_input = request.POST.get('id_frente')
+        ot.id_frente_id = id_frente_input
+        
+        if id_frente_input == 1:
+            patio_tierra = request.POST.get('id_patio')
+            if patio_tierra:
+                final_id_patio = patio_tierra
+        else: 
+            check_fase = request.POST.get('check_fase_patio')
+            print(check_fase)
+            if check_fase == 'on':
+                patio_fase = request.POST.get('id_patio_fase')
+                if patio_fase:
+                    final_id_patio = patio_fase
+                    requiere_patio = True
+
+        if final_id_patio:
+            ot.id_patio = final_id_patio
+            ot.requiere_patio = requiere_patio
+            ot.fecha_inicio_patio = request.POST.get('fecha_inicio_patio')
+            ot.fecha_fin_patio = request.POST.get('fecha_fin_patio')
+        else:
+            ot.id_patio = None
+            ot.requiere_patio = False
+            ot.fecha_inicio_patio = None
+            ot.fecha_fin_patio = None
+
         if request.POST.get('monto_mxn'):
             ot.monto_mxn = request.POST.get('monto_mxn')
 
