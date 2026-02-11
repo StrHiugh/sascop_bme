@@ -14,14 +14,25 @@ const moneyFormatter = new Intl.NumberFormat('es-MX', {
     minimumFractionDigits: 2
 });
 
-let storeTotales = { aut_mn: 0, aut_usd: 0, ejec_mn: 0, ejec_usd: 0 };
+let storeTotales = { 
+    aut_mn: 0, aut_usd: 0, ejec_mn: 0, ejec_usd: 0,
+    acum_mn: 0, acum_usd: 0, resta_mn: 0, resta_usd: 0
+};
 
 function actualizarKPIsFinancieros(totales) {
-    storeTotales = totales || { aut_mn: 0, aut_usd: 0, ejec_mn: 0, ejec_usd: 0 };
+    storeTotales = totales || { 
+        aut_mn: 0, aut_usd: 0, ejec_mn: 0, ejec_usd: 0,
+        acum_mn: 0, acum_usd: 0, resta_mn: 0, resta_usd: 0
+    };
     $('#lbl-aut-mn').text(moneyFormatter.format(storeTotales.aut_mn));
     $('#lbl-aut-usd').text(moneyFormatter.format(storeTotales.aut_usd));
     $('#lbl-ejec-mn').text(moneyFormatter.format(storeTotales.ejec_mn));
     $('#lbl-ejec-usd').text(moneyFormatter.format(storeTotales.ejec_usd));
+
+    $('#lbl-acum-mn').text(moneyFormatter.format(storeTotales.acum_mn || 0));
+    $('#lbl-acum-usd').text(moneyFormatter.format(storeTotales.acum_usd || 0));
+    $('#lbl-resta-mn').text(moneyFormatter.format(storeTotales.resta_mn || 0));
+    $('#lbl-resta-usd').text(moneyFormatter.format(storeTotales.resta_usd || 0));
 
     calcularHomologado();
 }
@@ -996,12 +1007,16 @@ $(document).ready(function() {
         const anio = $('#filtro-anio').val();
 
         if(!idSitio) return;
-        const $grids = $('#grid-produccion, #grid-asistencia');
-        for(let i=1; i<=31; i++) {
-            $grids.find(`th[data-column-name="dia${i}"]`).css({
-                'border-top': '', 'background-color': ''
+        const $gridContainers = $('#grid-produccion, #grid-asistencia');
+        $gridContainers.find('th[data-column-name^="dia"]').each(function() {
+            $(this).css({
+                'background-color': '',
+                'position': 'relative', 
+                'overflow': 'visible', 
+                'border-top': '' 
             }).attr('title', '');
-        }
+            $(this).find('.guardia-badge').remove(); 
+        });
 
         $.ajax({
             url: urlObtenerGuardias,
@@ -1009,18 +1024,57 @@ $(document).ready(function() {
             success: function(response) {
                 const guardias = response.guardias;
                 
-                guardias.forEach(g => {
-                    for (let d = g.inicio; d <= g.fin; d++) {
-                        const $headerCells = $grids.find(`th[data-column-name="dia${d}"]`);
+                $gridContainers.each(function() {
+                    const $currentGrid = $(this);
+
+                    guardias.forEach(g => {
+                        const $startCell = $currentGrid.find(`th[data-column-name="dia${g.inicio}"]`);
                         
-                        if ($headerCells.length) {
-                            $headerCells.css({
-                                'border-top': `10px solid ${g.color}`,
-                                'background-color': hexToRgba(g.color, 0.1)
-                            });
-                            $headerCells.attr('title', `👮 ${g.nombre}`);
+                        if ($startCell.length) {
+                            let totalWidth = 0;
+                            
+                            for (let d = g.inicio; d <= g.fin; d++) {
+                                const $cell = $currentGrid.find(`th[data-column-name="dia${d}"]`);
+                                if ($cell.length) {
+                                    totalWidth += $cell.outerWidth();
+                                    
+                                    $cell.css('background-color', hexToRgba(g.color, 0.1));
+                                    $cell.attr('title', `👮 ${g.nombre}`);
+                                }
+                            }
+                            if (totalWidth > 0) {
+                                const primerNombre = g.nombre;
+                                
+                                const badgeHtml = `
+                                    <div class="guardia-badge" style="
+                                        position: absolute;
+                                        top: -4px;
+                                        left: 0;
+                                        width: ${totalWidth}px;
+                                        height: 18px;
+                                        background-color: ${g.color};
+                                        color: white;
+                                        font-size: 10px;
+                                        line-height: 18px;
+                                        font-weight: bold;
+                                        text-align: center;
+                                        white-space: nowrap;
+                                        overflow: hidden;
+                                        text-overflow: ellipsis;
+                                        z-index: 100;
+                                        border-bottom-left-radius: 4px;
+                                        border-bottom-right-radius: 4px;
+                                        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+                                        pointer-events: none;
+                                    ">
+                                        ${primerNombre}
+                                    </div>
+                                `;
+                                
+                                $startCell.append(badgeHtml);
+                            }
                         }
-                    }
+                    });
                 });
             },
             error: function(e) {

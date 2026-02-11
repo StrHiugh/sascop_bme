@@ -270,41 +270,74 @@
                     <div class="row g-2 mt-2">
                         <div class="col-md-4">
                             <div class="p-2 border rounded bg-white shadow-sm border-start border-4 border-secondary">
-                                <h6 class="text-uppercase text-muted fw-bold mb-2" style="font-size: 0.75rem;">
-                                    <i class="fas fa-file-contract me-1"></i> Autorizado Total
-                                </h6>
-                                <div class="d-flex justify-content-between mb-1">
-                                    <span class="small fw-bold text-secondary">MN:</span>
-                                    <span class="fw-bold text-dark" id="lbl-aut-mn">$0.00</span>
-                                </div>
-                                <div class="d-flex justify-content-between">
-                                    <span class="small fw-bold text-secondary">USD:</span>
-                                    <span class="fw-bold text-dark" id="lbl-aut-usd">$0.00</span>
+                                <div class="row">
+                                    <div class="col-6 border-end">
+                                        <h6 class="text-uppercase text-muted fw-bold mb-2" style="font-size: 0.75rem;">
+                                            <i class="fas fa-file-contract me-1"></i> Autorizado
+                                        </h6>
+                                        <div class="d-flex justify-content-between mb-1">
+                                            <span class="small fw-bold text-secondary">MN:</span>
+                                            <span class="fw-bold text-dark" id="lbl-aut-mn">$0.00</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <span class="small fw-bold text-secondary">USD:</span>
+                                            <span class="fw-bold text-dark" id="lbl-aut-usd">$0.00</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <h6 class="text-uppercase text-muted fw-bold mb-2" style="font-size: 0.75rem;">
+                                            <i class="fas fa-calendar-day me-1"></i> Prod. Mes
+                                        </h6>
+                                        <div class="d-flex justify-content-between mb-1">
+                                            <span class="small fw-bold text-secondary">MN:</span>
+                                            <span class="fw-bold text-success" id="lbl-ejec-mn">$0.00</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <span class="small fw-bold text-secondary">USD:</span>
+                                            <span class="fw-bold text-success" id="lbl-ejec-usd">$0.00</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-
                         <div class="col-md-4">
                             <div class="p-2 border rounded bg-white shadow-sm border-start border-4 border-secondary">
-                                <h6 class="text-uppercase text-muted fw-bold mb-2" style="font-size: 0.75rem;">
-                                    <i class="fas fa-hard-hat me-1"></i> Producción Mes
-                                </h6>
-                                <div class="d-flex justify-content-between mb-1">
-                                    <span class="small fw-bold text-secondary">MN:</span>
-                                    <span class="fw-bold text-success" id="lbl-ejec-mn">$0.00</span>
-                                </div>
-                                <div class="d-flex justify-content-between">
-                                    <span class="small fw-bold text-secondary">USD:</span>
-                                    <span class="fw-bold text-success" id="lbl-ejec-usd">$0.00</span>
+                                <div class="row">
+                                    <div class="col-6 border-end">
+                                        <h6 class="text-uppercase text-muted fw-bold mb-2" style="font-size: 0.75rem;">
+                                            <i class="fas fa-chart-line me-1"></i> Prod. general
+                                        </h6>
+                                        <div class="d-flex justify-content-between mb-1">
+                                            <span class="small fw-bold text-secondary">MN:</span>
+                                            <span class="fw-bold text-success" id="lbl-acum-mn">$0.00</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <span class="small fw-bold text-secondary">USD:</span>
+                                            <span class="fw-bold text-success" id="lbl-acum-usd">$0.00</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <h6 class="text-uppercase text-muted fw-bold mb-2" style="font-size: 0.75rem;">
+                                            <i class="fas fa-hourglass-half me-1"></i> Por producir
+                                        </h6>
+                                        <div class="d-flex justify-content-between mb-1">
+                                            <span class="small fw-bold text-secondary">MN:</span>
+                                            <span class="fw-bold text-primary" id="lbl-resta-mn">$0.00</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <span class="small fw-bold text-secondary">USD:</span>
+                                            <span class="fw-bold text-primary" id="lbl-resta-usd">$0.00</span>
+                                        </div>
+                                    </div>
+
                                 </div>
                             </div>
                         </div>
-
                         <div class="col-md-4">
                             <div class="p-2 border rounded bg-white shadow-sm border-start border-4 border-secondary">
                                 <div class="d-flex justify-content-between align-items-center mb-1">
                                     <h6 class="text-uppercase text-muted fw-bold mb-0" style="font-size: 0.75rem;">
-                                        <i class="fas fa-coins me-1"></i> Estimación Aprox. (Homologado)
+                                        <i class="fas fa-coins me-1"></i> Estimación mensual (Homologado)
                                     </h6>
                                     <div class="input-group input-group-sm" style="width: 100px;">
                                         <span class="input-group-text p-1" style="font-size: 0.7rem;">TC:</span>
@@ -324,7 +357,8 @@
                                 </div>
                             </div>
                         </div>
-                    </div>             
+
+                    </div>            
                 </div>
             </div>
         </div>
