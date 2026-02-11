@@ -105,7 +105,7 @@ def fn_obtener_resumen_pasos_cargados():
       INNER JOIN responsable_proyecto ON
          pte_header.id_responsable_proyecto_id = responsable_proyecto.id
       WHERE
-         pte_detalle.estatus_paso_id != 14
+         pte_detalle.estatus_paso_id != 14 AND pte_detalle.estatus_paso_id !=0
       GROUP BY
          responsable_proyecto.id, pte_header.id_responsable_proyecto_id, nombre_usuario
       ORDER BY
@@ -128,7 +128,7 @@ def fn_obtener_resumen_ot_pasos_cargados():
       INNER JOIN responsable_proyecto ON
          ot.id_responsable_proyecto_id = responsable_proyecto.id
       WHERE
-         ot_detalle.estatus_paso_id != 14
+         ot_detalle.estatus_paso_id != 14 AND ot_detalle.estatus_paso_id !=0
       GROUP BY
          responsable_proyecto.id, ot.id_responsable_proyecto_id, nombre_usuario
       ORDER BY

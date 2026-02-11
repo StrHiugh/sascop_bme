@@ -13,8 +13,12 @@ class Command(BaseCommand):
    def handle(self, *args, **kwargs):
       self.stdout.write("Iniciando proceso de envío de reporte semanal...")
       fecha_actual = timezone.now()
-      fecha_fin_dt = fecha_actual - datetime.timedelta(days=1)
-      fecha_inicio_dt = fecha_fin_dt - datetime.timedelta(days=6)
+      # fecha_fin_dt = fecha_actual - datetime.timedelta(days=1)
+      # fecha_inicio_dt = fecha_fin_dt - datetime.timedelta(days=6)
+
+      fecha_inicio_dt = datetime.datetime(2026, 2, 2)
+      fecha_fin_dt = datetime.datetime(2026, 2, 11)
+
       fecha_inicio_str = fecha_inicio_dt.strftime("%Y-%m-%d 00:00:00+00")
       fecha_fin_str = fecha_fin_dt.strftime("%Y-%m-%d 23:59:59+00")
       texto_periodo = f"{fecha_inicio_dt.strftime('%d/%m/%Y')} — {fecha_fin_dt.strftime('%d/%m/%Y')}"

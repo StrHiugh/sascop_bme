@@ -162,5 +162,5 @@ EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
 # Configuración global
 DEFAULT_FROM_EMAIL = os.getenv(
     "DEFAULT_FROM_EMAIL",
-    "Mensaje Automatico <noreply@SASCOP.com>"
+    "SASCOP <noreply@SASCOP.com>"
 )
