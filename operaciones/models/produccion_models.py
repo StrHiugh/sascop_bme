@@ -69,11 +69,11 @@ class Produccion(models.Model):
     id_reporte_mensual = models.ForeignKey(ReporteMensual, on_delete=models.CASCADE, related_name='producciones', blank=True, null=True)
     fecha_produccion = models.DateField()
     volumen_produccion = models.DecimalField(max_digits=15, decimal_places=6)
-    # volumen_actual = models.DecimalField(max_digits=15, decimal_places=2)
     tipo_tiempo = models.CharField(max_length=3, choices=TIPO_TIEMPO_CHOICES, blank=True, null=True)
     es_excedente = models.BooleanField(default=False)
     id_estatus_cobro = models.ForeignKey(Estatus, on_delete=models.CASCADE, limit_choices_to={'nivel_afectacion': 3})
     comentario = models.TextField(blank=True)
+    id_sitio_produccion = models.ForeignKey(Sitio, on_delete=models.SET_NULL, null=True, blank=True)
 
     class Meta:
         db_table = 'produccion'

@@ -28,6 +28,11 @@ class OTE(models.Model):
     id_patio = models.IntegerField(null=True, blank=True)
     plazo_dias = models.IntegerField(null=True, blank=True)
     id_cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, null=True, blank=True)
+
+    requiere_patio = models.BooleanField(default=False, verbose_name="Requiere Fase en Patio")
+    fecha_inicio_patio = models.DateField(blank=True, null=True, verbose_name="Inicio Fase Patio")
+    fecha_fin_patio = models.DateField(blank=True, null=True, verbose_name="Fin Fase Patio")
+    
     class Meta:
         db_table = 'ot'
 
