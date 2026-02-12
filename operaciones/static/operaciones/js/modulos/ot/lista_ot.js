@@ -1068,7 +1068,6 @@ $(document).ready(function () {
         const dropdownButton = $(this).closest('.dropdown').find('.dropdown-toggle');
 
         let datosPaso = window.tablaDetalleActiva ? window.tablaDetalleActiva.row($(this).parents('tr')).data() : null;
-        console.log(datosPaso)
         let contenidoMensaje = `
             <div class="mb-3">
                 <p>¿Estás seguro de cambiar el estatus a <strong>${textoEstatus}</strong>?</p>
