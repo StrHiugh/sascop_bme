@@ -10,10 +10,10 @@
                     <li class="breadcrumb-item">
                         <a href="{% url 'operaciones:index' %}" class="text-decoration-none">Inicio</a>
                     </li>
-                    <li class="breadcrumb-item active">Producción y Reportes</li>
+                    <li class="breadcrumb-item active">Producción y Reportes diarios</li>
                 </ol>
             </nav>
-            <h1 class="h2 fw-bold mb-0">Producción</h1>
+            <h1 class="h2 fw-bold mb-0">PRODUCCIÓN Y REPORTES DIARIOS</h1>
         </div>
         
         <div class="header-buttons-section d-flex align-items-center gap-3">
@@ -205,8 +205,28 @@
         color: #cc0000 !important;
         font-weight: 600 !important;
         font-size: 10px !important;
-
     }
+
+    .tui-grid-layer-focus-border {
+        background-color: #f05523 !important;
+    }
+
+    .tui-grid-cell-editing,
+    .tui-grid-cell-selected {
+        border-color: #f05523 !important;
+    }
+
+    .tui-grid-container input,
+    .tui-grid-container select,
+    .tui-grid-container textarea,
+    .tui-grid-editor-container input,
+    .tui-grid-content input:focus {
+        border-color: #f05523 !important;
+        outline: none !important;
+        box-shadow: inset 0 0 0 1px #f05523 !important;
+    }
+
+    
 
 </style>
 
