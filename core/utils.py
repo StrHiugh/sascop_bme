@@ -23,12 +23,19 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER, TA_RIGHT
 from reportlab.lib import colors
 from scipy.interpolate import make_interp_spline
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image as ImageRL, PageBreak, KeepTogether, Table, TableStyle
-
-from operaciones.models import RegistroActividad
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image as ImageRL, PageBreak, KeepTogether, Table, TableStyle, CondPageBreak
 
 # Configuración del Backend de Matplotlib
 plt.switch_backend("Agg")
+
+# Colores Institucionales
+COLOR_FUERZA = "#f05523"
+COLOR_SERIEDAD = "#20145f"
+COLOR_CONFIANZA = "#51c2eb"
+COLOR_DINAMISMO = "#fad91f"
+COLOR_SOLIDEZ = "#54565a"
+
+PALETA_SASCOP = [COLOR_FUERZA, COLOR_SOLIDEZ, COLOR_DINAMISMO, COLOR_CONFIANZA, COLOR_SERIEDAD]
 
 # Configuración global de estilos
 plt.rcParams["font.family"] = "sans-serif"
@@ -88,10 +95,10 @@ def fn_obtener_resumen_actividad_por_usuario(fecha_inicio, fecha_fin):
          ra.tabla_log,
          CONCAT_WS(' ', au.first_name, au.last_name) AS nombre_usuario,
          CASE
-            WHEN ra.tabla_log = 0 THEN 'PTE HEADER'
-            WHEN ra.tabla_log = 1 THEN 'PTE DETALLE'
-            WHEN ra.tabla_log = 4 THEN 'OT HEADER'
-            WHEN ra.tabla_log = 5 THEN 'OT DETALLE'
+            WHEN ra.tabla_log = 0 THEN 'Cabecera PTE'
+            WHEN ra.tabla_log = 1 THEN 'Pasos PTE'
+            WHEN ra.tabla_log = 4 THEN 'Cabecera OT'
+            WHEN ra.tabla_log = 5 THEN 'Pasos OT'
             ELSE 'OTRO'
          END AS nombre_modulo
       FROM
@@ -232,12 +239,236 @@ def fn_generar_grafica_buffer(datos_queryset):
    plt.close(fig)
    return buffer
 
-def fn_crear_grafica_carga_archivos_pasos(nombres, cargados, nulos, titulo_grafica, porcentaje_fijo, mostrar_avance=False):
-   totales = [c + n for c, n in zip(cargados, nulos)]
-   COLOR_AZUL_BARRAS = "#4fc3f7"
-   COLOR_VERDE_LINEA = "#8bc34a"
-   COLOR_VERDE_AREA = "#f1f8e9"
+def fn_enviar_correo_template(
+   asunto,
+   ruta_template,
+   contexto,
+   lista_destinatarios,
+   archivo_adjunto=None
+):
+   try:
+      if not lista_destinatarios: return False
 
+      mensaje_html = render_to_string(ruta_template, contexto)
+      mensaje_plano = strip_tags(mensaje_html)
+      origen = settings.DEFAULT_FROM_EMAIL
+
+      email = EmailMultiAlternatives(
+         subject=asunto,
+         body=mensaje_plano,
+         from_email=origen,
+         to=lista_destinatarios
+      )
+      email.attach_alternative(mensaje_html, "text/html")
+      email.mixed_subtype = 'related'
+      ruta_logo_bme = os.path.join(
+         settings.BASE_DIR,
+         'operaciones',
+         'static',
+         'operaciones',
+         'images',
+         'logo_black_white_subtec.jpg'
+      )
+
+      if os.path.exists(ruta_logo_bme):
+         with open(ruta_logo_bme, 'rb') as f:
+            img1 = MIMEImage(f.read())
+            img1.add_header('Content-ID', '<logo_bme>')
+            img1.add_header(
+               'Content-Disposition',
+               'inline',
+               filename='logo_black_white_subtec.jpg'
+            )
+            email.attach(img1)
+
+      ruta_logo_sascop = os.path.join(
+         settings.BASE_DIR,
+         'operaciones',
+         'static',
+         'operaciones',
+         'images',
+         'SASCOP_LOGO.png'
+      )
+
+      if os.path.exists(ruta_logo_sascop):
+         with open(ruta_logo_sascop, 'rb') as f:
+            img2 = MIMEImage(f.read())
+            img2.add_header('Content-ID', '<logo_sascop>')
+            img2.add_header(
+               'Content-Disposition',
+               'inline',
+               filename='SASCOP_LOGO.png'
+            )
+            email.attach(img2)
+
+      if archivo_adjunto:
+         nombre, contenido, mime = archivo_adjunto
+         email.attach(nombre, contenido, mime)
+
+      email.send(fail_silently=False)
+      return True
+
+   except Exception as error:
+      print(f"Error enviando correo: {error}")
+      return False
+
+def fn_enviar_correo_template(
+   asunto,
+   ruta_template,
+   contexto,
+   lista_destinatarios,
+   archivo_adjunto=None
+):
+   try:
+      if not lista_destinatarios: return False
+
+      mensaje_html = render_to_string(ruta_template, contexto)
+      mensaje_plano = strip_tags(mensaje_html)
+      origen = settings.DEFAULT_FROM_EMAIL
+
+      email = EmailMultiAlternatives(
+         subject=asunto,
+         body=mensaje_plano,
+         from_email=origen,
+         to=lista_destinatarios
+      )
+      email.attach_alternative(mensaje_html, "text/html")
+      email.mixed_subtype = 'related'
+      ruta_logo_bme = os.path.join(
+         settings.BASE_DIR,
+         'operaciones',
+         'static',
+         'operaciones',
+         'images',
+         'logo_black_white_subtec.jpg'
+      )
+
+      if os.path.exists(ruta_logo_bme):
+         with open(ruta_logo_bme, 'rb') as f:
+            img1 = MIMEImage(f.read())
+            img1.add_header('Content-ID', '<logo_bme>')
+            img1.add_header(
+               'Content-Disposition',
+               'inline',
+               filename='logo_black_white_subtec.jpg'
+            )
+            email.attach(img1)
+
+      ruta_logo_sascop = os.path.join(
+         settings.BASE_DIR,
+         'operaciones',
+         'static',
+         'operaciones',
+         'images',
+         'SASCOP_LOGO.png'
+      )
+
+      if os.path.exists(ruta_logo_sascop):
+         with open(ruta_logo_sascop, 'rb') as f:
+            img2 = MIMEImage(f.read())
+            img2.add_header('Content-ID', '<logo_sascop>')
+            img2.add_header(
+               'Content-Disposition',
+               'inline',
+               filename='SASCOP_LOGO.png'
+            )
+            email.attach(img2)
+
+      if archivo_adjunto:
+         nombre, contenido, mime = archivo_adjunto
+         email.attach(nombre, contenido, mime)
+
+      email.send(fail_silently=False)
+      return True
+
+   except Exception as error:
+      print(f"Error enviando correo: {error}")
+      return False
+
+def fn_dibujar_elementos_fijos(canvas, doc):
+   """Dibuja el encabezado y pie de página institucional."""
+   canvas.saveState()
+   ancho, alto = letter
+
+   canvas.setStrokeColor(colors.HexColor(COLOR_SERIEDAD))
+   canvas.setLineWidth(1)
+   canvas.line(50, 80, ancho - 50, 80)
+
+   canvas.setFillColor(colors.HexColor(COLOR_SERIEDAD))
+   canvas.setFont("Helvetica", 8)
+   direccion = "Calle 1 Sur, Lote 1-B, Puerto de Isla del Carmen, Patio GARZPROM 2, Cd. Del Carmen, Campeche. Tel. +52 (938) 286 1241"
+   canvas.drawCentredString(ancho / 2, 68, direccion)
+
+   canvas.setFont("Helvetica-Bold", 9)
+   canvas.drawCentredString(ancho / 2, 55, "www.bluemarine.com.mx")
+
+   canvas.setFont("Helvetica-Oblique", 7)
+   canvas.setFillColor(colors.gray)
+   canvas.drawRightString(ancho - 50, 35, f"Generado automáticamente por SASCOP | Página {doc.page}")
+
+   canvas.restoreState()
+
+def fn_generar_grafica_buffer(datos_queryset):
+   """Genera la gráfica de Resumen de Actividades por usuario."""
+   datos_organizados = {}
+   tipos_registro = set()
+
+   mapeo_colores = {
+      "Pasos PTE": COLOR_FUERZA,
+      "Pasos OT": COLOR_SOLIDEZ,
+      "Cabecera PTE": COLOR_CONFIANZA,
+      "Cabecera OT": COLOR_DINAMISMO
+   }
+
+   for fila in datos_queryset:
+      usuario = fila["nombre_usuario"]
+      tipo = fila["nombre_modulo"]
+      cantidad = fila["total_por_modulo"]
+      if usuario not in datos_organizados:
+         datos_organizados[usuario] = {}
+
+      datos_organizados[usuario][tipo] = cantidad
+      tipos_registro.add(tipo)
+
+   lista_usuarios = list(datos_organizados.keys())
+   lista_tipos = sorted(list(tipos_registro))
+   nombres_ajustados = [textwrap.fill(nombre, width=15) for nombre in lista_usuarios]
+
+   fig, ax = plt.subplots(figsize=(11, 5))
+   acumulado_altura = [0] * len(lista_usuarios)
+
+   for tipo in lista_tipos:
+      valores = [datos_organizados[u].get(tipo, 0) for u in lista_usuarios]
+
+      color_segmento = mapeo_colores.get(tipo, COLOR_SOLIDEZ)
+
+      ax.bar(range(len(lista_usuarios)), valores, bottom=acumulado_altura,
+         label=tipo, color=color_segmento, width=0.6)
+
+      acumulado_altura = [s + v for s, v in zip(acumulado_altura, valores)]
+
+   max_y = max(acumulado_altura) if acumulado_altura else 100
+   ax.get_yaxis().set_major_formatter(ticker.StrMethodFormatter("{x:,.0f}"))
+
+   ax.set_title("Resumen de Actividad por Usuario", pad=25, fontsize=12, color=COLOR_SERIEDAD, fontweight="bold")
+   ax.legend(loc="upper right", fontsize=8, frameon=False)
+   ax.set_xticks(range(len(lista_usuarios)))
+   ax.set_xticklabels(nombres_ajustados, fontsize=8)
+
+   for s in ["top", "right"]: ax.spines[s].set_visible(False)
+   ax.yaxis.grid(True, linestyle="--", alpha=0.3)
+
+   plt.tight_layout()
+   buffer = io.BytesIO()
+   plt.savefig(buffer, format="png", dpi=120)
+   buffer.seek(0)
+   plt.close(fig)
+
+   return buffer
+
+def fn_crear_grafica_carga_archivos_pasos(nombres, cargados, nulos, titulo_grafica, porcentaje_fijo, mostrar_avance=False):
+   """Gráfica de avance (PTEs/OTs) con colores institucionales."""
+   totales = [c + n for c, n in zip(cargados, nulos)]
    fig, ax = plt.subplots(figsize=(11, 5.5))
    x = np.arange(len(nombres))
 
@@ -245,32 +476,21 @@ def fn_crear_grafica_carga_archivos_pasos(nombres, cargados, nulos, titulo_grafi
       x_smooth = np.linspace(x.min(), x.max(), 300)
       spl = make_interp_spline(x, totales, k=3)
       y_smooth = np.maximum(spl(x_smooth), 0)
-   else:
-      x_smooth, y_smooth = x, totales
+      ax.fill_between(x_smooth, y_smooth, color=COLOR_DINAMISMO, alpha=0.15, zorder=1)
+      ax.plot(x_smooth, y_smooth, color=COLOR_FUERZA, linewidth=2.5, zorder=2)
 
-   ax.fill_between(x_smooth, y_smooth, color=COLOR_VERDE_AREA, alpha=0.6, zorder=1)
-   ax.plot(x_smooth, y_smooth, color=COLOR_VERDE_LINEA, linewidth=2, zorder=2)
-   ax.bar(x, cargados, color=COLOR_AZUL_BARRAS, width=0.6, zorder=3)
-
-   ax.get_yaxis().set_major_formatter(ticker.StrMethodFormatter('{x:,.0f}'))
-
-   max_val = max(totales) if totales else 1
-
-   for i, (v_cargado, v_total) in enumerate(zip(cargados, totales)):
-      ax.text(i, v_total + (max_val * 0.02), f"{v_total:,}", ha="center", va="bottom", fontsize=8, color="#555")
-      ax.text(i, v_cargado + (max_val * 0.01), f"{v_cargado:,}", ha="center", va="bottom", fontsize=8, color="#333", fontweight="bold")
+   ax.bar(x, cargados, color=COLOR_CONFIANZA, width=0.6, zorder=3)
 
    if mostrar_avance:
-      texto_box = f"{porcentaje_fijo:.2f}%\n% Avance Operativo"
-      ax.text(0.98, 0.85, texto_box, transform=ax.transAxes, fontsize=13,
-         fontweight="bold", ha="right", va="top",
-         bbox=dict(facecolor="white", edgecolor="#dddddd", boxstyle="round,pad=0.6"))
+      texto_box = f"{porcentaje_fijo:.2f}%\nAvance Operativo"
+      ax.text(0.98, 0.88, texto_box, transform=ax.transAxes, fontsize=12,
+         fontweight="bold", ha="right", va="top", color=COLOR_SERIEDAD,
+         bbox=dict(facecolor="white", edgecolor=COLOR_CONFIANZA, boxstyle="round,pad=0.5"))
 
-   ax.set_title(f"PROGRESO DE CARGA HISTÓRICA\n{titulo_grafica}", pad=25, fontsize=12)
+   ax.set_title(f"PROGRESO DE CARGA - {titulo_grafica}", pad=20, fontsize=12, color=COLOR_SERIEDAD, fontweight="bold")
    ax.set_xticks(x)
-   ax.set_xticklabels(nombres, fontsize=8)
+   ax.set_xticklabels(nombres, fontsize=8, color=COLOR_SOLIDEZ)
    ax.yaxis.grid(True, linestyle="--", alpha=0.3)
-   for spine in ["top", "right", "left"]: ax.spines[spine].set_visible(False)
 
    plt.tight_layout()
    buffer = io.BytesIO()
@@ -280,321 +500,109 @@ def fn_crear_grafica_carga_archivos_pasos(nombres, cargados, nulos, titulo_grafi
    return buffer
 
 def fn_agregar_seccion_pdf(elementos, estilos, datos, titulo_seccion):
-   estilo_encabezado = ParagraphStyle("EncabezadoSeccion", parent=estilos["Heading2"], fontSize=14, textColor=colors.HexColor("#2c3e50"), spaceBefore=15, spaceAfter=10)
-   elementos.append(Paragraph(titulo_seccion, estilo_encabezado))
-   elementos.append(Spacer(1, 5))
+   """Agrega secciones dividiendo usuarios en lotes de 10 por gráfica."""
+   estilo_h2 = ParagraphStyle("H2", parent=estilos["Heading2"], fontSize=14,
+      textColor=colors.HexColor(COLOR_SERIEDAD), spaceBefore=20, spaceAfter=10)
 
-   total_cargados_sec = sum(fila["archivos_cargados"] for fila in datos)
-   total_nulos_sec = sum(fila["archivos_nulos"] for fila in datos)
-   total_universo_sec = total_cargados_sec + total_nulos_sec
-   porcentaje_global_sec = (total_cargados_sec / total_universo_sec * 100) if total_universo_sec > 0 else 0
+   elementos.append(CondPageBreak(200)) 
+   elementos.append(Paragraph(f"<b>{titulo_seccion}</b>", estilo_h2))
 
-   nombres = [textwrap.fill(fila["nombre_usuario"], width=10) for fila in datos]
-   cargados = [fila["archivos_cargados"] for fila in datos]
-   nulos = [fila["archivos_nulos"] for fila in datos]
+   total_cargados = sum(f["archivos_cargados"] for f in datos)
+   total_universo = total_cargados + sum(f["archivos_nulos"] for f in datos)
+   porcentaje = (total_cargados / total_universo * 100) if total_universo > 0 else 0
+
+   nombres = [textwrap.fill(f["nombre_usuario"], width=10) for f in datos]
+   cargados = [f["archivos_cargados"] for f in datos]
+   nulos = [f["archivos_nulos"] for f in datos]
 
    if not nombres:
       elementos.append(Paragraph("No hay registros en este periodo.", estilos["Normal"]))
       return
 
    tamano_lote = 10
-
    for i in range(0, len(nombres), tamano_lote):
       l_nombres = nombres[i : i + tamano_lote]
       l_cargados = cargados[i : i + tamano_lote]
       l_nulos = nulos[i : i + tamano_lote]
 
-      pagina_actual = (i // tamano_lote) + 1
-      subtitulo = f"Detalle por Usuario (Parte {pagina_actual}/{math.ceil(len(nombres)/tamano_lote)})"
+      pagina_lote = (i // tamano_lote) + 1
+      subtitulo = f"{titulo_seccion} (Parte {pagina_lote}/{math.ceil(len(nombres)/tamano_lote)})"
 
-      buffer_img = fn_crear_grafica_carga_archivos_pasos(l_nombres, l_cargados, l_nulos, subtitulo, porcentaje_global_sec, mostrar_avance=(i == 0))
-      elementos.append(KeepTogether([ImageRL(buffer_img, width=540, height=270), Spacer(1, 15)]))
+      buffer_img = fn_crear_grafica_carga_archivos_pasos(l_nombres, l_cargados, l_nulos, subtitulo, porcentaje, mostrar_avance=(i == 0))
+      elementos.append(KeepTogether([ImageRL(buffer_img, width=500, height=240, kind="proportional"), Spacer(1, 15)]))
 
    data_resumen = [
       ["Descripción", "Cargados", "Pendientes", "Total"],
-      ["Totales de Sección", f"{total_cargados_sec:,}", f"{total_nulos_sec:,}", f"{total_universo_sec:,}"]
+      ["Totales de " + titulo_seccion, f"{total_cargados:,}", f"{total_universo-total_cargados:,}", f"{total_universo:,}"]
    ]
 
-   tabla_resumen = Table(data_resumen, colWidths=[300, 80, 80, 80])
-   tabla_resumen.setStyle(TableStyle([
-      ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#2E86C1")),
-      ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
-      ("ALIGN", (0, 0), (0, -1), "LEFT"),
-      ("ALIGN", (1, 0), (-1, -1), "RIGHT"),
-      ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-      ("FONTSIZE", (0, 0), (-1, -1), 9),
+   tabla = Table(data_resumen, colWidths=[240, 80, 80, 80])
+   tabla.setStyle(TableStyle([
+      ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor(COLOR_SOLIDEZ)),
+      ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+      ("ALIGN", (1, 0), (-1, -1), "CENTER"),
       ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-      ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-      ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-      ("TOPPADDING", (0, 0), (-1, -1), 4),
+      ("FONTSIZE", (0, 0), (-1, -1), 9),
    ]))
+   elementos.append(KeepTogether([Paragraph(f"Resumen {titulo_seccion}:", estilos["Normal"]), Spacer(1, 5), tabla]))
 
-   elementos.append(KeepTogether([Spacer(1, 10), Paragraph(f"<b>Resumen {titulo_seccion}:</b>", estilos["Normal"]), Spacer(1, 5), tabla_resumen, Spacer(1, 15)]))
-
-def fn_generar_pdf_reporte(
-   imagen_actividad_buffer,
-   texto_periodo,
-   datos_queryset
-):
+def fn_generar_pdf_reporte(imagen_actividad_buffer, texto_periodo, datos_queryset):
    buffer_pdf = io.BytesIO()
    doc = SimpleDocTemplate(
       buffer_pdf,
       pagesize=letter,
-      rightMargin=30,
-      leftMargin=30,
       topMargin=30,
-      bottomMargin=50
+      bottomMargin=100, 
+      leftMargin=45,
+      rightMargin=45
    )
+
    estilos = getSampleStyleSheet()
    elementos = []
 
-   estilo_titulo = ParagraphStyle(
-      "TituloPrincipal",
-      parent=estilos["Heading1"],
-      fontSize=20,
-      textColor=colors.HexColor("#2E86C1"),
-      alignment=TA_CENTER,
-      spaceAfter=2
-   )
+   ruta_logo = os.path.join(settings.BASE_DIR, "operaciones", "static", "operaciones", "images", "logo_black_white_subtec.jpg")
+   if os.path.exists(ruta_logo):
+      img = ImageRL(ruta_logo, width=130, height=65, kind="proportional")
+      img.hAlign = "CENTER"
+      elementos.append(img)
+      elementos.append(Spacer(1, 10))
 
-   estilo_periodo = ParagraphStyle(
-      "SubtituloPeriodo",
-      parent=estilos["Normal"],
-      fontSize=11,
-      textColor=colors.HexColor("#555555"),
-      alignment=TA_CENTER,
-      spaceAfter=20
-   )
-   estilo_footer = ParagraphStyle(
-      "FooterSascop",
-      parent=estilos["Normal"],
-      fontSize=8,
-      textColor=colors.gray,
-      alignment=TA_RIGHT
-   )
-
-   elementos.append(Paragraph("Informe de Operaciones Semanal", estilo_titulo))
-   elementos.append(Paragraph(f"Periodo de actividades: <b>{texto_periodo}</b>", estilo_periodo))
+   estilo_h1 = ParagraphStyle("H1", parent=estilos["Heading1"], fontSize=18, textColor=colors.HexColor(COLOR_SERIEDAD), alignment=TA_CENTER)
+   elementos.append(Paragraph("Informe Semanal de Actividad", estilo_h1))
+   elementos.append(Paragraph(f"Periodo: {texto_periodo}", ParagraphStyle("Sub", alignment=TA_CENTER, textColor=colors.HexColor(COLOR_SOLIDEZ))))
+   elementos.append(Spacer(1, 15))
 
    if imagen_actividad_buffer:
-      elementos.append(
-         ImageRL(
-            imagen_actividad_buffer,
-            width=540,
-            height=270
-         )
-      )
-
-   elementos.append(Spacer(1, 10))
+      elementos.append(ImageRL(imagen_actividad_buffer, width=500, height=240, kind="proportional"))
+      elementos.append(Spacer(1, 15))
 
    usuarios = list(dict.fromkeys([f["nombre_usuario"] for f in datos_queryset]))
    modulos = list(dict.fromkeys([f["nombre_modulo"] for f in datos_queryset]))
-
-   headers = ["Nombre del Usuario"] + modulos
+   headers = ["Colaborador"] + modulos
    data_tabla = [headers]
 
    for u in usuarios:
       fila = [u]
       for m in modulos:
-         valor = next(
-            (item["total_por_modulo"] for item in datos_queryset if item["nombre_usuario"] == u and item["nombre_modulo"] == m), 
-            0
-         )
+         valor = next((i["total_por_modulo"] for i in datos_queryset if i["nombre_usuario"] == u and i["nombre_modulo"] == m), 0)
          fila.append(f"{valor:,}")
       data_tabla.append(fila)
 
-   ancho_nombre = 200
-   ancho_restante = (540 - ancho_nombre) / len(modulos)
-   col_widths = [ancho_nombre] + [ancho_restante] * len(modulos)
+   tabla_act = Table(data_tabla, colWidths=[160] + [75] * len(modulos))
+   tabla_act.setStyle(TableStyle([
+      ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor(COLOR_SOLIDEZ)),
+      ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+      ("ALIGN", (1, 1), (-1, -1), "CENTER"),
+      ("FONTSIZE", (0, 0), (-1, -1), 8),
+      ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+      ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+   ]))
+   elementos.append(KeepTogether([Paragraph("<b>Detalle de Operaciones SASCOP</b>", estilos["Normal"]), Spacer(1, 10), tabla_act]))
 
-   tabla_act = Table(
-      data_tabla,
-      colWidths=col_widths
-   )
+   from .utils import fn_obtener_resumen_pasos_cargados, fn_obtener_resumen_ot_pasos_cargados
 
-   tabla_act.setStyle(
-      TableStyle([
-         ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#2E86C1")),
-         ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
-         ("ALIGN", (0, 0), (0, -1), "LEFT"),
-         ("ALIGN", (1, 0), (-1, -1), "RIGHT"),
-         ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-         ("FONTSIZE", (0, 0), (-1, -1), 8),
-         ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-         ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-         ("TOPPADDING", (0, 0), (-1, -1), 4)
-      ])
-   )
+   fn_agregar_seccion_pdf(elementos, estilos, fn_obtener_resumen_pasos_cargados(), "Avance de Carga PTEs")
+   fn_agregar_seccion_pdf(elementos, estilos, fn_obtener_resumen_ot_pasos_cargados(), "Avance de Carga OTs")
 
-   elementos.append(Paragraph("<b>Detalle de Interacciones por Módulo:</b>", estilos["Normal"]))
-   elementos.append(Spacer(1, 10))
-   elementos.append(tabla_act)
-
-   elementos.append(PageBreak())
-   fn_agregar_seccion_pdf(
-      elementos,
-      estilos,
-      fn_obtener_resumen_pasos_cargados(),
-      "Avance de carga de Archivos en PTEs"
-   )
-
-   elementos.append(PageBreak())
-   fn_agregar_seccion_pdf(
-      elementos,
-      estilos,
-      fn_obtener_resumen_ot_pasos_cargados(),
-      "Avance de carga de Archivos en OTs"
-   )
-
-   elementos.append(Spacer(1, 40))
-   elementos.append(Paragraph("Generado por Sistema SASCOP", estilo_footer))
-
-   doc.build(elementos)
+   doc.build(elementos, onFirstPage=fn_dibujar_elementos_fijos, onLaterPages=fn_dibujar_elementos_fijos)
    return buffer_pdf.getvalue()
-
-def fn_enviar_correo_template(
-   asunto,
-   ruta_template,
-   contexto,
-   lista_destinatarios,
-   archivo_adjunto=None
-):
-   try:
-      if not lista_destinatarios: return False
-
-      mensaje_html = render_to_string(ruta_template, contexto)
-      mensaje_plano = strip_tags(mensaje_html)
-      origen = settings.DEFAULT_FROM_EMAIL
-
-      email = EmailMultiAlternatives(
-         subject=asunto,
-         body=mensaje_plano,
-         from_email=origen,
-         to=lista_destinatarios
-      )
-      email.attach_alternative(mensaje_html, "text/html")
-      email.mixed_subtype = 'related'
-      ruta_logo_bme = os.path.join(
-         settings.BASE_DIR,
-         'operaciones',
-         'static',
-         'operaciones',
-         'images',
-         'logo_bmesubtec.png'
-      )
-
-      if os.path.exists(ruta_logo_bme):
-         with open(ruta_logo_bme, 'rb') as f:
-            img1 = MIMEImage(f.read())
-            img1.add_header('Content-ID', '<logo_bme>')
-            img1.add_header(
-               'Content-Disposition',
-               'inline',
-               filename='logo_bmesubtec.png'
-            )
-            email.attach(img1)
-
-      ruta_logo_sascop = os.path.join(
-         settings.BASE_DIR,
-         'operaciones',
-         'static',
-         'operaciones',
-         'images',
-         'SASCOP_LOGO.png'
-      )
-
-      if os.path.exists(ruta_logo_sascop):
-         with open(ruta_logo_sascop, 'rb') as f:
-            img2 = MIMEImage(f.read())
-            img2.add_header('Content-ID', '<logo_sascop>')
-            img2.add_header(
-               'Content-Disposition',
-               'inline',
-               filename='SASCOP_LOGO.png'
-            )
-            email.attach(img2)
-
-      if archivo_adjunto:
-         nombre, contenido, mime = archivo_adjunto
-         email.attach(nombre, contenido, mime)
-
-      email.send(fail_silently=False)
-      return True
-
-   except Exception as error:
-      print(f"Error enviando correo: {error}")
-      return False
-
-def fn_enviar_correo_template(
-   asunto,
-   ruta_template,
-   contexto,
-   lista_destinatarios,
-   archivo_adjunto=None
-):
-   try:
-      if not lista_destinatarios: return False
-
-      mensaje_html = render_to_string(ruta_template, contexto)
-      mensaje_plano = strip_tags(mensaje_html)
-      origen = settings.DEFAULT_FROM_EMAIL
-
-      email = EmailMultiAlternatives(
-         subject=asunto,
-         body=mensaje_plano,
-         from_email=origen,
-         to=lista_destinatarios
-      )
-      email.attach_alternative(mensaje_html, "text/html")
-      email.mixed_subtype = 'related'
-      ruta_logo_bme = os.path.join(
-         settings.BASE_DIR,
-         'operaciones',
-         'static',
-         'operaciones',
-         'images',
-         'logo_bmesubtec.png'
-      )
-
-      if os.path.exists(ruta_logo_bme):
-         with open(ruta_logo_bme, 'rb') as f:
-            img1 = MIMEImage(f.read())
-            img1.add_header('Content-ID', '<logo_bme>')
-            img1.add_header(
-               'Content-Disposition',
-               'inline',
-               filename='logo_bmesubtec.png'
-            )
-            email.attach(img1)
-
-      ruta_logo_sascop = os.path.join(
-         settings.BASE_DIR,
-         'operaciones',
-         'static',
-         'operaciones',
-         'images',
-         'SASCOP_LOGO.png'
-      )
-
-      if os.path.exists(ruta_logo_sascop):
-         with open(ruta_logo_sascop, 'rb') as f:
-            img2 = MIMEImage(f.read())
-            img2.add_header('Content-ID', '<logo_sascop>')
-            img2.add_header(
-               'Content-Disposition',
-               'inline',
-               filename='SASCOP_LOGO.png'
-            )
-            email.attach(img2)
-
-      if archivo_adjunto:
-         nombre, contenido, mime = archivo_adjunto
-         email.attach(nombre, contenido, mime)
-
-      email.send(fail_silently=False)
-      return True
-
-   except Exception as error:
-      print(f"Error enviando correo: {error}")
-      return False
