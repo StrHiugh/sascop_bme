@@ -27,7 +27,7 @@ class Command(BaseCommand):
       self.stdout.write(f"Periodo calculado: {texto_periodo}")
 
       lista_correos = [
-         "gregorio021@outlook.com",
+         "bmesascop@bluemarine.com.mx",
          "Jfcp@bluemarine.com.mx",
          "Svr@bluemarine.com.mx",
          "ejs@bluemarine.com.mx",
