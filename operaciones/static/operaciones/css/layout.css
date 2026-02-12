@@ -373,6 +373,10 @@ html, body {
     display: none;
 }
 
+.sidebar-collapsed .sidebar-caption {
+    display: none;
+}
+
 .main-nav .nav-link {
     font-size: 15px !important;
     font-weight: 600 !important;

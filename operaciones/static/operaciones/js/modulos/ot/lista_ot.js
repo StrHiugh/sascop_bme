@@ -949,7 +949,6 @@ $(document).ready(function () {
         const nuevoEstatusTexto = $(this).text().trim();
         const otId = $(this).closest('.dropdown').find('.ot-id').val();
         const mostrarFechaEntrega = (nuevoEstatusId == '10');
-
         let contenidoMensaje = `
             <div class="mb-3">
                 <p>¿Estás seguro de cambiar el estatus de la OT a <strong>${nuevoEstatusTexto}</strong>?</p>
@@ -1069,6 +1068,7 @@ $(document).ready(function () {
         const dropdownButton = $(this).closest('.dropdown').find('.dropdown-toggle');
 
         let datosPaso = window.tablaDetalleActiva ? window.tablaDetalleActiva.row($(this).parents('tr')).data() : null;
+        console.log(datosPaso)
         let contenidoMensaje = `
             <div class="mb-3">
                 <p>¿Estás seguro de cambiar el estatus a <strong>${textoEstatus}</strong>?</p>
@@ -1116,7 +1116,7 @@ $(document).ready(function () {
                             nombre: "Actualizó",
                             valor_actual: textoEstatus,
                             valor_anterior: datosPaso.estatus_paso_texto || 'PENDIENTE',
-                            detalle: `el estatus de: <b>${datosPaso.estatus_paso_texto || 'PENDIENTE'}</b> a: <b>${textoEstatus}</b>, del paso <b>${datosPaso.orden || ''} - ${datosPaso.desc_paso || ''}</b> de la OT: <b>${datosPaso.orden_trabajo || ''}</b>`
+                            detalle: `el estatus de: <b>${datosPaso.estatus_paso_texto || 'PENDIENTE'}</b> a: <b>${textoEstatus}</b>, del paso <b>${datosPaso.orden || ''} - ${datosPaso.desc_paso || ''}</b> de la OT: <b>${datosPaso.oficio_ot || ''}</b>`
                         });
                         
                         const datos = {
