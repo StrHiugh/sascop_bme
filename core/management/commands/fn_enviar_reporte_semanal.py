@@ -13,11 +13,12 @@ class Command(BaseCommand):
    def handle(self, *args, **kwargs):
       self.stdout.write("Iniciando proceso de envío de reporte semanal...")
       fecha_actual = timezone.now()
-      # fecha_fin_dt = fecha_actual - datetime.timedelta(days=1)
-      # fecha_inicio_dt = fecha_fin_dt - datetime.timedelta(days=6)
+      fecha_fin_dt = fecha_actual - datetime.timedelta(days=1)
+      fecha_inicio_dt = fecha_fin_dt - datetime.timedelta(days=6)
 
-      fecha_inicio_dt = datetime.datetime(2026, 2, 2)
-      fecha_fin_dt = datetime.datetime(2026, 2, 11)
+      # Descomentar en caso que quieran hacerse pruebas con fechas estaticas.
+      # fecha_inicio_dt = datetime.datetime(2026, 2, 2)
+      # fecha_fin_dt = datetime.datetime(2026, 2, 11)
 
       fecha_inicio_str = fecha_inicio_dt.strftime("%Y-%m-%d 00:00:00+00")
       fecha_fin_str = fecha_fin_dt.strftime("%Y-%m-%d 23:59:59+00")
@@ -54,7 +55,7 @@ class Command(BaseCommand):
             return
 
          buffer_grafica = fn_generar_grafica_buffer(resultados)
-         pdf_bytes = fn_generar_pdf_reporte(buffer_grafica, texto_periodo)
+         pdf_bytes = fn_generar_pdf_reporte(buffer_grafica, texto_periodo, resultados)
          buffer_grafica.close()
 
          adjunto_pdf = ("Reporte_Semanal_SASCOP.pdf", pdf_bytes, "application/pdf")
