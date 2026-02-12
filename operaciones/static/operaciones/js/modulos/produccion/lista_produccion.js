@@ -92,17 +92,19 @@ class GpuStatusRenderer {
         this.el.innerHTML = '';
 
         const span = document.createElement('span');
+        span.className = 'badge text-white'; 
         
         if (value === 'BLOQUEADO') {
             span.innerHTML = '<i class="fas fa-lock me-1"></i> EXCEDENTE';
-            span.className = 'gpu-badge gpu-bloqueado';
+            span.style.backgroundColor = '#f05523'; 
         } else if (value === 'PENDIENTE') {
             span.innerHTML = 'PENDIENTE';
-            span.className = 'gpu-badge gpu-pendiente';
+            span.style.backgroundColor = '#fad91f'; 
         } else if (value === 'AUTORIZADO') {
             span.innerHTML = '<i class="fas fa-check me-1"></i> AUTORIZADO';
-            span.className = 'gpu-badge bg-success text-white';
+            span.style.backgroundColor = '#95c93d'; 
         } else {
+            span.className = ''; 
             span.innerText = value || '-';
         }
         this.el.appendChild(span);
