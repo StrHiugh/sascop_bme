@@ -27,8 +27,7 @@ html, body {
     max-width: 250px;
     font-family: "Roboto";
     font-size: 13px;
-    background: #54565a;
-    box-shadow: 0px 20px 20px -10px rgba(144, 152, 158, 0.7);
+    background: #45474b;
     transition: all 0.3s ease;
     z-index: 1000;
     position: relative;
@@ -36,8 +35,9 @@ html, body {
     flex-direction: column;
 }
 
+
 #bm-header {
-    background: #54565a;
+    background: #45474b;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     padding: 0;
 }
@@ -52,7 +52,7 @@ html, body {
 .sidebar-toggle {
     background: transparent;
     border: none;
-    color:  #54565a;
+    color:  #45474b;
     cursor: pointer;
     padding: 0.5rem;
     border-radius: 4px;
@@ -66,7 +66,7 @@ html, body {
 }
 
 .sidebar-footer {
-    background: #54565a;
+    background: #45474b;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
     padding: 1rem;
     margin-top: auto;
