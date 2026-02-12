@@ -117,7 +117,7 @@ def ots_por_sitio_grid(request):
         id_reporte_mensual__id_ot_id__in=ids_ots,
         id_reporte_mensual__mes=mes,
         id_reporte_mensual__anio=anio,
-        id_sitio_id=id_sitio_int
+        id_sitio=id_sitio_int
     ).values(
         'id_reporte_mensual__id_ot_id', 
         'fecha__day',                   
@@ -310,7 +310,7 @@ def obtener_partidas_produccion(request):
             dias_bloqueados = list(ReporteDiario.objects.filter(
                 id_reporte_mensual=reporte,
                 id_estatus_id=17,
-                id_sitio_id=id_sitio_int
+                id_sitio=id_sitio_int
             ).values_list('fecha__day', flat=True))
             
             if reporte.archivo:
