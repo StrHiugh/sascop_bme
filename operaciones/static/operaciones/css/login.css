@@ -130,7 +130,7 @@
 
 .form-input:focus {
     outline: none;
-    border-color: #434c5b;
+    border-color: #54565abe;
     background: white;
     box-shadow: 0 0 0 3px rgba(67, 76, 91, 0.1);
 }
@@ -167,7 +167,7 @@
 .forgot-password-link {
     display: block;
     text-align: center;
-    color: #434c5b;
+    color: #54565a;
     text-decoration: none;
     margin-top: 1.5rem;
     font-size: 0.9rem;
@@ -198,7 +198,7 @@
     width: 100%;
     padding: 0.75rem;
     background: white;
-    color: #434c5b;
+    color: #54565a;
     border: 2px solid #e9ecef;
     border-radius: 8px;
     text-decoration: none;
@@ -209,7 +209,7 @@
 
 .google-login-btn:hover {
     background: #f8f9fa;
-    border-color: #434c5b;
+    border-color: #54565a;
 }
 
 /* Recuperar contraseña */
@@ -226,7 +226,7 @@
 .close-btn {
     background: none;
     border: none;
-    color: #434c5b;
+    color: #54565a;
     font-size: 1.2rem;
     cursor: pointer;
     margin-bottom: 2rem;
@@ -234,7 +234,7 @@
 
 .recovery-icon {
     font-size: 3rem;
-    color: #434c5b;
+    color: #54565a;
     text-align: center;
     display: block;
     margin-bottom: 1.5rem;
@@ -244,7 +244,7 @@
     font-size: 1.5rem;
     font-weight: 700;
     text-align: center;
-    color: #434c5b;
+    color: #54565a;
     margin-bottom: 1rem;
 }
 
@@ -257,7 +257,7 @@
 .recovery-btn {
     width: 100%;
     padding: 1rem;
-    background: #434c5b;
+    background: #54565a;
     color: white;
     border: none;
     border-radius: 8px;
@@ -271,7 +271,7 @@
 .back-to-login-link {
     display: block;
     text-align: center;
-    color: #434c5b;
+    color: #54565a;
     text-decoration: none;
     margin-top: 1.5rem;
     font-size: 0.9rem;
@@ -305,7 +305,7 @@
 
 /* Estados para inputs con focus */
 .form-group.focused .form-input {
-    border-color: #434c5b;
+    border-color: #54565a;
     background: white;
     box-shadow: 0 0 0 3px rgba(67, 76, 91, 0.1);
 }

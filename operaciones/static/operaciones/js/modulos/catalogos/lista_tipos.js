@@ -41,11 +41,14 @@ $(document).ready(function () {
                 "data": "activo",
                 "title": "Estatus",
                 "render": function(data, type, row) {
-                    const estatusTipo = {
-                        'Activo': 'bg-success',
-                        'Inactivo': 'bg-danger'
+                    const estatusColors = {
+                        'Activo': '#95c93d',   
+                        'Inactivo': '#f05523'
                     };
-                    return `<span class="badge ${estatusTipo[data] || 'bg-secondary'}">${data}</span>`;
+                    
+                    const color = estatusColors[data] || '#54565a';
+                    
+                    return `<span class="badge text-white" style="background-color: ${color};">${data}</span>`;
                 }
             },
             {

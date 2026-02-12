@@ -95,19 +95,19 @@ $(document).ready(function () {
                 "className": "text-center",
                 "width": "10%",
                 "render": function(data, type, row) {
-                    const estatusClasses = {
-                        'PENDIENTE': 'bg-warning',
-                        'PROCESO': 'bg-primary', 
-                        'ENTREGADA': 'bg-success',
-                        'CANCELADA': 'bg-danger',
-                        'SUSPENDIDA': 'bg-secondary',
-                        'DESCONOCIDO': 'bg-secondary'
+                    const estatusColors = {
+                        'PENDIENTE': '#fad91f',   
+                        'PROCESO': '#55c0e9',     
+                        'ENTREGADA': '#95c93d',   
+                        'CANCELADA': '#f05523',   
+                        'SUSPENDIDA': '#54565a'   
                     };
-                    
+                    const bgColor = estatusColors[data] || '#54565a';
                     return `
                         <div class="dropdown">
-                            <button class="btn btn-sm ${estatusClasses[data] || 'bg-secondary'} dropdown-toggle text-white w-100" 
-                                    type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <button class="btn btn-sm dropdown-toggle text-white w-100" 
+                                style="background-color: ${bgColor}; border-color: ${bgColor};"
+                                type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 ${data}
                             </button>
                             <ul class="dropdown-menu w-100">
@@ -125,18 +125,20 @@ $(document).ready(function () {
                 "data": "progreso",
                 "title": "Progreso",
                 "render": function(data, type, row) {
-                    let color = 'bg-success';
-                    if (data < 25) color = 'bg-danger';
-                    else if (data < 75) color = 'bg-warning';
-                    
                     const porcentaje = isNaN(data) ? 0 : Math.max(0, Math.min(100, data));
+                    let colorCode = '#95c93d'; 
+                    if (porcentaje < 25) {
+                        colorCode = '#f05523';
+                    } else if (porcentaje < 75) {
+                        colorCode = '#fad91f';
+                    }
                     
                     return `
                         <div title="${row.pasos_completados}/${row.total_pasos} pasos completados">
                             <div class="progress" style="height: 20px;">
-                                <div class="progress-bar ${color} progress-bar" 
+                                <div class="progress-bar" 
                                     role="progressbar" 
-                                    style="width: ${porcentaje}%" 
+                                    style="width: ${porcentaje}%; background-color: ${colorCode};" 
                                     aria-valuenow="${porcentaje}" 
                                     aria-valuemin="0" 
                                     aria-valuemax="100">
@@ -178,7 +180,7 @@ $(document).ready(function () {
                     if (fila.progreso === 100) {
                         botones += `
                             <a class="table-icon crear-ot" title="Crear Orden de Trabajo" data-id="${fila.id}">
-                                <i class="fas fa-clipboard-check text-success"></i>
+                                <i class="fas fa-clipboard-check" style="color: #f05523;"></i>
                             </a>
                         `;
                     }
@@ -452,28 +454,28 @@ $(document).ready(function () {
                         "className": "text-center",
                         "width": "10%",
                         "render": function(data, type, row) {
-                            const estatusClasses = {
-                                'PENDIENTE': 'bg-warning',
-                                'PROCESO': 'bg-primary', 
-                                'COMPLETADO': 'bg-success',
-                                'CANCELADO': 'bg-danger',
-                                'NO APLICA': 'bg-secondary'
+                            const estatusColors = {
+                                'PENDIENTE': '#fad91f',   
+                                'PROCESO': '#55c0e9',     
+                                'COMPLETADO': '#95c93d',  
+                                'CANCELADO': '#f05523',   
+                                'NO APLICA': '#54565a'    
                             };
 
-                            if (row.orden == "4.0" && row.tipo_cliente==15) {
-                                let color = 'bg-success';
+                            if (row.orden == "4.0" && row.tipo_cliente == 15) {
+                                let barColor = '#95c93d';
                                 const progreso = Math.round(row.progreso_subpasos);
                                 
-                                if (progreso < 25) color = 'bg-danger';
-                                else if (progreso < 75) color = 'bg-warning';
+                                if (progreso < 25) barColor = '#f05523';
+                                else if (progreso < 75) barColor = '#fad91f'; 
                                 
                                 return `
                                     <div>
                                         <div class="small text-dark mb-1" style="font-size: 12px;"><b>Avance general:</b></div>
                                         <div class="progress" style="height: 15px;">
-                                            <div class="progress-bar ${color} progress-bar" 
+                                            <div class="progress-bar" 
                                                 role="progressbar" 
-                                                style="width: ${progreso}%" 
+                                                style="width: ${progreso}%; background-color: ${barColor};" 
                                                 aria-valuenow="${progreso}" 
                                                 aria-valuemin="0" 
                                                 aria-valuemax="100"
@@ -486,24 +488,26 @@ $(document).ready(function () {
                                     </div>
                                 `;
                             } else {
+                                const btnColor = estatusColors[data] || '#54565a'; 
+                                
                                 return `
                                     <div class="dropdown">
-                                        <button class="btn btn-sm ${estatusClasses[data] || 'bg-secondary'} dropdown-toggle text-white w-100" 
+                                        <button class="btn btn-sm dropdown-toggle text-white w-100" 
+                                                style="background-color: ${btnColor}; border-color: ${btnColor};"
                                                 type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                             ${data}
                                         </button>
                                         <ul class="dropdown-menu w-100">
-                                            <li><a class="dropdown-item cambiar-estatus-option" data-estatus="1">PENDIENTE</a></li>
-                                            <li><a class="dropdown-item cambiar-estatus-option" data-estatus="2">PROCESO</a></li>
-                                            <li><a class="dropdown-item cambiar-estatus-option" data-estatus="3">COMPLETADO</a></li>
-                                            <li><a class="dropdown-item cambiar-estatus-option" data-estatus="4">CANCELADO</a></li>
-                                            <li><a class="dropdown-item cambiar-estatus-option" data-estatus="14">NO APLICA</a></li>
+                                            <li><a class="dropdown-item cambiar-estatus-option" href="#" data-estatus="1">PENDIENTE</a></li>
+                                            <li><a class="dropdown-item cambiar-estatus-option" href="#" data-estatus="2">PROCESO</a></li>
+                                            <li><a class="dropdown-item cambiar-estatus-option" href="#" data-estatus="3">COMPLETADO</a></li>
+                                            <li><a class="dropdown-item cambiar-estatus-option" href="#" data-estatus="4">CANCELADO</a></li>
+                                            <li><a class="dropdown-item cambiar-estatus-option" href="#" data-estatus="14">NO APLICA</a></li>
                                         </ul>
                                         <input type="hidden" class="paso-id" value="${row.id}">
                                     </div>
                                 `;
                             }
-                        
                         }
                     },
                     {
@@ -521,7 +525,7 @@ $(document).ready(function () {
                                 return `
                                     <a class="table-icon ver-archivo" 
                                         title="Cambiar archivo" 
-                                        data-id="${row.id}"  >
+                                        data-id="${row.id}">
                                         <i class="fas fa-upload text-secondary"></i>
                                     </a>
                                     <a class="table-icon ver-archivo-externo" 
@@ -531,7 +535,7 @@ $(document).ready(function () {
                                         data-bs-toggle="tooltip"
                                         data-bs-placement="top"
                                         data-id="${row.id}">
-                                            <i class="fas fa-eye text-success"></i>
+                                        <i class="fas fa-eye" style="color: #f05523;"></i>
                                     </a>
                                 `;
                             } else {
@@ -855,26 +859,29 @@ $(document).ready(function () {
                                 "className": "text-center",
                                 "width": "10%",
                                 "render": function(data, type, row) {
-                                    const estatusClasses = {
-                                        'PENDIENTE': 'bg-warning',
-                                        'PROCESO': 'bg-primary', 
-                                        'COMPLETADO': 'bg-success',
-                                        'CANCELADO': 'bg-danger',
-                                        'NO APLICA': 'bg-secondary'
+                                    const estatusColors = {
+                                        'PENDIENTE': '#fad91f',   
+                                        'PROCESO': '#55c0e9',     
+                                        'COMPLETADO': '#95c93d',  
+                                        'CANCELADO': '#f05523',   
+                                        'NO APLICA': '#54565a'    
                                     };
+                                    
+                                    const btnColor = estatusColors[data] || '#54565a';
                                     
                                     return `
                                         <div class="dropdown">
-                                            <button class="btn btn-sm ${estatusClasses[data] || 'bg-secondary'} dropdown-toggle text-white w-100" 
+                                            <button class="btn btn-sm dropdown-toggle text-white w-100" 
+                                                    style="background-color: ${btnColor}; border-color: ${btnColor};"
                                                     type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                                 ${data}
                                             </button>
                                             <ul class="dropdown-menu w-100">
-                                                <li><a class="dropdown-item cambiar-estatus-option" data-estatus="1">PENDIENTE</a></li>
-                                                <li><a class="dropdown-item cambiar-estatus-option" data-estatus="2">PROCESO</a></li>
-                                                <li><a class="dropdown-item cambiar-estatus-option" data-estatus="3">COMPLETADO</a></li>
-                                                <li><a class="dropdown-item cambiar-estatus-option" data-estatus="4">CANCELADO</a></li>
-                                                <li><a class="dropdown-item cambiar-estatus-option" data-estatus="14">NO APLICA</a></li>
+                                                <li><a class="dropdown-item cambiar-estatus-option" href="#" data-estatus="1">PENDIENTE</a></li>
+                                                <li><a class="dropdown-item cambiar-estatus-option" href="#" data-estatus="2">PROCESO</a></li>
+                                                <li><a class="dropdown-item cambiar-estatus-option" href="#" data-estatus="3">COMPLETADO</a></li>
+                                                <li><a class="dropdown-item cambiar-estatus-option" href="#" data-estatus="4">CANCELADO</a></li>
+                                                <li><a class="dropdown-item cambiar-estatus-option" href="#" data-estatus="14">NO APLICA</a></li>
                                             </ul>
                                             <input type="hidden" class="paso-id" value="${row.id}">
                                         </div>
@@ -906,7 +913,7 @@ $(document).ready(function () {
                                                 data-bs-toggle="tooltip"
                                                 data-bs-placement="top"
                                                 data-id="${row.id}">
-                                                    <i class="fas fa-eye text-success"></i>
+                                                <i class="fas fa-eye" style="color: #f05523;"></i>
                                             </a>
                                         `;
                                     } else {
