@@ -1551,15 +1551,19 @@ function fnHTMLTablaSubpasos(pteId) {
 }
 
 function actualizarEstatusEnTiempoReal(dropdownButton, nuevoTexto, nuevoEstatus, fechaValor, comentarioValor) {
+    const textoClave = (nuevoTexto || '').trim().toUpperCase();
+    
     const estatusColors = {
         'PENDIENTE': '#fad91f',   
         'PROCESO': '#55c0e9',     
         'COMPLETADO': '#95c93d',  
+        'ENTREGADA': '#95c93d',   
         'CANCELADO': '#f05523',   
-        'NO APLICA': '#54565a'     
+        'NO APLICA': '#54565a',   
+        'DESCONOCIDO': '#6c757d'  
     };
 
-    const colorAplicar = estatusColors[nuevoTexto] || '#6c757d';
+    const colorAplicar = estatusColors[textoClave] || estatusColors['DESCONOCIDO'];
 
     dropdownButton.removeClass('bg-warning bg-primary bg-success bg-danger bg-secondary')
         .css({
@@ -1607,11 +1611,8 @@ function actualizarEstatusEnTiempoReal(dropdownButton, nuevoTexto, nuevoEstatus,
             }
 
             fechaEntregaCell.css({
-                'background-color': '#95c93d',
-                'color': '#ffffff',
-                'font-weight': 'bold',
-                'text-align': 'center',
-                'border-radius': '4px'
+                'color': '#000000',
+                'text-align': 'center'
             });
 
         } else {
@@ -1628,21 +1629,18 @@ function actualizarEstatusEnTiempoReal(dropdownButton, nuevoTexto, nuevoEstatus,
             }
         }
     } else if (fechaEntregaCell) {
-        // Si no es estatus 3, limpiamos el texto
         fechaEntregaCell.text('');
     }
 
-    // 5. Habilitar/Deshabilitar inputs de fecha según estatus
     const inputsFecha = tr.find('.fecha-input');
     if (inputsFecha.length) {
-        if ([3, 14].includes(nuevoEstatus)) { // 3=Completado, 14=Cancelado/Otro?
+        if ([3, 14].includes(parseInt(nuevoEstatus))) { 
             inputsFecha.prop('disabled', true);
         } else {
             inputsFecha.prop('disabled', false);
         }
     }
     
-    // 6. Actualizar comentario
     if (comentarioValor && comentarioCell) {
         comentarioCell.text(comentarioValor);
     }
@@ -1696,30 +1694,37 @@ function actualizarProgresoGeneralPTE(pteId) {
 }
 
 function actualizarEstatusPTEEnTiempoReal(dropdownButton, nuevoTexto, nuevoEstatus) {
+    const textoClave = (nuevoTexto || '').trim().toUpperCase();
+
     const estatusColors = {
         'PENDIENTE': '#fad91f',   
         'PROCESO': '#55c0e9',     
         'COMPLETADO': '#95c93d',  
+        'ENTREGADA': '#95c93d',   
         'CANCELADO': '#f05523',   
-        'NO APLICA': '#54565a'   
+        'NO APLICA': '#54565a',   
+        'DESCONOCIDO': '#6c757d'  
     };
     
-    const colorAplicar = estatusColors[nuevoTexto] || estatusColors['DESCONOCIDO'];
+    const colorAplicar = estatusColors[textoClave] || estatusColors['DESCONOCIDO'];
 
     dropdownButton.removeClass('bg-warning bg-primary bg-success bg-danger bg-secondary')
-                    .css('background-color', colorAplicar)
-                    .css('border-color', colorAplicar)
-                    .css('color', '#ffffff')
-                    .text(nuevoTexto);
+                .css({
+                    'background-color': colorAplicar,
+                    'border-color': colorAplicar,
+                    'color': '#ffffff'
+                })
+                .text(nuevoTexto);
 
     const tr = dropdownButton.closest('tr');
     const tds = tr.find('td');
-    let fechaEntregaCell = tds.eq(4);
+    let fechaEntregaCell = tds.eq(5);
 
-    fechaEntregaCell.css('background-color', '')
-                    .css('color', '')
-                    .css('font-weight', 'normal')
-                    .text('');
+    fechaEntregaCell.css({
+        'background-color': '',
+        'color': '',
+        'font-weight': 'normal'
+    }).text('');
 
     if (nuevoEstatus == '3') { 
         const fechaInput = $(`#fechaEntregaPte`); 
@@ -1735,11 +1740,8 @@ function actualizarEstatusPTEEnTiempoReal(dropdownButton, nuevoTexto, nuevoEstat
 
             fechaEntregaCell.text(fechaTexto);
             fechaEntregaCell.css({
-                'background-color': '#95c93d',
-                'color': '#ffffff',
-                'font-weight': 'bold',
+                'color': '#000000',
                 'text-align': 'center',
-                'border-radius': '4px'
             });
         }
     }
