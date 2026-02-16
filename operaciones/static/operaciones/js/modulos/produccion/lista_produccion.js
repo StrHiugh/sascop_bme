@@ -578,7 +578,6 @@ $(document).ready(function() {
 
         const link = celdaData.archivo || '';
         $('#input-link-gpu').val(link);
-        console.log(celdaData);
         if (link) {
             $('#btn-abrir-link-gpu').attr('href', link);
             $('#div-ver-archivo-gpu').removeClass('d-none');
