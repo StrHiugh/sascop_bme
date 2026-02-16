@@ -71,7 +71,6 @@ def ejecutar_query_sql(query, params=None, retornar_dict=True):
          return [dict(zip(columns, row)) for row in cursor.fetchall()]
       else:
          return cursor.fetchall()
-
 def fn_obtener_resumen_actividad_por_usuario(fecha_inicio, fecha_fin):
    sql = """
       WITH resumen_totales AS (
@@ -81,8 +80,8 @@ def fn_obtener_resumen_actividad_por_usuario(fecha_inicio, fecha_fin):
          FROM
             registro_actividad
          WHERE
-            fecha >= '2026-02-02 00:00:00+00' AND
-            fecha < '2026-02-11 23:59:59+00'
+            fecha >= %s AND
+            fecha <= %s
          GROUP BY
             usuario_id_id
          ORDER BY
@@ -112,8 +111,8 @@ def fn_obtener_resumen_actividad_por_usuario(fecha_inicio, fecha_fin):
             FROM
                resumen_totales
          ) AND
-         ra.fecha >= '2026-02-02 00:00:00+00' AND
-         ra.fecha < '2026-02-11 23:59:59+00'
+         ra.fecha >= %s AND
+         ra.fecha <= %s
       GROUP BY
          ra.usuario_id_id,
          ra.tabla_log,
@@ -128,7 +127,9 @@ def fn_obtener_resumen_actividad_por_usuario(fecha_inicio, fecha_fin):
             resumen_totales.usuario_id_id = ra.usuario_id_id
       ) DESC, total_por_modulo DESC;
    """
-   return ejecutar_query_sql(sql)
+
+   params = [fecha_inicio, fecha_fin, fecha_inicio, fecha_fin]
+   return ejecutar_query_sql(sql, params)
 
 def fn_obtener_resumen_pasos_cargados():
    sql = """
