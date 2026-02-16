@@ -62,19 +62,28 @@ class StatusRenderer {
         this.el.innerText = value || '';
         this.el.className = 'tui-grid-cell-content d-flex justify-content-center align-items-center'; 
         
-        if (value === 'OK') {
-            this.el.style.backgroundColor = '#d4edda';
-            this.el.style.color = '#155724';
+        this.el.style.backgroundColor = '';
+        this.el.style.color = '';
+        this.el.style.fontWeight = '';
+
+        if (value == 'FIRMADO') {
+            this.el.style.backgroundColor = '#95c93d'; 
+            this.el.style.color = '#ffffff';           
             this.el.style.fontWeight = 'bold';
         } 
-        else if (value === 'FFP') {
-            this.el.style.backgroundColor = '#fff3cd';
-            this.el.style.color = '#856404';
+        else if (value == 'FALTA FIRMA PEMEX') {
+            this.el.style.backgroundColor = '#fad91f'; 
+            this.el.style.color = '#ffffff';           
             this.el.style.fontWeight = 'bold';
         } 
-        else if (value === 'S') {
-            this.el.style.backgroundColor = '#f8d7da';
-            this.el.style.color = '#721c24';
+        else if (value == 'PENDIENTE') {
+            this.el.style.backgroundColor = '#f05523'; 
+            this.el.style.color = '#ffffff';           
+            this.el.style.fontWeight = 'bold';
+        }
+        else if (value == 'PROCESO') {
+            this.el.style.backgroundColor = '#51c2eb'; 
+            this.el.style.color = '#ffffff';           
             this.el.style.fontWeight = 'bold';
         }
     }
@@ -255,6 +264,61 @@ class ProduccionEditor {
     mounted() { this.el.select(); }
 }
 
+class CeldaGpuRenderer {
+    constructor(props) {
+        this.el = document.createElement('div');
+        this.render(props);
+    }
+
+    getElement() { return this.el; }
+
+    render(props) {
+        const data = props.value;
+        
+        this.el.className = 'tui-grid-cell-content d-flex justify-content-center align-items-center';
+        this.el.style.width = '100%';
+        this.el.style.height = '100%';
+        
+        this.el.innerText = '';
+        this.el.style.backgroundColor = '#f9f9f9'; 
+        this.el.style.color = '';
+        this.el.style.fontWeight = '';
+
+        if (!data || typeof data !== 'object') {
+            return;
+        }
+
+        const { estatus_id, estatus_texto, archivos_count } = data;
+        const id = parseInt(estatus_id || 0);
+
+        let texto = (estatus_texto || '')
+        
+        this.el.innerText = texto;
+        this.el.style.fontWeight = 'bold';
+
+        if (id === 17) { 
+            this.el.style.backgroundColor = '#95c93d'; 
+            this.el.style.color = '#ffffff';
+        } 
+        else if (id === 18) { 
+            this.el.style.backgroundColor = '#fad91f'; 
+            this.el.style.color = '#ffffffff';
+        } 
+        else if (id === 19 || id === 0) { 
+            this.el.style.backgroundColor = '#f05523'; 
+            this.el.style.color = '#ffffff';
+        }
+        else if (id === 20) {
+            this.el.style.backgroundColor = '#51c2eb'; 
+            this.el.style.color = '#ffffff';
+        }
+        else { 
+            this.el.style.backgroundColor = '#6c757d'; 
+            this.el.style.color = '#ffffff';
+        }
+    }
+}
+
 class OpcionesRenderer {
     constructor(props) {
         this.el = document.createElement('div');
@@ -301,10 +365,13 @@ $(document).ready(function() {
     const DAYS_IN_MONTH = 31;
     let gridReportesDiarios = null; 
     let gridProduccion = null; 
+    let gridGpus = null;
     let otSeleccionada = null; 
     let tipoTiempoActivo = 'TE';
     let productoSeleccionadoCatalogo = null;
-    
+    let filaEnEdicion = null; 
+    let celdaGpuEnEdicion = null;
+
     inicializarFechas();
     cargarSitiosOtProceso();
     inicializarSelect2Catalogo();
@@ -497,6 +564,32 @@ $(document).ready(function() {
         }, 500);
     }
 
+    function abrirModalEvidenciaGpu(celdaData, codigoPartida, descripcionPartida, rowKey, columnName) {
+        celdaGpuEnEdicion = {
+            rowKey: rowKey,
+            columnName: columnName,
+            id_produccion: celdaData.id_produccion,
+            datosOriginales: celdaData
+        };
+        $('#lbl-codigo-gpu').text(codigoPartida + ' - ' + descripcionPartida);
+        
+        const estatusId = celdaData.estatus_id ? celdaData.estatus_id : 19;
+        $('#select-estatus-gpu').val(estatusId);
+
+        const link = celdaData.archivo || '';
+        $('#input-link-gpu').val(link);
+        console.log(celdaData);
+        if (link) {
+            $('#btn-abrir-link-gpu').attr('href', link);
+            $('#div-ver-archivo-gpu').removeClass('d-none');
+        } else {
+            $('#div-ver-archivo-gpu').addClass('d-none');
+        }
+
+        const modal = new bootstrap.Modal(document.getElementById('modalEvidenciaGpu'));
+        modal.show();
+    }
+
     window.guardarEnlaceArchivo = function() {
         const enlace = $('#enlaceArchivoOt').val().trim();
         const $btn = $('#btnGuardarEnlacePaso');
@@ -658,15 +751,16 @@ $(document).ready(function() {
         const columnasDiasAsistencia = Array.from({length: DAYS_IN_MONTH}, (_, i) => ({
             header: `${i+1}`,
             name: `dia${i+1}`,
-            width: 45,
+            width: 150,
             align: 'center',
             editor: {
                 type: NativeSelectEditor,
                 options: {
                     listItems: [
-                        { text: 'OK', value: 'OK' },
-                        { text: 'FFP', value: 'FFP' },
-                        { text: 'S', value: 'S' },
+                        { text: 'FIRMADO', value: 'FIRMADO' },
+                        { text: 'FALTA FIRMA PEMEX', value: 'FALTA FIRMA PEMEX' },
+                        { text: 'PENDIENTE', value: 'PENDIENTE' },
+                        { text: 'PROCESO', value: 'PROCESO' },
                         { text: 'Limpiar', value: '' }
                     ]
                 }
@@ -708,6 +802,10 @@ $(document).ready(function() {
                         otSeleccionada = rowData;
                         cargarDetalleProduccion(otSeleccionada);
                         $('#lbl-ot-seleccionada').text(otSeleccionada.ot);
+                        $('#lbl-ot-seleccionada-gpu').text(otSeleccionada.ot);
+                        if (gridGpus) {
+                            gridGpus.resetData([]);
+                        }
                     }
                 }
             });
@@ -806,6 +904,43 @@ $(document).ready(function() {
                 });
             });
         }
+
+        const elGridGpus = document.getElementById('grid-gpus');
+        if (!elGridGpus) return; 
+            const columnasDiasGpu = Array.from({length: DAYS_IN_MONTH}, (_, i) => ({
+                header: `${i+1}`,
+                name: `dia_${i+1}`,
+                width: 140,
+                align: 'center',
+                renderer: { type: CeldaGpuRenderer }
+            }));
+
+            gridGpus = new tui.Grid({
+                el: elGridGpus,
+                scrollX: true,
+                scrollY: true,
+                bodyHeight: 640,
+                rowHeight: 60, 
+                columnOptions: { resizable: true, frozenCount: 4 },
+                columns: [
+                    { header: 'Partida', name: 'codigo',filter: 'select', width: 90, align: 'center' },
+                    { header: 'Concepto', name: 'descripcion',filter: 'select', width: 150, align: 'left' },
+                    { header: 'Anexo', name: 'anexo', filter: 'select', width: 80, align: 'center' },
+                    { header: 'Unidad', name: 'unidad', width: 70, align: 'center' },
+                    ...columnasDiasGpu 
+                ],
+                data: []
+            });
+
+            gridGpus.on('click', (ev) => {
+                if (ev.columnName && ev.columnName.startsWith('dia') && ev.rowKey !== undefined) {
+                    const rowData = gridGpus.getRow(ev.rowKey);
+                    const celdaData = rowData[ev.columnName];
+                    if (celdaData && celdaData.id_produccion) {
+                        abrirModalEvidenciaGpu(celdaData, rowData.codigo, rowData.descripcion.slice(0, 53) + '...', ev.rowKey, ev.columnName);
+                    }
+                }
+            });
     }
 
     function cargarDatosTablero() {
@@ -885,6 +1020,34 @@ $(document).ready(function() {
             },
             error: function(xhr) {
                 $('#kpi-status-text').text("ERROR CARGANDO PARTIDAS").addClass('text-danger');
+            }
+        });
+    }
+    
+    function cargarDatosGpus() {
+        if (!otSeleccionada || !gridGpus) return;
+
+        const idSitio = $('#select-sitio').val();
+        const mes = $('#filtro-mes').val();
+        const anio = $('#filtro-anio').val();
+
+        gridGpus.resetData([]); 
+        
+        $.ajax({
+            url: urlObtenerGridGpus,
+            type: 'GET',
+            data: {
+                id_ot: otSeleccionada.id_ot,
+                mes: mes,
+                anio: anio
+            },
+            success: function(response) {
+                const data = response.data || [];
+                gridGpus.resetData(data);
+            },
+            error: function(xhr) {
+                console.error("Error cargando GPUs:", xhr);
+                aviso("error", "No se pudo cargar el tablero de GPUs");
             }
         });
     }
@@ -1006,6 +1169,76 @@ $(document).ready(function() {
         });
     });
 
+    $('#btn-guardar-gpu').on('click', function() {
+        if (!celdaGpuEnEdicion) return;
+
+        const nuevoEstatusId = parseInt($('#select-estatus-gpu').val());
+        const nuevoLink = $('#input-link-gpu').val().trim();
+        const textoEstatus = $('#select-estatus-gpu option:selected').text();
+
+        if (nuevoLink.trim() !== "") {
+            if (!nuevoLink.startsWith('http://') && !nuevoLink.startsWith('https://')) {
+                aviso("advertencia", "La URL debe comenzar con http:// o https://");
+                $('#input-link-gpu').focus();
+                return;
+            }
+        }
+
+        const $btn = $(this);
+        const textoOriginalBtn = $btn.html();
+        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Guardando...');
+
+        const payload = {
+            id_produccion: celdaGpuEnEdicion.id_produccion,
+            estatus_id: nuevoEstatusId,
+            archivo: nuevoLink
+        };
+
+        $.ajax({
+            url: urlGuardarEstatusGpu, 
+            type: 'POST',
+            data: JSON.stringify(payload),
+            contentType: 'application/json',
+            headers: { 'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val() },
+            success: function(response) {
+                if (response.exito) {
+                    aviso("exito", "GPU actualizado correctamente");
+                    const nuevaDataCelda = {
+                        ...celdaGpuEnEdicion.datosOriginales, 
+                        estatus_id: nuevoEstatusId,           
+                        estatus_texto: textoEstatus,          
+                        archivo: nuevoLink,                   
+                        archivos_count: nuevoLink ? 1 : 0     
+                    };
+
+                    if (gridGpus) {
+                        gridGpus.setValue(
+                            celdaGpuEnEdicion.rowKey, 
+                            celdaGpuEnEdicion.columnName, 
+                            nuevaDataCelda
+                        );
+                    }
+
+                    const modalEl = document.getElementById('modalEvidenciaGpu');
+                    const modalInstance = bootstrap.Modal.getInstance(modalEl);
+                    modalInstance.hide();
+                    
+                    celdaGpuEnEdicion = null;
+
+                } else {
+                    aviso("error", response.mensaje || "No se pudo guardar");
+                }
+            },
+            error: function(xhr) {
+                console.error("Error al guardar GPU:", xhr);
+                aviso("error", "Error de comunicación con el servidor");
+            },
+            complete: function() {
+                $btn.prop('disabled', false).html(textoOriginalBtn);
+            }
+        });
+    });
+
     function pintarGuardiasEnGrid() {
         const idSitio = $('#select-sitio').val();
         const mes = $('#filtro-mes').val();
@@ -1113,6 +1346,12 @@ $(document).ready(function() {
             gridProduccion.refreshLayout();
             pintarGuardiasEnGrid();
         }
+        if(event.target.id === 'gpus-tab' && gridGpus) {
+            gridGpus.refreshLayout();
+            if(otSeleccionada) {
+                cargarDatosGpus();
+            }
+        }
     });
 
     $('#tabProcesos button').on('click', function (e) {
@@ -1128,6 +1367,7 @@ $(document).ready(function() {
         setTimeout(() => {
             if (gridReportesDiarios) gridReportesDiarios.refreshLayout();
             if (gridProduccion) gridProduccion.refreshLayout();
+            if (gridGpus) gridGpus.refreshLayout();
         }, 50);
     });
 });

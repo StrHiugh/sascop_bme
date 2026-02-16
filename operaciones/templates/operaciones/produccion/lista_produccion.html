@@ -48,7 +48,7 @@
             </div>
 
             <button class="btn btn-primary btn-sm ms-2" id="btn-actualizar-tablero" title="Recargar Datos">
-                <i class="fas fa-sync-alt"></i>
+                <i class="fas fa-sync-alt me-1"></i>Actualizar
             </button>
 
             <button class="btn btn-secondary btn-sm ms-2" id="btn-config-guardias" title="Configurar Ciclo 14x14">
@@ -245,6 +245,11 @@
                         <i class="fas fa-hard-hat me-2"></i>Producción
                     </button>
                 </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link text-dark fw-semibold" id="gpus-tab" data-bs-toggle="tab" data-bs-target="#panel-gpus" type="button" role="tab" aria-controls="panel-gpus" aria-selected="false">
+                        <i class="fas fa-folder-open me-2"></i>GPU's
+                    </button>
+                </li>
             </ul>
             
             <div class="tab-content" id="tabProcesosContent">
@@ -258,7 +263,6 @@
                     </div>
                     <div id="grid-asistencia" class="grid-wrapper"></div>
                 </div>
-
                 <div class="tab-pane fade" id="panel-produccion" role="tabpanel" aria-labelledby="produccion-tab">
                     <div class="card shadow-sm mb-3">
                         <div class="card-body p-2 d-flex justify-content-between align-items-center" style="background-color: #f4f4f4;">
@@ -376,6 +380,25 @@
                             </div>
                         </div>
                     </div>          
+                </div>
+                <div class="tab-pane fade" id="panel-gpus" role="tabpanel" aria-labelledby="gpus-tab">
+                    <div class="card shadow-sm mb-3">
+                        <div class="card-body p-2 d-flex justify-content-between align-items-center" style="background-color: #f4f4f4;">
+                            <div class="d-flex align-items-center" style="width: 250px;">
+                            </div>
+                            <div>
+                                <span id="lbl-ot-seleccionada-gpu" class="fw-bold" style="color: #f05523; font-weight: 600;">
+
+                                </span>
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <button id="btn-guardar-gpus" class="btn btn-primary px-4 fw-bold">
+                                    <i class="fas fa-save me-2"></i>Guardar Cambios
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="grid-gpus" class="grid-wrapper mb-3 border-top-0"></div>
                 </div>
             </div>
         </div>
@@ -503,6 +526,54 @@
     </div>
 </div>
 
+<div class="modal fade" id="modalEvidenciaGpu" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title">
+                    <i class="fas fa-tasks me-2 text-secondary"></i>
+                    Actualizar GPU <span id="lbl-codigo-gpu" class="fw-bold text-dark"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formEvidenciaGpu">
+                    <div class="mb-3">
+                        <label for="select-estatus-gpu" class="form-label fw-bold">Estatus</label>
+                        <select class="form-select" id="select-estatus-gpu">
+                            <option value="19">PENDIENTE</option>
+                            <option value="20">PROCESO</option>
+                            <option value="18">FALTA FIRMA PEMEX</option>
+                            <option value="17">FIRMADO</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="input-link-gpu" class="form-label fw-bold">Enlace de Evidencia</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-link"></i></span>
+                            <input type="url" class="form-control" id="input-link-gpu" placeholder="https://..." autocomplete="off">
+                        </div>
+                        <div class="form-text">Pega aquí el enlace al archivo o carpeta</div>
+                    </div>
+
+                    <div class="mb-3 d-none" id="div-ver-archivo-gpu">
+                        <a href="#" target="_blank" id="btn-abrir-link-gpu" class="btn btn-sm btn-outline-secondary w-100">
+                            <i class="fas fa-external-link-alt me-2"></i>Ver archivo
+                        </a>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="btn-guardar-gpu">
+                    <i class="fas fa-save me-2"></i>Guardar Cambios
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -519,5 +590,7 @@
     var urlObtenerSupers = "{% url 'operaciones:obtener_supers_por_sitio' %}";
     var urlConfigGuardia = "{% url 'operaciones:configurar_ciclo_guardia' %}";
     var urlObtenerGuardias = "{% url 'operaciones:obtener_guardias_mes' %}";
+    var urlObtenerGridGpus = "{% url 'operaciones:obtener_grid_gpus' %}";
+    var urlGuardarEstatusGpu = "{% url 'operaciones:guardar_estatus_gpu' %}";
 </script>
 {% endblock %}
