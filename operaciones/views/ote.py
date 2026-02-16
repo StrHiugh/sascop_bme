@@ -8,7 +8,7 @@ from django.shortcuts import render, get_object_or_404
 from ..models import OTE, OTDetalle, PasoOt, ImportacionAnexo, PartidaAnexoImportada, UnidadMedida, ConceptoMaestro, PartidaProyectada
 from ..registro_actividad import registrar_actividad
 from operaciones.models.catalogos_models import Sitio, Estatus, ResponsableProyecto, Tipo
-from django.db.models import Case, When, Value, CharField,Q, ExpressionWrapper, Count,F, FloatField, IntegerField
+from django.db.models import Case, When, Value, CharField,Q, ExpressionWrapper, Count,F, FloatField, IntegerField, Sum
 from django.db.models.functions import *
 from django.views.decorators.csrf import csrf_exempt
 from django.db import transaction
@@ -964,7 +964,8 @@ def datatable_importaciones(request):
             "draw": int(request.GET.get('draw', 1)),
             "recordsTotal": 0,
             "recordsFiltered": 0,
-            "data": []
+            "data": [],
+            "totales": {"mn": 0, "usd": 0, "homologado": 0}
         })
 
     search_value = request.GET.get('search[value]', '')
@@ -973,6 +974,15 @@ def datatable_importaciones(request):
             Q(id_partida__icontains=search_value) |
             Q(descripcion_concepto__icontains=search_value)
         )
+
+    TIPO_CAMBIO = Decimal('19.1648')
+    resumen_totales = queryset.aggregate(
+        total_mn=Sum(F('volumen_proyectado') * F('precio_unitario_mn')),
+        total_usd=Sum(F('volumen_proyectado') * F('precio_unitario_usd'))
+    )
+    sum_mn = resumen_totales['total_mn'] or 0
+    sum_usd = resumen_totales['total_usd'] or 0
+    sum_homologado = sum_mn + (sum_usd * TIPO_CAMBIO)
 
     columns_mapping = {
         0: 'id_partida',
@@ -996,7 +1006,6 @@ def datatable_importaciones(request):
     length = int(request.GET.get('length', 25))
     total_filtered = queryset.count()
     data_page = queryset[start:start + length]
-    TIPO_CAMBIO = Decimal('20.5') 
     data = []
     for row in data_page:
         importe_visual = row.volumen_proyectado * (row.precio_unitario_mn + row.precio_unitario_usd * TIPO_CAMBIO)
@@ -1015,7 +1024,12 @@ def datatable_importaciones(request):
         "draw": int(request.GET.get('draw', 1)),
         "recordsTotal": importacion.total_registros,
         "recordsFiltered": total_filtered,
-        "data": data
+        "data": data,
+        "totales": {
+            "mn": float(sum_mn),
+            "usd": float(sum_usd),
+            "homologado": float(sum_homologado)
+        }
     })
 
 @csrf_exempt
