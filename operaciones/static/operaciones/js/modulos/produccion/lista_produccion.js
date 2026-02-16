@@ -526,6 +526,9 @@ $(document).ready(function() {
                 if (response.exito) {
                     aviso("exito", `Sábana de ${tipoTiempoActivo} guardada correctamente`);
                     cargarDetalleProduccion(otSeleccionada);
+                    if (gridGpus && $('#gpus-tab').hasClass('active')) {
+                        cargarDatosGpus();
+                    }
                 } else {
                     aviso("error", response.mensaje);
                 }
@@ -951,8 +954,8 @@ $(document).ready(function() {
 
         otSeleccionada = null;
         if(gridProduccion) gridProduccion.resetData([]);
+        if(gridGpus) gridGpus.resetData([]);
         $('#kpi-status-text').text("SELECCIONA UNA OT").removeClass('text-success text-danger').addClass('text-muted');
-
         $.ajax({
             url: urlOtsPorSitioGrid,
             type: 'GET',
