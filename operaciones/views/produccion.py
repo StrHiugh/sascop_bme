@@ -1038,8 +1038,12 @@ def obtener_grid_gpus(request):
     """
     try:
         id_ot = request.GET.get('id_ot')
-        mes = int(request.GET.get('mes'))
-        anio = int(request.GET.get('anio'))
+        mes = request.GET.get('mes')
+        anio = request.GET.get('anio')
+        
+        if not id_ot or not mes or not anio:
+            return JsonResponse({'data': []})
+
         anexos_validos_gpu = ['C-2', 'C-3', 'C2EXT', 'C3EXT']
 
         reporte = ReporteMensual.objects.filter(id_ot_id=id_ot, mes=mes, anio=anio).first()
@@ -1048,9 +1052,10 @@ def obtener_grid_gpus(request):
 
         producciones = Produccion.objects.filter(
             id_reporte_mensual=reporte,
-            volumen_produccion__gt=0,
-            id_partida_anexo__anexo__in=anexos_validos_gpu
-        ).select_related('id_partida_anexo', 'gpu', 'gpu__id_estatus')
+            volumen_produccion__gt=0.00,
+            id_partida_anexo__anexo__in=anexos_validos_gpu,
+            id_partida_anexo__importacion_anexo__es_activo=True 
+        ).select_related('id_partida_anexo', 'id_partida_anexo__unidad_medida', 'gpu', 'gpu__id_estatus')
 
         data_map = {}
 
@@ -1059,11 +1064,13 @@ def obtener_grid_gpus(request):
             pid = partida.id
             
             if pid not in data_map:
+                unidad_clave = str(partida.unidad_medida.clave) if hasattr(partida.unidad_medida, 'clave') else str(partida.unidad_medida)
+                
                 data_map[pid] = {
                     'id_partida_anexo': pid,
                     'codigo': partida.id_partida,
-                    'descripcion': partida.descripcion_concepto if hasattr(partida, 'descripcion_concepto') else partida.id_partida,
-                    'unidad': str(partida.unidad_medida.clave),
+                    'descripcion': partida.descripcion_concepto,
+                    'unidad': unidad_clave,
                     'anexo': str(partida.anexo),
                     **{f'dia_{d}': None for d in range(1, 32)}
                 }
@@ -1073,22 +1080,21 @@ def obtener_grid_gpus(request):
             estado_gpu = {
                 'id_produccion': prod.id,
                 'volumen': prod.volumen_produccion,
-                'estatus_id': 1,
+                'estatus_id': 19, 
                 'estatus_texto': 'PENDIENTE',
-                'archivos_count': 0
+                'archivos_count': 0,
+                'archivo': ''
             }
 
             if hasattr(prod, 'gpu'):
                 gpu = prod.gpu
                 estado_gpu['estatus_id'] = gpu.id_estatus.id
-                estado_gpu['estatus_texto'] = str(gpu.id_estatus)
+                estado_gpu['estatus_texto'] = str(gpu.id_estatus.descripcion if hasattr(gpu.id_estatus, 'descripcion') else gpu.id_estatus)
                 
                 evidencias = gpu.archivo
                 if evidencias:
                     estado_gpu['archivos_count'] = 1
                     estado_gpu['archivo'] = evidencias
-                else:
-                    estado_gpu['archivos_count'] = 0
                 
                 estado_gpu['id_gpu'] = gpu.id
 
@@ -1097,6 +1103,7 @@ def obtener_grid_gpus(request):
         return JsonResponse({'data': list(data_map.values())})
 
     except Exception as e:
+        print(f"Error en obtener_grid_gpus: {str(e)}")
         return JsonResponse({'error': str(e)}, status=500)
 
 @login_required
