@@ -39,7 +39,9 @@ class Command(BaseCommand):
          "afcv@bluemarine.com.mx",
          "jarpa@bluemarine.com.mx",
          "fbhp@bluemarine.com.mx",
-         "jmrm@bluemarine.com.mx"
+         "jmrm@bluemarine.com.mx",
+         "occ@bluemarine.com.mx",
+         "vmud@bluemarine.com.mx"
       ]
 
       datos_correo = {
