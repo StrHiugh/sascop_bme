@@ -816,7 +816,7 @@ $(document).ready(function() {
         const columnasDiasProduccion = Array.from({length: DAYS_IN_MONTH}, (_, i) => ({
             header: `${i+1}`,
             name: `dia${i+1}`,
-            width: 60,
+            width: 70,
             align: 'center',
             formatter: ({ value }) => {
                 if (value && typeof value === 'object') {
