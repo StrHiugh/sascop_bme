@@ -2,7 +2,9 @@
 html, body {
     max-width: 100%;
     overflow-x: hidden;
+    font-size: 95%;
 }
+
 .layout-sidebar {
     font-family: 'Roboto', sans-serif;
     background-color: #f5f7fa;
@@ -279,6 +281,7 @@ html, body {
 
 .nav-text {
     flex: 1;
+    font-size: 90%;
 }
 
 .main-content-area {
@@ -839,11 +842,25 @@ html, body {
 .btn.btn-primary{
     background-color: #f05523;
     border-color: #f05523;
+    font-size: 95%;
 }
 
 .btn.btn-secondary{
     background-color: #54565a;
     border-color: #54565a;
+    font-size: 95%;
+}
+
+.btn-outline-primary{
+    color: #f05523;
+    border-color: #f05523;
+    font-size: 95%;
+}
+
+.btn-outline-secondary{
+    color: #54565a;
+    border-color: #54565a;
+    font-size: 95%;
 }
 
 .alert.alert-primary{

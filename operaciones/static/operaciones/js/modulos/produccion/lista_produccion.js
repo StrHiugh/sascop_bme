@@ -1,3 +1,16 @@
+const DAYS_IN_MONTH = 31;
+let gridReportesDiarios = null; 
+let gridProduccion = null; 
+let gridGpus = null;
+let otSeleccionada = null; 
+let tipoTiempoActivo = 'TE';
+let productoSeleccionadoCatalogo = null;
+let filaEnEdicion = null; 
+let celdaGpuEnEdicion = null;
+let gridAvances = null;
+let sCurveChart = null;
+let currentViewMode = 'subtec';
+
 const numberFormatter = new Intl.NumberFormat('es-MX', { 
     minimumFractionDigits: 6, 
     maximumFractionDigits: 6 
@@ -361,20 +374,36 @@ class OpcionesRenderer {
     }
 }
 
-$(document).ready(function() {
-    const DAYS_IN_MONTH = 31;
-    let gridReportesDiarios = null; 
-    let gridProduccion = null; 
-    let gridGpus = null;
-    let otSeleccionada = null; 
-    let tipoTiempoActivo = 'TE';
-    let productoSeleccionadoCatalogo = null;
-    let filaEnEdicion = null; 
-    let celdaGpuEnEdicion = null;
+class ReadOnlyColorRenderer {
+    constructor(props) {
+        this.el = document.createElement('div');
+        this.render(props);
+    }
+    getElement() { return this.el; }
+    render(props) {
+        this.el.className = 'tui-grid-cell-content d-flex justify-content-center align-items-center w-100 h-100';
+        this.el.innerText = props.value || '';
+        if(props.columnInfo.name.endsWith('_p')) {
+            this.el.style.backgroundColor = '#f1f5f9'; 
+            this.el.style.color = '#64748b';
+        } else {
+            if (currentViewMode === 'ejecutivo') {
+            this.el.style.color = '#20145f';
+            this.el.style.fontWeight = 'bold';
+            this.el.style.backgroundColor = '#f5f3ff';
+            } else {
+            this.el.style.fontWeight = 'bold';
+            }
+        }
+    }
+}
 
+$(document).ready(function() {
     inicializarFechas();
     cargarSitiosOtProceso();
     inicializarSelect2Catalogo();
+    inicializarGridAvances();
+    inicializarGraficos();
 
     setTimeout(() => {
         inicializarGrids();
@@ -1354,6 +1383,11 @@ $(document).ready(function() {
                 cargarDatosGpus();
             }
         }
+        if(event.target.id === 'avances-tab') {
+            if (gridAvances) gridAvances.refreshLayout();
+            if (sCurveChart) sCurveChart.resize();
+            cargarDatosAvances();
+        }
     });
 
     $('#tabProcesos button').on('click', function (e) {
@@ -1372,4 +1406,177 @@ $(document).ready(function() {
             if (gridGpus) gridGpus.refreshLayout();
         }, 50);
     });
+
+    function inicializarGridAvances() {
+        const el = document.getElementById('grid-avances');
+        if (!el) return;
+
+        const daysInMonth = DAYS_IN_MONTH;
+        const columnasDias = [];
+        const mergeHeaders = [];
+
+        for (let i = 1; i <= daysInMonth; i++) {
+            columnasDias.push({
+                header: 'P',
+                name: `dia_${i}_p`,
+                width: 45,
+                align: 'center',
+                renderer: { type: ReadOnlyColorRenderer }
+            });
+            columnasDias.push({
+                header: 'R',
+                name: `dia_${i}_r`,
+                width: 45,
+                align: 'center',
+                editor: 'text',
+                renderer: { type: ReadOnlyColorRenderer }
+            });
+
+            mergeHeaders.push({
+                name: `grupo_dia_${i}`,
+                childNames: [`dia_${i}_p`, `dia_${i}_r`],
+                header: i.toString().padStart(2, '0')
+            });
+        }
+
+        gridAvances = new tui.Grid({
+            el: el,
+            scrollX: true,
+            scrollY: true,
+            bodyHeight: 360,
+            header: {
+                height: 60,
+                complexColumns: mergeHeaders
+            },
+            columnOptions: { resizable: true, frozenCount: 1 },
+            columns: [
+                { header: 'Actividad', name: 'actividad', width: 250, align: 'left', validation: { required: true } },
+                { header: 'Inicio', name: 'f_inicio', width: 90, align: 'center' },
+                { header: 'Fin', name: 'f_fin', width: 90, align: 'center' },
+                { header: 'Peso %', name: 'peso', width: 70, align: 'center' },
+                { header: '% Acum', name: 'acumulado', width: 80, align: 'center', formatter: ({value}) => `${value}%` },
+                ...columnasDias
+            ],
+            data: []
+        });
+
+        // Evento de cambio para recalcular totales o actualizar gráficas
+        gridAvances.on('afterChange', (ev) => {
+            // Aquí iría lógica para recalcular curva S localmente si se desea
+            console.log('Cambio en grid avances:', ev);
+        });
+    }
+
+    function inicializarGraficos() {
+        const chartDom = document.getElementById('chart-scurve');
+        if (chartDom) {
+            sCurveChart = echarts.init(chartDom);
+            window.addEventListener('resize', function() {
+                sCurveChart.resize();
+            });
+        }
+    }
+
+    // Función Mock para simular datos (Remplazar con tu AJAX real `urlObtenerAvances`)
+    function cargarDatosAvances() {
+        if (!otSeleccionada) {
+            $('#gantt-container').html('<div class="text-center text-muted mt-5">Selecciona una OT en la pestaña Producción.</div>');
+            if(sCurveChart) sCurveChart.clear();
+            return;
+        }
+
+        $('#lbl-ot-avances').text(otSeleccionada.ot);
+
+        // TODO: Hacer AJAX real aquí.
+        // Simulamos datos por ahora para que veas que funciona
+        const datosSimulados = [
+            { id: 1, actividad: '1.1 Ingeniería de Detalle', f_inicio: '01/02', f_fin: '05/02', peso: 10, acumulado: 100, dia_1_p: 20, dia_1_r: 20, dia_2_p: 20, dia_2_r: 20 },
+            { id: 2, actividad: '1.2 Habilitado Tubería', f_inicio: '03/02', f_fin: '10/02', peso: 30, acumulado: 45, dia_3_p: 10, dia_3_r: 5, dia_4_p: 10, dia_4_r: 10 },
+            { id: 3, actividad: '1.3 Soldadura', f_inicio: '05/02', f_fin: '15/02', peso: 40, acumulado: 10, dia_5_p: 5, dia_5_r: 0 },
+        ];
+
+        if(gridAvances) gridAvances.resetData(datosSimulados);
+
+        renderGanttHTML(datosSimulados);
+
+        actualizarChartSCurve();
+        
+        $('#lbl-avance-fisico').text("35.4%");
+        $('#lbl-desviacion').text("(-2.1%)").attr('class', 'kpi-delta-bad ms-1');
+    }
+
+    function renderGanttHTML(data) {
+        const container = $('#gantt-container');
+        container.empty();
+
+        data.forEach(item => {
+            const widthPlan = Math.floor(Math.random() * 80) + 10; 
+            const widthReal = currentViewMode === 'subtec' ? (widthPlan - 10) : (widthPlan + 5);
+            const colorClass = currentViewMode === 'subtec' ? '' : 'client-mode';
+
+            const row = `
+                <div class="gantt-row">
+                    <div class="gantt-label" title="${item.actividad}">${item.actividad}</div>
+                    <div class="gantt-track">
+                        <div class="gantt-bar-plan" style="width: ${widthPlan}%;"></div>
+                        <div class="gantt-bar-real ${colorClass}" style="width: ${widthReal}%;"></div>
+                    </div>
+                </div>
+            `;
+            container.append(row);
+        });
+    }
+
+    function actualizarChartSCurve() {
+        if (!sCurveChart) return;
+
+        const labels = ['S1', 'S2', 'S3', 'S4'];
+        const plan = [10, 30, 60, 100];
+        const real = [8, 25, 55, null]; 
+        const cliente = [10, 28, 62, null];
+
+        const serieActual = currentViewMode === 'subtec' 
+            ? { name: 'Real (Subtec)', data: real, color: '#f05523' }
+            : { name: 'Cliente', data: cliente, color: '#20145f' };
+
+        const options = {
+            tooltip: { trigger: 'axis' },
+            legend: { bottom: 0 },
+            grid: { top: 30, bottom: 50, left: 20, right: 20 },
+            xAxis: { type: 'category', data: labels },
+            yAxis: { type: 'value', max: 100, axisLabel: { formatter: '{value}%' } },
+            series: [
+                {
+                    name: 'Programado',
+                    type: 'line',
+                    data: plan,
+                    lineStyle: { type: 'dashed', color: '#cbd5e1' },
+                    itemStyle: { color: '#cbd5e1' },
+                    symbol: 'none'
+                },
+                {
+                    name: serieActual.name,
+                    type: 'line',
+                    data: serieActual.data,
+                    smooth: true,
+                    lineStyle: { width: 3, color: serieActual.color },
+                    itemStyle: { color: serieActual.color },
+                    areaStyle: { opacity: 0.1, color: serieActual.color }
+                }
+            ]
+        };
+        sCurveChart.setOption(options);
+    }
+
+    window.toggleVistaAvance = function(mode, btn) {
+        currentViewMode = mode;
+        $('.segmented-control button').removeClass('active');
+        $(btn).addClass('active');
+        if(gridAvances) gridAvances.refreshLayout();
+        actualizarChartSCurve();
+        const currentData = gridAvances.getData();
+        renderGanttHTML(currentData);
+    };
+
+
 });
