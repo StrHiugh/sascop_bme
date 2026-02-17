@@ -795,6 +795,7 @@ def actualizar_fecha_ot(request):
 
 @require_http_methods(["POST"])
 @login_required
+@registrar_actividad
 def guardar_archivo_ot(request):
     """Guardar Archivo de entregables de OT"""
     try:

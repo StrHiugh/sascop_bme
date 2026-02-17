@@ -1352,6 +1352,12 @@ function guardarEnlaceArchivo() {
         $('#enlaceArchivoOt').select();
         return;
     }
+    let log = new RegistroActividad(5,window.pasoActual.id,"IMPORTAR");
+    log.agregar_actividad({
+        nombre:"Importó",
+        valor_actual:enlace,
+        valor_anterior:window.pasoActual.archivo,
+        detalle:`un enlace de archivo al paso: <b>${window.pasoActual.orden}-${window.pasoActual.desc_paso}</b> de la OT: <b>${window.pasoActual.oficio_ot}</b>`})   
     
     if (window.pasoActual) {
         $btn.blur();
@@ -1362,7 +1368,8 @@ function guardarEnlaceArchivo() {
             data: {
                 csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val(),
                 paso_id: window.pasoActual.id,
-                archivo: enlace
+                archivo: enlace,
+                registro_actividad: JSON.stringify(log.actividad)
             },
             success: function(response) {
                 if (response.exito) {
@@ -1874,7 +1881,6 @@ function initTablaImportaciones(otId) {
         drawCallback: function(settings) {
             var api = this.api();
             var json = api.ajax.json();
-            console.log(json, api);
             if (json && json.totales) {
                 $(`#lbl-total-importado-mn_${otId}`).text(formatoMoneda.format(json.totales.mn));
                 $(`#lbl-total-importado-usd_${otId}`).text(formatoMoneda.format(json.totales.usd)); 
