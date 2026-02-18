@@ -95,8 +95,9 @@ class RegistroGPU(models.Model):
     id_produccion = models.OneToOneField(Produccion, on_delete=models.CASCADE, related_name='gpu')
     id_estatus = models.ForeignKey(Estatus, on_delete=models.CASCADE, limit_choices_to={'nivel_afectacion': 6}, verbose_name="Estatus GPU")
     archivo = models.URLField(max_length=500, blank=True, null=True, verbose_name="Link Evidencia Fotográfica")
-    nota_bloqueo = models.TextField(blank=True, verbose_name="Alerta por Excedente/No Considerado")
+    nota_bloqueo = models.TextField(blank=True, verbose_name="Observaciones", null=True)
     id_estimacion_detalle = models.ForeignKey('EstimacionDetalle', on_delete=models.SET_NULL, null=True, blank=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = 'registro_generadores_pu'
@@ -160,3 +161,53 @@ class CicloGuardia(models.Model):
 
     def __str__(self):
         return f"Ciclo {self.sitio}: {self.super_a} / {self.super_b}"
+
+class CronogramaVersion(models.Model):
+    """
+    La 'foto' del archivo .mpp importado.
+    """
+    id_ot = models.ForeignKey(OTE, on_delete=models.CASCADE, related_name='cronogramas')
+    nombre_version = models.CharField(max_length=150)
+    archivo_mpp = models.FileField(upload_to='cronogramas/')
+    fecha_carga = models.DateTimeField(auto_now_add=True)
+    es_vigente = models.BooleanField(default=True)
+    fecha_inicio_proyecto = models.DateField(null=True, blank=True)
+    fecha_fin_proyecto = models.DateField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'importacion_cronograma'
+
+class TareaCronograma(models.Model):
+    """
+    Desglose de tareas del Project.
+    """
+    version = models.ForeignKey(CronogramaVersion, on_delete=models.CASCADE, related_name='tareas')
+    uid_project = models.IntegerField() 
+    id_project = models.IntegerField() 
+    wbs = models.CharField(max_length=50) 
+    nombre = models.CharField(max_length=500)
+    nivel_esquema = models.IntegerField(default=0) 
+    es_resumen = models.BooleanField(default=False) 
+    padre_uid = models.IntegerField(null=True, blank=True)
+    fecha_inicio = models.DateField(null=True)
+    fecha_fin = models.DateField(null=True)
+    duracion_dias = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    porcentaje_mpp = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+
+    class Meta:
+        db_table = 'importacion_cronograma_tarea'
+        indexes = [models.Index(fields=['version', 'uid_project'])]
+
+class AvanceCronograma(models.Model):
+    """
+    La doble verdad: Real vs Cliente.
+    Se separa de la tarea para no sobreescribir al re-importar versiones.
+    """
+    tarea = models.OneToOneField(TareaCronograma, on_delete=models.CASCADE, related_name='avance')
+    porcentaje_real = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    porcentaje_cliente = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    comentario = models.TextField(blank=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'importacion_cronograma_avance'

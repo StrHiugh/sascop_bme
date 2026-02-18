@@ -1,3 +1,16 @@
+const DAYS_IN_MONTH = 31;
+let gridReportesDiarios = null; 
+let gridProduccion = null; 
+let gridGpus = null;
+let otSeleccionada = null; 
+let tipoTiempoActivo = 'TE';
+let productoSeleccionadoCatalogo = null;
+let filaEnEdicion = null; 
+let celdaGpuEnEdicion = null;
+let gridAvances = null;
+let sCurveChart = null;
+let currentViewMode = 'subtec';
+
 const numberFormatter = new Intl.NumberFormat('es-MX', { 
     minimumFractionDigits: 6, 
     maximumFractionDigits: 6 
@@ -62,19 +75,28 @@ class StatusRenderer {
         this.el.innerText = value || '';
         this.el.className = 'tui-grid-cell-content d-flex justify-content-center align-items-center'; 
         
-        if (value === 'OK') {
-            this.el.style.backgroundColor = '#d4edda';
-            this.el.style.color = '#155724';
+        this.el.style.backgroundColor = '';
+        this.el.style.color = '';
+        this.el.style.fontWeight = '';
+
+        if (value == 'FIRMADO') {
+            this.el.style.backgroundColor = '#95c93d'; 
+            this.el.style.color = '#ffffff';           
             this.el.style.fontWeight = 'bold';
         } 
-        else if (value === 'FFP') {
-            this.el.style.backgroundColor = '#fff3cd';
-            this.el.style.color = '#856404';
+        else if (value == 'FALTA FIRMA PEMEX') {
+            this.el.style.backgroundColor = '#fad91f'; 
+            this.el.style.color = '#ffffff';           
             this.el.style.fontWeight = 'bold';
         } 
-        else if (value === 'S') {
-            this.el.style.backgroundColor = '#f8d7da';
-            this.el.style.color = '#721c24';
+        else if (value == 'PENDIENTE') {
+            this.el.style.backgroundColor = '#f05523'; 
+            this.el.style.color = '#ffffff';           
+            this.el.style.fontWeight = 'bold';
+        }
+        else if (value == 'PROCESO') {
+            this.el.style.backgroundColor = '#51c2eb'; 
+            this.el.style.color = '#ffffff';           
             this.el.style.fontWeight = 'bold';
         }
     }
@@ -255,6 +277,61 @@ class ProduccionEditor {
     mounted() { this.el.select(); }
 }
 
+class CeldaGpuRenderer {
+    constructor(props) {
+        this.el = document.createElement('div');
+        this.render(props);
+    }
+
+    getElement() { return this.el; }
+
+    render(props) {
+        const data = props.value;
+        
+        this.el.className = 'tui-grid-cell-content d-flex justify-content-center align-items-center';
+        this.el.style.width = '100%';
+        this.el.style.height = '100%';
+        
+        this.el.innerText = '';
+        this.el.style.backgroundColor = '#f9f9f9'; 
+        this.el.style.color = '';
+        this.el.style.fontWeight = '';
+
+        if (!data || typeof data !== 'object') {
+            return;
+        }
+
+        const { estatus_id, estatus_texto, archivos_count } = data;
+        const id = parseInt(estatus_id || 0);
+
+        let texto = (estatus_texto || '')
+        
+        this.el.innerText = texto;
+        this.el.style.fontWeight = 'bold';
+
+        if (id === 17) { 
+            this.el.style.backgroundColor = '#95c93d'; 
+            this.el.style.color = '#ffffff';
+        } 
+        else if (id === 18) { 
+            this.el.style.backgroundColor = '#fad91f'; 
+            this.el.style.color = '#ffffffff';
+        } 
+        else if (id === 19 || id === 0) { 
+            this.el.style.backgroundColor = '#f05523'; 
+            this.el.style.color = '#ffffff';
+        }
+        else if (id === 20) {
+            this.el.style.backgroundColor = '#51c2eb'; 
+            this.el.style.color = '#ffffff';
+        }
+        else { 
+            this.el.style.backgroundColor = '#6c757d'; 
+            this.el.style.color = '#ffffff';
+        }
+    }
+}
+
 class OpcionesRenderer {
     constructor(props) {
         this.el = document.createElement('div');
@@ -297,17 +374,36 @@ class OpcionesRenderer {
     }
 }
 
+class ReadOnlyColorRenderer {
+    constructor(props) {
+        this.el = document.createElement('div');
+        this.render(props);
+    }
+    getElement() { return this.el; }
+    render(props) {
+        this.el.className = 'tui-grid-cell-content d-flex justify-content-center align-items-center w-100 h-100';
+        this.el.innerText = props.value || '';
+        if(props.columnInfo.name.endsWith('_p')) {
+            this.el.style.backgroundColor = '#f1f5f9'; 
+            this.el.style.color = '#64748b';
+        } else {
+            if (currentViewMode === 'ejecutivo') {
+            this.el.style.color = '#20145f';
+            this.el.style.fontWeight = 'bold';
+            this.el.style.backgroundColor = '#f5f3ff';
+            } else {
+            this.el.style.fontWeight = 'bold';
+            }
+        }
+    }
+}
+
 $(document).ready(function() {
-    const DAYS_IN_MONTH = 31;
-    let gridReportesDiarios = null; 
-    let gridProduccion = null; 
-    let otSeleccionada = null; 
-    let tipoTiempoActivo = 'TE';
-    let productoSeleccionadoCatalogo = null;
-    
     inicializarFechas();
     cargarSitiosOtProceso();
     inicializarSelect2Catalogo();
+    inicializarGridAvances();
+    inicializarGraficos();
 
     setTimeout(() => {
         inicializarGrids();
@@ -459,6 +555,9 @@ $(document).ready(function() {
                 if (response.exito) {
                     aviso("exito", `Sábana de ${tipoTiempoActivo} guardada correctamente`);
                     cargarDetalleProduccion(otSeleccionada);
+                    if (gridGpus && $('#gpus-tab').hasClass('active')) {
+                        cargarDatosGpus();
+                    }
                 } else {
                     aviso("error", response.mensaje);
                 }
@@ -495,6 +594,31 @@ $(document).ready(function() {
         setTimeout(() => {
             enlaceInput.focus();
         }, 500);
+    }
+
+    function abrirModalEvidenciaGpu(celdaData, codigoPartida, descripcionPartida, rowKey, columnName) {
+        celdaGpuEnEdicion = {
+            rowKey: rowKey,
+            columnName: columnName,
+            id_produccion: celdaData.id_produccion,
+            datosOriginales: celdaData
+        };
+        $('#lbl-codigo-gpu').text(codigoPartida + ' - ' + descripcionPartida);
+        
+        const estatusId = celdaData.estatus_id ? celdaData.estatus_id : 19;
+        $('#select-estatus-gpu').val(estatusId);
+
+        const link = celdaData.archivo || '';
+        $('#input-link-gpu').val(link);
+        if (link) {
+            $('#btn-abrir-link-gpu').attr('href', link);
+            $('#div-ver-archivo-gpu').removeClass('d-none');
+        } else {
+            $('#div-ver-archivo-gpu').addClass('d-none');
+        }
+
+        const modal = new bootstrap.Modal(document.getElementById('modalEvidenciaGpu'));
+        modal.show();
     }
 
     window.guardarEnlaceArchivo = function() {
@@ -658,15 +782,16 @@ $(document).ready(function() {
         const columnasDiasAsistencia = Array.from({length: DAYS_IN_MONTH}, (_, i) => ({
             header: `${i+1}`,
             name: `dia${i+1}`,
-            width: 45,
+            width: 150,
             align: 'center',
             editor: {
                 type: NativeSelectEditor,
                 options: {
                     listItems: [
-                        { text: 'OK', value: 'OK' },
-                        { text: 'FFP', value: 'FFP' },
-                        { text: 'S', value: 'S' },
+                        { text: 'FIRMADO', value: 'FIRMADO' },
+                        { text: 'FALTA FIRMA PEMEX', value: 'FALTA FIRMA PEMEX' },
+                        { text: 'PENDIENTE', value: 'PENDIENTE' },
+                        { text: 'PROCESO', value: 'PROCESO' },
                         { text: 'Limpiar', value: '' }
                     ]
                 }
@@ -708,6 +833,10 @@ $(document).ready(function() {
                         otSeleccionada = rowData;
                         cargarDetalleProduccion(otSeleccionada);
                         $('#lbl-ot-seleccionada').text(otSeleccionada.ot);
+                        $('#lbl-ot-seleccionada-gpu').text(otSeleccionada.ot);
+                        if (gridGpus) {
+                            gridGpus.resetData([]);
+                        }
                     }
                 }
             });
@@ -716,7 +845,7 @@ $(document).ready(function() {
         const columnasDiasProduccion = Array.from({length: DAYS_IN_MONTH}, (_, i) => ({
             header: `${i+1}`,
             name: `dia${i+1}`,
-            width: 60,
+            width: 70,
             align: 'center',
             formatter: ({ value }) => {
                 if (value && typeof value === 'object') {
@@ -806,6 +935,43 @@ $(document).ready(function() {
                 });
             });
         }
+
+        const elGridGpus = document.getElementById('grid-gpus');
+        if (!elGridGpus) return; 
+            const columnasDiasGpu = Array.from({length: DAYS_IN_MONTH}, (_, i) => ({
+                header: `${i+1}`,
+                name: `dia_${i+1}`,
+                width: 140,
+                align: 'center',
+                renderer: { type: CeldaGpuRenderer }
+            }));
+
+            gridGpus = new tui.Grid({
+                el: elGridGpus,
+                scrollX: true,
+                scrollY: true,
+                bodyHeight: 640,
+                rowHeight: 60, 
+                columnOptions: { resizable: true, frozenCount: 4 },
+                columns: [
+                    { header: 'Partida', name: 'codigo',filter: 'select', width: 90, align: 'center' },
+                    { header: 'Concepto', name: 'descripcion',filter: 'select', width: 150, align: 'left' },
+                    { header: 'Anexo', name: 'anexo', filter: 'select', width: 80, align: 'center' },
+                    { header: 'Unidad', name: 'unidad', width: 70, align: 'center' },
+                    ...columnasDiasGpu 
+                ],
+                data: []
+            });
+
+            gridGpus.on('click', (ev) => {
+                if (ev.columnName && ev.columnName.startsWith('dia') && ev.rowKey !== undefined) {
+                    const rowData = gridGpus.getRow(ev.rowKey);
+                    const celdaData = rowData[ev.columnName];
+                    if (celdaData && celdaData.id_produccion) {
+                        abrirModalEvidenciaGpu(celdaData, rowData.codigo, rowData.descripcion.slice(0, 53) + '...', ev.rowKey, ev.columnName);
+                    }
+                }
+            });
     }
 
     function cargarDatosTablero() {
@@ -817,8 +983,8 @@ $(document).ready(function() {
 
         otSeleccionada = null;
         if(gridProduccion) gridProduccion.resetData([]);
+        if(gridGpus) gridGpus.resetData([]);
         $('#kpi-status-text').text("SELECCIONA UNA OT").removeClass('text-success text-danger').addClass('text-muted');
-
         $.ajax({
             url: urlOtsPorSitioGrid,
             type: 'GET',
@@ -885,6 +1051,34 @@ $(document).ready(function() {
             },
             error: function(xhr) {
                 $('#kpi-status-text').text("ERROR CARGANDO PARTIDAS").addClass('text-danger');
+            }
+        });
+    }
+    
+    function cargarDatosGpus() {
+        if (!otSeleccionada || !gridGpus) return;
+
+        const idSitio = $('#select-sitio').val();
+        const mes = $('#filtro-mes').val();
+        const anio = $('#filtro-anio').val();
+
+        gridGpus.resetData([]); 
+        
+        $.ajax({
+            url: urlObtenerGridGpus,
+            type: 'GET',
+            data: {
+                id_ot: otSeleccionada.id_ot,
+                mes: mes,
+                anio: anio
+            },
+            success: function(response) {
+                const data = response.data || [];
+                gridGpus.resetData(data);
+            },
+            error: function(xhr) {
+                console.error("Error cargando GPUs:", xhr);
+                aviso("error", "No se pudo cargar el tablero de GPUs");
             }
         });
     }
@@ -1006,6 +1200,76 @@ $(document).ready(function() {
         });
     });
 
+    $('#btn-guardar-gpu').on('click', function() {
+        if (!celdaGpuEnEdicion) return;
+
+        const nuevoEstatusId = parseInt($('#select-estatus-gpu').val());
+        const nuevoLink = $('#input-link-gpu').val().trim();
+        const textoEstatus = $('#select-estatus-gpu option:selected').text();
+
+        if (nuevoLink.trim() !== "") {
+            if (!nuevoLink.startsWith('http://') && !nuevoLink.startsWith('https://')) {
+                aviso("advertencia", "La URL debe comenzar con http:// o https://");
+                $('#input-link-gpu').focus();
+                return;
+            }
+        }
+
+        const $btn = $(this);
+        const textoOriginalBtn = $btn.html();
+        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Guardando...');
+
+        const payload = {
+            id_produccion: celdaGpuEnEdicion.id_produccion,
+            estatus_id: nuevoEstatusId,
+            archivo: nuevoLink
+        };
+
+        $.ajax({
+            url: urlGuardarEstatusGpu, 
+            type: 'POST',
+            data: JSON.stringify(payload),
+            contentType: 'application/json',
+            headers: { 'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val() },
+            success: function(response) {
+                if (response.exito) {
+                    aviso("exito", "GPU actualizado correctamente");
+                    const nuevaDataCelda = {
+                        ...celdaGpuEnEdicion.datosOriginales, 
+                        estatus_id: nuevoEstatusId,           
+                        estatus_texto: textoEstatus,          
+                        archivo: nuevoLink,                   
+                        archivos_count: nuevoLink ? 1 : 0     
+                    };
+
+                    if (gridGpus) {
+                        gridGpus.setValue(
+                            celdaGpuEnEdicion.rowKey, 
+                            celdaGpuEnEdicion.columnName, 
+                            nuevaDataCelda
+                        );
+                    }
+
+                    const modalEl = document.getElementById('modalEvidenciaGpu');
+                    const modalInstance = bootstrap.Modal.getInstance(modalEl);
+                    modalInstance.hide();
+                    
+                    celdaGpuEnEdicion = null;
+
+                } else {
+                    aviso("error", response.mensaje || "No se pudo guardar");
+                }
+            },
+            error: function(xhr) {
+                console.error("Error al guardar GPU:", xhr);
+                aviso("error", "Error de comunicación con el servidor");
+            },
+            complete: function() {
+                $btn.prop('disabled', false).html(textoOriginalBtn);
+            }
+        });
+    });
+
     function pintarGuardiasEnGrid() {
         const idSitio = $('#select-sitio').val();
         const mes = $('#filtro-mes').val();
@@ -1113,6 +1377,17 @@ $(document).ready(function() {
             gridProduccion.refreshLayout();
             pintarGuardiasEnGrid();
         }
+        if(event.target.id === 'gpus-tab' && gridGpus) {
+            gridGpus.refreshLayout();
+            if(otSeleccionada) {
+                cargarDatosGpus();
+            }
+        }
+        if(event.target.id === 'avances-tab') {
+            if (gridAvances) gridAvances.refreshLayout();
+            if (sCurveChart) sCurveChart.resize();
+            cargarDatosAvances();
+        }
     });
 
     $('#tabProcesos button').on('click', function (e) {
@@ -1128,6 +1403,180 @@ $(document).ready(function() {
         setTimeout(() => {
             if (gridReportesDiarios) gridReportesDiarios.refreshLayout();
             if (gridProduccion) gridProduccion.refreshLayout();
+            if (gridGpus) gridGpus.refreshLayout();
         }, 50);
     });
+
+    function inicializarGridAvances() {
+        const el = document.getElementById('grid-avances');
+        if (!el) return;
+
+        const daysInMonth = DAYS_IN_MONTH;
+        const columnasDias = [];
+        const mergeHeaders = [];
+
+        for (let i = 1; i <= daysInMonth; i++) {
+            columnasDias.push({
+                header: 'P',
+                name: `dia_${i}_p`,
+                width: 45,
+                align: 'center',
+                renderer: { type: ReadOnlyColorRenderer }
+            });
+            columnasDias.push({
+                header: 'R',
+                name: `dia_${i}_r`,
+                width: 45,
+                align: 'center',
+                editor: 'text',
+                renderer: { type: ReadOnlyColorRenderer }
+            });
+
+            mergeHeaders.push({
+                name: `grupo_dia_${i}`,
+                childNames: [`dia_${i}_p`, `dia_${i}_r`],
+                header: i.toString().padStart(2, '0')
+            });
+        }
+
+        gridAvances = new tui.Grid({
+            el: el,
+            scrollX: true,
+            scrollY: true,
+            bodyHeight: 360,
+            header: {
+                height: 60,
+                complexColumns: mergeHeaders
+            },
+            columnOptions: { resizable: true, frozenCount: 1 },
+            columns: [
+                { header: 'Actividad', name: 'actividad', width: 250, align: 'left', validation: { required: true } },
+                { header: 'Inicio', name: 'f_inicio', width: 90, align: 'center' },
+                { header: 'Fin', name: 'f_fin', width: 90, align: 'center' },
+                { header: 'Peso %', name: 'peso', width: 70, align: 'center' },
+                { header: '% Acum', name: 'acumulado', width: 80, align: 'center', formatter: ({value}) => `${value}%` },
+                ...columnasDias
+            ],
+            data: []
+        });
+
+        // Evento de cambio para recalcular totales o actualizar gráficas
+        gridAvances.on('afterChange', (ev) => {
+            // Aquí iría lógica para recalcular curva S localmente si se desea
+            console.log('Cambio en grid avances:', ev);
+        });
+    }
+
+    function inicializarGraficos() {
+        const chartDom = document.getElementById('chart-scurve');
+        if (chartDom) {
+            sCurveChart = echarts.init(chartDom);
+            window.addEventListener('resize', function() {
+                sCurveChart.resize();
+            });
+        }
+    }
+
+    // Función Mock para simular datos (Remplazar con tu AJAX real `urlObtenerAvances`)
+    function cargarDatosAvances() {
+        if (!otSeleccionada) {
+            $('#gantt-container').html('<div class="text-center text-muted mt-5">Selecciona una OT en la pestaña Producción.</div>');
+            if(sCurveChart) sCurveChart.clear();
+            return;
+        }
+
+        $('#lbl-ot-avances').text(otSeleccionada.ot);
+
+        // TODO: Hacer AJAX real aquí.
+        // Simulamos datos por ahora para que veas que funciona
+        const datosSimulados = [
+            { id: 1, actividad: '1.1 Ingeniería de Detalle', f_inicio: '01/02', f_fin: '05/02', peso: 10, acumulado: 100, dia_1_p: 20, dia_1_r: 20, dia_2_p: 20, dia_2_r: 20 },
+            { id: 2, actividad: '1.2 Habilitado Tubería', f_inicio: '03/02', f_fin: '10/02', peso: 30, acumulado: 45, dia_3_p: 10, dia_3_r: 5, dia_4_p: 10, dia_4_r: 10 },
+            { id: 3, actividad: '1.3 Soldadura', f_inicio: '05/02', f_fin: '15/02', peso: 40, acumulado: 10, dia_5_p: 5, dia_5_r: 0 },
+        ];
+
+        if(gridAvances) gridAvances.resetData(datosSimulados);
+
+        renderGanttHTML(datosSimulados);
+
+        actualizarChartSCurve();
+        
+        $('#lbl-avance-fisico').text("35.4%");
+        $('#lbl-desviacion').text("(-2.1%)").attr('class', 'kpi-delta-bad ms-1');
+    }
+
+    function renderGanttHTML(data) {
+        const container = $('#gantt-container');
+        container.empty();
+
+        data.forEach(item => {
+            const widthPlan = Math.floor(Math.random() * 80) + 10; 
+            const widthReal = currentViewMode === 'subtec' ? (widthPlan - 10) : (widthPlan + 5);
+            const colorClass = currentViewMode === 'subtec' ? '' : 'client-mode';
+
+            const row = `
+                <div class="gantt-row">
+                    <div class="gantt-label" title="${item.actividad}">${item.actividad}</div>
+                    <div class="gantt-track">
+                        <div class="gantt-bar-plan" style="width: ${widthPlan}%;"></div>
+                        <div class="gantt-bar-real ${colorClass}" style="width: ${widthReal}%;"></div>
+                    </div>
+                </div>
+            `;
+            container.append(row);
+        });
+    }
+
+    function actualizarChartSCurve() {
+        if (!sCurveChart) return;
+
+        const labels = ['S1', 'S2', 'S3', 'S4'];
+        const plan = [10, 30, 60, 100];
+        const real = [8, 25, 55, null]; 
+        const cliente = [10, 28, 62, null];
+
+        const serieActual = currentViewMode === 'subtec' 
+            ? { name: 'Real (Subtec)', data: real, color: '#f05523' }
+            : { name: 'Cliente', data: cliente, color: '#20145f' };
+
+        const options = {
+            tooltip: { trigger: 'axis' },
+            legend: { bottom: 0 },
+            grid: { top: 30, bottom: 50, left: 20, right: 20 },
+            xAxis: { type: 'category', data: labels },
+            yAxis: { type: 'value', max: 100, axisLabel: { formatter: '{value}%' } },
+            series: [
+                {
+                    name: 'Programado',
+                    type: 'line',
+                    data: plan,
+                    lineStyle: { type: 'dashed', color: '#cbd5e1' },
+                    itemStyle: { color: '#cbd5e1' },
+                    symbol: 'none'
+                },
+                {
+                    name: serieActual.name,
+                    type: 'line',
+                    data: serieActual.data,
+                    smooth: true,
+                    lineStyle: { width: 3, color: serieActual.color },
+                    itemStyle: { color: serieActual.color },
+                    areaStyle: { opacity: 0.1, color: serieActual.color }
+                }
+            ]
+        };
+        sCurveChart.setOption(options);
+    }
+
+    window.toggleVistaAvance = function(mode, btn) {
+        currentViewMode = mode;
+        $('.segmented-control button').removeClass('active');
+        $(btn).addClass('active');
+        if(gridAvances) gridAvances.refreshLayout();
+        actualizarChartSCurve();
+        const currentData = gridAvances.getData();
+        renderGanttHTML(currentData);
+    };
+
+
 });

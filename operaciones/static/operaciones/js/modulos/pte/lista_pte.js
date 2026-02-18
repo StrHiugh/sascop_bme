@@ -1550,18 +1550,28 @@ function fnHTMLTablaSubpasos(pteId) {
     `;
 }
 
-function actualizarEstatusEnTiempoReal(dropdownButton, nuevoTexto, nuevoEstatus, fechaInputId, comentarioInputId) {
-    const estatusClasses = {
-        'PENDIENTE': 'bg-warning',
-        'PROCESO': 'bg-primary', 
-        'COMPLETADO': 'bg-success',
-        'CANCELADO': 'bg-danger',
-        'NO APLICA': 'bg-secondary'
-    };
+function actualizarEstatusEnTiempoReal(dropdownButton, nuevoTexto, nuevoEstatus, fechaValor, comentarioValor) {
+    const textoClave = (nuevoTexto || '').trim().toUpperCase();
     
+    const estatusColors = {
+        'PENDIENTE': '#fad91f',   
+        'PROCESO': '#55c0e9',     
+        'COMPLETADO': '#95c93d',  
+        'ENTREGADA': '#95c93d',   
+        'CANCELADO': '#f05523',   
+        'NO APLICA': '#54565a',   
+        'DESCONOCIDO': '#6c757d'  
+    };
+
+    const colorAplicar = estatusColors[textoClave] || estatusColors['DESCONOCIDO'];
+
     dropdownButton.removeClass('bg-warning bg-primary bg-success bg-danger bg-secondary')
-                    .addClass(estatusClasses[nuevoTexto] || 'bg-secondary')
-                    .text(nuevoTexto);
+        .css({
+            'background-color': colorAplicar,
+            'border-color': colorAplicar,
+            'color': '#ffffff'
+        })
+        .text(nuevoTexto);
 
     const tr = dropdownButton.closest('tr');
     const table = tr.closest('table');
@@ -1575,22 +1585,36 @@ function actualizarEstatusEnTiempoReal(dropdownButton, nuevoTexto, nuevoEstatus,
         const headerText = $(this).text().trim().toLowerCase();
         if (headerText.includes('fecha entrega')) {
             fechaEntregaCell = tds.eq(index);
-            
         } else if (headerText.includes('comentario')) {
             comentarioCell = tds.eq(index);
         }
     });
 
+    if (fechaEntregaCell) {
+        fechaEntregaCell.css({
+            'background-color': '',
+            'color': '',
+            'font-weight': '',
+            'text-align': '',
+            'border-radius': ''
+        });
+    }
+
     if (nuevoEstatus == '3' && fechaEntregaCell) {
-        const fechaInput = $(`#${fechaInputId}`);
-        if (fechaInputId) {
-            const parts = fechaInputId.split('-');
+        if (fechaValor) {
+            const parts = fechaValor.split('-');
             if (parts.length === 3) {
                 const fechaFormateada = `${parts[2]}/${parts[1]}/${parts[0]}`;
                 fechaEntregaCell.text(fechaFormateada);
             } else {
-                fechaEntregaCell.text(fechaInputId);
+                fechaEntregaCell.text(fechaValor);
             }
+
+            fechaEntregaCell.css({
+                'color': '#000000',
+                'text-align': 'center'
+            });
+
         } else {
             const rowData = table.DataTable().row(tr).data();
             if (rowData && rowData.orden == 4) {
@@ -1610,17 +1634,18 @@ function actualizarEstatusEnTiempoReal(dropdownButton, nuevoTexto, nuevoEstatus,
 
     const inputsFecha = tr.find('.fecha-input');
     if (inputsFecha.length) {
-        if ([3, 14].includes(nuevoEstatus)) {
+        if ([3, 14].includes(parseInt(nuevoEstatus))) { 
             inputsFecha.prop('disabled', true);
         } else {
             inputsFecha.prop('disabled', false);
         }
     }
     
-    if (comentarioInputId && comentarioCell) {
-        comentarioCell.text(comentarioInputId);
+    if (comentarioValor && comentarioCell) {
+        comentarioCell.text(comentarioValor);
     }
 }
+
 function actualizarProgresoPaso4(pteId, tablaDetallePTE) {
     BMAjax(
         urlObtenerProgresoPaso4,
@@ -1669,36 +1694,55 @@ function actualizarProgresoGeneralPTE(pteId) {
 }
 
 function actualizarEstatusPTEEnTiempoReal(dropdownButton, nuevoTexto, nuevoEstatus) {
-    const estatusClasses = {
-        'PENDIENTE': 'bg-warning',
-        'PROCESO': 'bg-primary', 
-        'ENTREGADA': 'bg-success',
-        'CANCELADA': 'bg-danger',
-        'DESCONOCIDO': 'bg-secondary'
+    const textoClave = (nuevoTexto || '').trim().toUpperCase();
+
+    const estatusColors = {
+        'PENDIENTE': '#fad91f',   
+        'PROCESO': '#55c0e9',     
+        'COMPLETADO': '#95c93d',  
+        'ENTREGADA': '#95c93d',   
+        'CANCELADO': '#f05523',   
+        'NO APLICA': '#54565a',   
+        'DESCONOCIDO': '#6c757d'  
     };
     
+    const colorAplicar = estatusColors[textoClave] || estatusColors['DESCONOCIDO'];
+
     dropdownButton.removeClass('bg-warning bg-primary bg-success bg-danger bg-secondary')
-                    .addClass(estatusClasses[nuevoTexto] || 'bg-secondary')
-                    .text(nuevoTexto);
+                .css({
+                    'background-color': colorAplicar,
+                    'border-color': colorAplicar,
+                    'color': '#ffffff'
+                })
+                .text(nuevoTexto);
 
     const tr = dropdownButton.closest('tr');
     const tds = tr.find('td');
-    const table = tr.closest('table');
-    const headers = table.find('th');
-    let fechaEntregaCell = tds.eq(4);;
-    if (nuevoEstatus == '3' && fechaEntregaCell) {
-        const fechaInput = $(`#fechaEntregaPte`);
+    let fechaEntregaCell = tds.eq(5);
+
+    fechaEntregaCell.css({
+        'background-color': '',
+        'color': '',
+        'font-weight': 'normal'
+    }).text('');
+
+    if (nuevoEstatus == '3') { 
+        const fechaInput = $(`#fechaEntregaPte`); 
+        
         if (fechaInput.length && fechaInput.val()) {
             const fecha = fechaInput.val();
+            let fechaTexto = fecha;
+
             const parts = fecha.split('-');
             if (parts.length === 3) {
-                const fechaFormateada = `${parts[2]}/${parts[1]}/${parts[0]}`;
-                fechaEntregaCell.text(fechaFormateada);
-            } else {
-                fechaEntregaCell.text(fecha);
+                fechaTexto = `${parts[2]}/${parts[1]}/${parts[0]}`;
             }
+
+            fechaEntregaCell.text(fechaTexto);
+            fechaEntregaCell.css({
+                'color': '#000000',
+                'text-align': 'center',
+            });
         }
-    } else {
-            fechaEntregaCell.text('');
-        }
+    }
 }

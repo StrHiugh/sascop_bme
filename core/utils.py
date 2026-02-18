@@ -71,7 +71,6 @@ def ejecutar_query_sql(query, params=None, retornar_dict=True):
          return [dict(zip(columns, row)) for row in cursor.fetchall()]
       else:
          return cursor.fetchall()
-
 def fn_obtener_resumen_actividad_por_usuario(fecha_inicio, fecha_fin):
    sql = """
       WITH resumen_totales AS (
@@ -81,8 +80,8 @@ def fn_obtener_resumen_actividad_por_usuario(fecha_inicio, fecha_fin):
          FROM
             registro_actividad
          WHERE
-            fecha >= '2026-02-02 00:00:00+00' AND
-            fecha < '2026-02-11 23:59:59+00'
+            fecha >= %s AND
+            fecha <= %s
          GROUP BY
             usuario_id_id
          ORDER BY
@@ -112,8 +111,8 @@ def fn_obtener_resumen_actividad_por_usuario(fecha_inicio, fecha_fin):
             FROM
                resumen_totales
          ) AND
-         ra.fecha >= '2026-02-02 00:00:00+00' AND
-         ra.fecha < '2026-02-11 23:59:59+00'
+         ra.fecha >= %s AND
+         ra.fecha <= %s
       GROUP BY
          ra.usuario_id_id,
          ra.tabla_log,
@@ -128,7 +127,9 @@ def fn_obtener_resumen_actividad_por_usuario(fecha_inicio, fecha_fin):
             resumen_totales.usuario_id_id = ra.usuario_id_id
       ) DESC, total_por_modulo DESC;
    """
-   return ejecutar_query_sql(sql)
+
+   params = [fecha_inicio, fecha_fin, fecha_inicio, fecha_fin]
+   return ejecutar_query_sql(sql, params)
 
 def fn_obtener_resumen_pasos_cargados():
    sql = """
@@ -467,9 +468,8 @@ def fn_generar_grafica_buffer(datos_queryset):
    return buffer
 
 def fn_crear_grafica_carga_archivos_pasos(nombres, cargados, nulos, titulo_grafica, porcentaje_fijo, mostrar_avance=False):
-   """Gráfica de avance (PTEs/OTs) con colores institucionales."""
    totales = [c + n for c, n in zip(cargados, nulos)]
-   fig, ax = plt.subplots(figsize=(11, 5.5))
+   fig, ax = plt.subplots(figsize=(11, 6))
    x = np.arange(len(nombres))
 
    if len(x) > 3:
@@ -477,24 +477,65 @@ def fn_crear_grafica_carga_archivos_pasos(nombres, cargados, nulos, titulo_grafi
       spl = make_interp_spline(x, totales, k=3)
       y_smooth = np.maximum(spl(x_smooth), 0)
       ax.fill_between(x_smooth, y_smooth, color=COLOR_DINAMISMO, alpha=0.15, zorder=1)
-      ax.plot(x_smooth, y_smooth, color=COLOR_FUERZA, linewidth=2.5, zorder=2)
+      ax.plot(x_smooth, y_smooth, color=COLOR_FUERZA, linewidth=2.5, zorder=2, label="Total esperado")
 
-   ax.bar(x, cargados, color=COLOR_CONFIANZA, width=0.6, zorder=3)
+   ax.bar(x, cargados, color=COLOR_CONFIANZA, width=0.6, zorder=3, label="Archivos cargados")
+   max_y = max(totales) if totales else 100
+
+   for i, (c, t) in enumerate(zip(cargados, totales)):
+      n = t if t > 0 else 1
+      pct = (c / n) * 100
+
+      ax.text(
+         i, t + max_y * 0.015,
+         f"{t:,}",
+         ha="center", va="bottom",
+         fontsize=7.5, fontweight="bold",
+         color=COLOR_SERIEDAD,
+      )
+
+      ax.text(
+         i, -max_y * 0.04,
+         f"{c:,} ({pct:.0f}%)",
+         ha="center", va="top",
+         fontsize=6.8, fontweight="bold",
+         color=COLOR_SERIEDAD,
+         clip_on=False,
+      )
 
    if mostrar_avance:
-      texto_box = f"{porcentaje_fijo:.2f}%\nAvance Operativo"
-      ax.text(0.98, 0.88, texto_box, transform=ax.transAxes, fontsize=12,
-         fontweight="bold", ha="right", va="top", color=COLOR_SERIEDAD,
-         bbox=dict(facecolor="white", edgecolor=COLOR_CONFIANZA, boxstyle="round,pad=0.5"))
+      fig.text(
+         0.97, 0.97,
+         f"Avance Operativo\n{porcentaje_fijo:.2f}%",
+         fontsize=10, fontweight="bold",
+         ha="right", va="top",
+         color=COLOR_SERIEDAD,
+         bbox=dict(facecolor="white", edgecolor=COLOR_CONFIANZA,
+                     boxstyle="round,pad=0.45", linewidth=1.2)
+      )
 
-   ax.set_title(f"PROGRESO DE CARGA - {titulo_grafica}", pad=20, fontsize=12, color=COLOR_SERIEDAD, fontweight="bold")
+   ax.set_title(f"PROGRESO DE CARGA — {titulo_grafica}", pad=20, fontsize=12,
+               color=COLOR_SERIEDAD, fontweight="bold")
    ax.set_xticks(x)
    ax.set_xticklabels(nombres, fontsize=8, color=COLOR_SOLIDEZ)
    ax.yaxis.grid(True, linestyle="--", alpha=0.3)
+   ax.get_yaxis().set_major_formatter(ticker.StrMethodFormatter("{x:,.0f}"))
+   for s in ["top", "right"]:
+      ax.spines[s].set_visible(False)
+
+   ax.legend(
+      loc="upper center",
+      bbox_to_anchor=(0.5, -0.18),
+      ncol=2,
+      fontsize=8,
+      frameon=False,
+   )
+
+   ax.set_ylim(-max_y * 0.10, max_y * 1.22)
 
    plt.tight_layout()
    buffer = io.BytesIO()
-   plt.savefig(buffer, format="png", dpi=110)
+   plt.savefig(buffer, format="png", dpi=110, bbox_inches="tight")
    buffer.seek(0)
    plt.close(fig)
    return buffer

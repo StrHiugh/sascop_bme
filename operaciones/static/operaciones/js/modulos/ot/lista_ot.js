@@ -6,6 +6,11 @@
  * __app__        : BME SUBTEC
  */
 let REGISTRO_ACTIVIDAD = new RegistroActividad(4,null,"REGISTRAR")
+const formatoMoneda = new Intl.NumberFormat('es-MX', {
+    style: 'currency',
+    currency: 'MXN',
+    minimumFractionDigits: 2
+});
 
 $(document).ready(function () {
     window.tablaOt = $("#tabla").DataTable({
@@ -1347,6 +1352,12 @@ function guardarEnlaceArchivo() {
         $('#enlaceArchivoOt').select();
         return;
     }
+    let log = new RegistroActividad(5,window.pasoActual.id,"IMPORTAR");
+    log.agregar_actividad({
+        nombre:"Importó",
+        valor_actual:enlace,
+        valor_anterior:window.pasoActual.archivo,
+        detalle:`un enlace de archivo al paso: <b>${window.pasoActual.orden}-${window.pasoActual.desc_paso}</b> de la OT: <b>${window.pasoActual.oficio_ot}</b>`})   
     
     if (window.pasoActual) {
         $btn.blur();
@@ -1357,7 +1368,8 @@ function guardarEnlaceArchivo() {
             data: {
                 csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val(),
                 paso_id: window.pasoActual.id,
-                archivo: enlace
+                archivo: enlace,
+                registro_actividad: JSON.stringify(log.actividad)
             },
             success: function(response) {
                 if (response.exito) {
@@ -1379,6 +1391,25 @@ function guardarEnlaceArchivo() {
 }
 
 function fnHTMLTablaDetallePTE(otId) {
+    const htmlTotales = `
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-white border d-flex align-items-center shadow-sm" style=" color: #54565a;">
+                MN: 
+                <b id="lbl-total-importado-mn_${otId}" class="ms-1" style="color: #95c93d; font-size: 1.1em;">$0.00</b>
+            </span>
+
+            <span class="badge bg-white border d-flex align-items-center shadow-sm" style="color: #54565a;">
+                USD: 
+                <b id="lbl-total-importado-usd_${otId}" class="ms-1" style="color: #3498db; font-size: 1.1em;">$0.00</b>
+            </span>
+
+            <span class="badge bg-white border d-flex align-items-center shadow-sm" style="color: #54565a;">
+                Total: 
+                <b id="lbl-total-importado-hom_${otId}" class="ms-1" style="color: #f05523; font-size: 1.1em;">$0.00</b>
+            </span>
+        </div>
+    `;
+
     if (window.tablaTexto == "OT") {
         return `
             <div class="detalle-ot-container p-3" style="background-color: #f8f9fa;">
@@ -1409,7 +1440,8 @@ function fnHTMLTablaDetallePTE(otId) {
                         </table>
                     </div>
                     <div class="tab-pane fade" id="importaciones_${otId}" role="tabpanel" aria-labelledby="importaciones-tab_${otId}">
-                        <div class="actions-toolbar mb-2 d-flex justify-content-end">
+                        <div class="actions-toolbar mb-2 d-flex justify-content-end align-items-center gap-3">
+                            ${htmlTotales}
                             <button class="btn btn-sm btn-primary btn-importar-excel shadow-sm" data-ot="${otId}">
                                 <i class="fas fa-file-upload me-2"></i>Importar Anexo C inicial
                             </button>
@@ -1441,7 +1473,8 @@ function fnHTMLTablaDetallePTE(otId) {
                         </table>
                     </div>
                     <div class="tab-pane fade" id="importaciones_${otId}" role="tabpanel" aria-labelledby="importaciones-tab_${otId}">
-                        <div class="actions-toolbar mb-2 d-flex justify-content-end">
+                        <div class="actions-toolbar mb-2 d-flex justify-content-end align-items-center gap-3">
+                            ${htmlTotales}
                             <button class="btn btn-sm btn-primary btn-importar-excel shadow-sm" data-ot="${otId}">
                                 <i class="fas fa-file-upload me-2"></i>Importar Anexo C modificado
                             </button>
@@ -1845,6 +1878,19 @@ function initTablaImportaciones(otId) {
                 ot_id: otId
             }
         },
+        drawCallback: function(settings) {
+            var api = this.api();
+            var json = api.ajax.json();
+            if (json && json.totales) {
+                $(`#lbl-total-importado-mn_${otId}`).text(formatoMoneda.format(json.totales.mn));
+                $(`#lbl-total-importado-usd_${otId}`).text(formatoMoneda.format(json.totales.usd)); 
+                $(`#lbl-total-importado-hom_${otId}`).text(formatoMoneda.format(json.totales.homologado));
+            } else {
+                $(`#lbl-total-importado-mn_${otId}`).text('$0.00');
+                $(`#lbl-total-importado-usd_${otId}`).text('$0.00');
+                $(`#lbl-total-importado-hom_${otId}`).text('$0.00');
+            }
+        },
         columns: [
             { 
                 data: "codigo_concepto", 
@@ -2130,3 +2176,5 @@ function actualizarProgresoGeneralOT(otId) {
         return false;
     });
 }
+
+

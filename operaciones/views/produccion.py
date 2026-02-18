@@ -1,7 +1,7 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
-from ..models import OTE, ImportacionAnexo, PartidaAnexoImportada, Produccion, ReporteMensual, Sitio, ReporteDiario, Estatus, ConceptoMaestro, PartidaProyectada, CicloGuardia, Superintendente
+from ..models import OTE, ImportacionAnexo, PartidaAnexoImportada, Produccion, ReporteMensual, Sitio, ReporteDiario, Estatus, ConceptoMaestro, PartidaProyectada, CicloGuardia, Superintendente, RegistroGPU, CronogramaVersion, TareaCronograma, AvanceCronograma
 from django.http import JsonResponse
 from itertools import chain
 from django.db.models import Q, Case, F, When, IntegerField, Value, CharField, Sum, OuterRef, Subquery, Max
@@ -718,7 +718,44 @@ def guardar_produccion_masiva(request):
                 Produccion.objects.bulk_create(a_crear)
             if a_actualizar: 
                 Produccion.objects.bulk_update(a_actualizar, ['volumen_produccion', 'es_excedente', 'id_sitio_produccion'])
-        
+
+            try:
+                estatus_pendiente = Estatus.objects.get(id=20) 
+            except Estatus.DoesNotExist:
+                estatus_pendiente = None 
+
+            if estatus_pendiente:
+                anexos_validos_gpu = ['C-2', 'C-3', 'C2EXT', 'C3EXT']
+
+                producciones_validas_gpu = Produccion.objects.filter(
+                    id_reporte_mensual=reporte_mensual,
+                    volumen_produccion__gt=0,
+                    id_partida_anexo__anexo__in=anexos_validos_gpu
+                ).values_list('id', flat=True)
+
+                gpus_existentes = RegistroGPU.objects.filter(
+                    id_produccion__in=producciones_validas_gpu
+                ).values_list('id_produccion', flat=True)
+
+                ids_faltantes = set(producciones_validas_gpu) - set(gpus_existentes)
+
+                gpus_nuevos = []
+                for pid in ids_faltantes:
+                    gpus_nuevos.append(RegistroGPU(
+                        id_produccion_id=pid,
+                        id_estatus=estatus_pendiente,
+                    ))
+                
+                if gpus_nuevos:
+                    RegistroGPU.objects.bulk_create(gpus_nuevos)
+
+                RegistroGPU.objects.filter(
+                    id_produccion__id_reporte_mensual=reporte_mensual,
+                    id_produccion__volumen_produccion=0
+                ).delete()
+
+
+
         return JsonResponse({'exito': True, 'mensaje': 'Producción guardada correctamente.'})
     except Exception as e:
         import traceback
@@ -993,3 +1030,110 @@ def configurar_ciclo_guardia(request):
     )
     
     return JsonResponse({'exito': True})
+
+@login_required
+def obtener_grid_gpus(request):
+    """
+    Retorna la matriz de datos para el DataTable de GPUs.
+    """
+    try:
+        id_ot = request.GET.get('id_ot')
+        mes = request.GET.get('mes')
+        anio = request.GET.get('anio')
+        
+        if not id_ot or not mes or not anio:
+            return JsonResponse({'data': []})
+
+        anexos_validos_gpu = ['C-2', 'C-3', 'C2EXT', 'C3EXT']
+
+        reporte = ReporteMensual.objects.filter(id_ot_id=id_ot, mes=mes, anio=anio).first()
+        if not reporte:
+            return JsonResponse({'data': []})
+
+        producciones = Produccion.objects.filter(
+            id_reporte_mensual=reporte,
+            volumen_produccion__gt=0.00,
+            id_partida_anexo__anexo__in=anexos_validos_gpu,
+            id_partida_anexo__importacion_anexo__es_activo=True 
+        ).select_related('id_partida_anexo', 'id_partida_anexo__unidad_medida', 'gpu', 'gpu__id_estatus')
+
+        data_map = {}
+
+        for prod in producciones:
+            partida = prod.id_partida_anexo
+            pid = partida.id
+            
+            if pid not in data_map:
+                unidad_clave = str(partida.unidad_medida.clave) if hasattr(partida.unidad_medida, 'clave') else str(partida.unidad_medida)
+                
+                data_map[pid] = {
+                    'id_partida_anexo': pid,
+                    'codigo': partida.id_partida,
+                    'descripcion': partida.descripcion_concepto,
+                    'unidad': unidad_clave,
+                    'anexo': str(partida.anexo),
+                    **{f'dia_{d}': None for d in range(1, 32)}
+                }
+
+            dia = prod.fecha_produccion.day
+            
+            estado_gpu = {
+                'id_produccion': prod.id,
+                'volumen': prod.volumen_produccion,
+                'estatus_id': 19, 
+                'estatus_texto': 'PENDIENTE',
+                'archivos_count': 0,
+                'archivo': ''
+            }
+
+            if hasattr(prod, 'gpu'):
+                gpu = prod.gpu
+                estado_gpu['estatus_id'] = gpu.id_estatus.id
+                estado_gpu['estatus_texto'] = str(gpu.id_estatus.descripcion if hasattr(gpu.id_estatus, 'descripcion') else gpu.id_estatus)
+                
+                evidencias = gpu.archivo
+                if evidencias:
+                    estado_gpu['archivos_count'] = 1
+                    estado_gpu['archivo'] = evidencias
+                
+                estado_gpu['id_gpu'] = gpu.id
+
+            data_map[pid][f'dia_{dia}'] = estado_gpu
+
+        return JsonResponse({'data': list(data_map.values())})
+
+    except Exception as e:
+        print(f"Error en obtener_grid_gpus: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
+@require_http_methods(["POST"])
+def guardar_estatus_gpu(request):
+    """
+    Actualiza el estatus y el archivo de evidencia de un generador.
+    """
+    try:
+        data = json.loads(request.body)
+        id_produccion = data.get('id_produccion')
+        nuevo_estatus_id = data.get('estatus_id')
+        archivo_url = data.get('archivo')
+
+        if not id_produccion:
+            return JsonResponse({'exito': False, 'mensaje': 'ID de producción no proporcionado'})
+
+        produccion = get_object_or_404(Produccion, pk=id_produccion)
+
+        gpu, created = RegistroGPU.objects.update_or_create(
+            id_produccion=produccion,
+            defaults={
+                'id_estatus_id': nuevo_estatus_id,
+                'archivo': archivo_url
+            }
+        )
+
+        accion = "creado" if created else "actualizado"
+        return JsonResponse({'exito': True, 'mensaje': f'Registro GPU {accion} correctamente'})
+
+    except Exception as e:
+        print(f"Error en guardar_estatus_gpu: {str(e)}")
+        return JsonResponse({'exito': False, 'mensaje': f'Error interno: {str(e)}'})

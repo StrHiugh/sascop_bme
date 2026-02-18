@@ -70,7 +70,8 @@ urlpatterns = [
     path('produccion/obtener_supers_por_sitio/', produccion.obtener_supers_por_sitio, name='obtener_supers_por_sitio'),
     path('produccion/configurar_ciclo_guardia/', produccion.configurar_ciclo_guardia, name='configurar_ciclo_guardia'),
     path('produccion/obtener_guardias_mes/', produccion.obtener_guardias_mes, name='obtener_guardias_mes'),
-
+    path('produccion/obtener_grid_gpus/', produccion.obtener_grid_gpus, name='obtener_grid_gpus'),
+    path('produccion/guardar_estatus_gpu/', produccion.guardar_estatus_gpu, name='guardar_estatus_gpu'),
 
     #URLs para PRODUCTOS 
     path('catalogos/producto/', catalogos.lista_producto, name='lista_producto'),
