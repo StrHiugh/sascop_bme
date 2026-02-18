@@ -42,6 +42,8 @@
         const userAuthenticated = {{ user.is_authenticated|yesno:"true,false" }};
         const loginUrl = "{% url 'logout' %}";
     </script>
+    {% block extra_css %}
+    {% endblock %}
 </head>
 <body class="layout-sidebar">
 
@@ -87,6 +89,13 @@
                         <a class="nav-link" href="{% url 'operaciones:lista_produccion' %}">
                             <i class="fas fa-industry"></i>
                             <span class="nav-text">Producción</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'centro_consulta' %}active{% endif %}"
+                        href="{% url 'operaciones:centro_consulta' %}">
+                            <i class="fas fa-search"></i>
+                            <span class="nav-text">Centro de Consulta</span>
                         </a>
                     </li>
                     {% endif %}

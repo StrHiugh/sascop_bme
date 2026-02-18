@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import login, pte, ote, produccion, api, catalogos, registro_actividad
+from .views import login, pte, ote, produccion, api, catalogos, registro_actividad, centro_consulta
 
 app_name = 'operaciones'
 
@@ -177,4 +177,11 @@ urlpatterns = [
     path('api/estadisticas/', api.api_estadisticas, name='api_estadisticas'),
     path('api/ptes/', api.api_ptes, name='api_ptes'),
     path('api/ptes/<int:pte_id>/', api.api_pte_detalle, name='api_pte_detalle'),
+
+    #URLs para modulo Centro de consultas
+    path('centro_consulta/centro-consulta/', centro_consulta.fn_centro_consulta, name='centro_consulta'),
+    path('acentro_consulta/busqueda-global/', centro_consulta.fn_api_busqueda_global, name='api_busqueda_global'),
+    path('centro_consulta/documentos-unificados/', centro_consulta.obtener_catalogo_documentos_unificado, name='obtener_documentos_unificados'),
+    path('catalogos/frentes/obtener_nivel_afectacion_dos/', centro_consulta.obtener_frente_afectacion_dos, name='obtener_frente_afectacion_dos'),
+    path('catalogos/estatus/obtener_nivel_afectacion_uno/', centro_consulta.obtener_estatus_afectacion_uno, name='obtener_estatus_afectacion_uno'),
 ]
