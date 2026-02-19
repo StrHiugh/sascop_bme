@@ -136,8 +136,17 @@ $(document).ready(function () {
     tabla = $("#tabla-resultados").DataTable({
         data: null,
         pageLength: 10,
-        language: { url: "https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json" },
-        dom: "rtip",
+        lengthMenu: [10, 25, 50, 100],
+        dom: '<"row"<"col-sm-12 col-md-6"l>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
+        language: {
+            "lengthMenu": "_MENU_",
+            "info": "Mostrando _END_ de _TOTAL_ registros.",
+            "infoFiltered": "(filtrado de _MAX_ registros)",
+            "paginate": {
+                "previous": "‹",
+                "next": "›"
+            }
+        },
         responsive: true,
         columns: [
             { title: "Origen",                  data: "tipo",      width: "70px",  className: "text-center align-middle", render: (d) => badgeTipo(d) },
@@ -147,10 +156,11 @@ $(document).ready(function () {
             { title: "Fecha",                    data: "fecha",     width: "100px", className: "align-middle text-nowrap", render: (d) => formatFecha(d) },
             { title: "Acción",                   data: null,        width: "70px",  className: "text-center align-middle", orderable: false, render: (d, t, row) => celdaAccion(row) },
         ],
-        initComplete: function () {
-            $("#select-length").html($("#tabla-resultados_length").detach());
+        drawCallback: function (settings) {
+            $("[data-toggle='tooltip']").tooltip();
         }
     });
+    $("#tabla-resultados_length").detach().appendTo("#select-length");
 
     cargaInicialAutomatica();
     if (typeof $.validator !== "undefined") {
