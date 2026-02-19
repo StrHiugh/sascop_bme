@@ -14,21 +14,21 @@
 }
 
 .badge-tipo-ot {
-    color: #007ea8;
-    background-color: rgba(81,194,235,0.12);
-    border-color: rgba(81,194,235,0.35);
+    color: white;
+    background-color: #55c0e9;
+    border-color: #55c0e9;
 }
 
 .badge-tipo-pte {
-    color: #d94b1a;
-    background-color: rgba(240,85,35,0.08);
-    border-color: rgba(240,85,35,0.25);
+    color: white;
+    background-color: #f05523;
+    border-color: #f05523;
 }
 
 .badge-tipo-prod {
-    color: #7a6b00;
-    background-color: rgba(250,217,31,0.18);
-    border-color: rgba(250,217,31,0.45);
+    color: white;
+    background-color: #fad91f;
+    border-color: #fad91f;
 }
 
 .badge-tipo-default {
@@ -65,14 +65,14 @@
 
 .meta-sitio {
     font-size: 0.75rem;
-    color: #007ea8;
+    color: #20145f;
     font-weight: 600;
     margin-top: 1px;
 }
 
 .meta-sitio i {
     font-size: 0.7rem;
-    color: #6c757d;
+    color: #20145f;
     margin-right: 4px;
 }
 
@@ -176,3 +176,72 @@ body .offcanvas.offcanvas-end#panelFiltros {
     border-radius: 4px; margin-right: 10px; background: white;
 }
 .custom-check input:checked + .check-box { background: #f05523; border-color: #f05523; }
+
+@media (min-width: 769px) {
+    body .offcanvas.offcanvas-end#panelFiltros {
+        width: 450px !important; /* Más angosto */
+        min-width: 450px;
+        border-left: 4px solid #f05523;
+    }
+}
+
+@media (max-width: 768px) {
+    body .offcanvas.offcanvas-end#panelFiltros {
+        width: 100% !important;
+    }
+}
+
+.offcanvas-body {
+    padding: 20px 25px 90px 25px;
+    overflow-y: auto;
+}
+
+.offcanvas-footer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 15px 25px;
+    background: #fff;
+    border-top: 1px solid #dee2e6;
+    display: flex;
+    gap: 10px;
+    z-index: 1050;
+    box-shadow: 0 -4px 15px rgba(0,0,0,0.05);
+}
+
+.section-title {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #adb5bd;
+    font-weight: 700;
+    margin: 25px 0 10px 0;
+    display: block;
+    border-bottom: 1px solid #f1f3f5;
+    padding-bottom: 5px;
+}
+
+.section-title.mt-0 { margin-top: 0; }
+
+.form-label {
+    font-size: 0.85rem;
+    color: #495057;
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+}
+
+.form-control, .form-select {
+    font-size: 0.9rem;
+    padding: 0.5rem 0.75rem;
+}
+
+.group-checkboxes {
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    padding: 8px 12px;
+    border: 1px solid #e9ecef;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
