@@ -5,82 +5,6 @@
 
 {% block extra_css %}
     <link href="{% static 'operaciones/css/centro_consulta/centro_consulta.css' %}" rel="stylesheet">
-    <style>
-        /* AJUSTE DE TAMAÑO DEL PANEL (450px) */
-        @media (min-width: 769px) {
-            body .offcanvas.offcanvas-end#panelFiltros {
-                width: 450px !important; /* Más angosto */
-                min-width: 450px;
-                border-left: 4px solid #f05523;
-            }
-        }
-
-        /* En móviles sigue siendo 100% */
-        @media (max-width: 768px) {
-            body .offcanvas.offcanvas-end#panelFiltros {
-                width: 100% !important;
-            }
-        }
-
-        /* Ajustes de layout interno */
-        .offcanvas-body {
-            padding: 20px 25px 90px 25px; /* Espacio inferior para el footer */
-            overflow-y: auto;
-        }
-        
-        .offcanvas-footer {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            padding: 15px 25px;
-            background: #fff;
-            border-top: 1px solid #dee2e6;
-            display: flex;
-            gap: 10px;
-            z-index: 1050;
-            box-shadow: 0 -4px 15px rgba(0,0,0,0.05);
-        }
-
-        .section-title {
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #adb5bd;
-            font-weight: 700;
-            margin: 25px 0 10px 0;
-            display: block;
-            border-bottom: 1px solid #f1f3f5;
-            padding-bottom: 5px;
-        }
-        
-        /* Título de la primera sección sin margen superior */
-        .section-title.mt-0 { margin-top: 0; }
-
-        .form-label {
-            font-size: 0.85rem;
-            color: #495057;
-            font-weight: 600;
-            margin-bottom: 0.4rem; /* Un poco más de aire bajo el label */
-        }
-
-        /* Inputs y Selects más limpios */
-        .form-control, .form-select {
-            font-size: 0.9rem;
-            padding: 0.5rem 0.75rem;
-        }
-
-        /* Checkboxes compactos */
-        .group-checkboxes {
-            background-color: #f8f9fa;
-            border-radius: 6px;
-            padding: 8px 12px;
-            border: 1px solid #e9ecef;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-    </style>
 {% endblock %}
 
 {% block titulos %}
@@ -119,9 +43,6 @@
                     </div>
                 </div>
                 <div class="col-md-2 col-lg-2" id="select-length"></div>
-                <div class="col-md-4 text-end">
-                     <span class="badge bg-secondary ms-2" id="badge-registros">0 Registros</span>
-                </div>
             </div>
             <table id="tabla-resultados" class="table table-hover dataTable-width-100"></table>
         </div>
@@ -138,12 +59,10 @@
 
     <div class="offcanvas-body">
         <form id="form-filtros-bi">
-            
             <span class="section-title mt-0">Configuración</span>
-            
             <div class="mb-3">
                 <label class="form-label">Origen de Datos</label>
-                <div class="group-checkboxes">
+                <div class="group-checkboxes group-origen" data-grupo-validacion="true">
                     <div class="form-check custom-check-simple mb-0">
                         <input class="form-check-input" type="checkbox" name="origen" value="PTE" id="orig_pte" checked>
                         <label class="form-check-label small" for="orig_pte">PTE</label>
@@ -178,14 +97,14 @@
             <div class="mb-3">
                 <label class="form-label">Tipo de Documento</label>
                 <select class="form-select select2" id="filtro-tipo-doc" name="tipo_doc">
-                    <option value="">Todos los tipos</option>
+                    <option value="">Todos los Tipos</option>
                 </select>
             </div>
 
             <div class="mb-3">
                 <label class="form-label">Estatus Proceso</label>
                 <select class="form-select select2" id="filtro-estatus" name="estatus">
-                    <option value="">Seleccione...</option>
+                    <option value="">Todos los Estatus</option>
                 </select>
             </div>
 
@@ -212,40 +131,41 @@
             <div class="mb-3">
                 <label class="form-label">Responsable</label>
                 <select class="form-select select2" id="filtro-lider" name="lider">
-                    <option value="">Todos los responsables</option>
+                    <option value="">Todos los Responsables</option>
                 </select>
             </div>
 
             <div class="mb-3">
                 <label class="form-label">Cliente</label>
                 <select class="form-select select2" id="filtro-cliente" name="cliente">
-                    <option value="">Todos los clientes</option>
+                    <option value="">Todos los Clientes</option>
                 </select>
             </div>
 
             <div class="mb-3">
                 <label class="form-label">Frente</label>
                 <select class="form-select select2" id="filtro-frente" name="frente">
-                    <option value="">Todos los frentes</option>
+                    <option value="">Todos los Frentes</option>
                 </select>
             </div>
 
             <div class="mb-3">
                 <label class="form-label">Sitio Específico</label>
                 <select class="form-select select2" id="filtro-sitio" name="sitio">
-                    <option value="">Todos los sitios</option>
+                    <option value="">Todos los Sitios</option>
                 </select>
             </div>
 
-            <div class="d-flex align-items-center justify-content-between p-3 mt-4 bg-light rounded border">
-                <label class="form-check-label small fw-bold text-dark mb-0" for="chk_buscar_por_frente">
-                    Buscar por frente
-                </label>
-                <div class="form-check form-switch mb-0">
-                    <input class="form-check-input" type="checkbox" role="switch" id="chk_buscar_por_frente" checked>
+            <div id="contenedor-switch-frente">
+                <div class="d-flex align-items-center justify-content-between p-3 mt-4 bg-light rounded border">
+                    <label class="form-check-label small fw-bold text-dark mb-0" for="chk_buscar_por_frente">
+                        Buscar por frente
+                    </label>
+                    <div class="form-check form-switch mb-0">
+                        <input class="form-check-input" type="checkbox" role="switch" id="chk_buscar_por_frente" checked>
+                    </div>
                 </div>
             </div>
-
         </form>
     </div>
 
