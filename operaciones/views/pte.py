@@ -981,15 +981,45 @@ def crear_ot_desde_pte(request):
             tipo_paso_busqueda = 4
 
         pasos_a_crear = PasoOt.objects.filter(tipo=tipo_paso_busqueda, activo=True).order_by('id')
-        
         if pasos_a_crear:
-            detalles_a_crear = []
+            mapa_clonacion = {
+                16: 37,
+                17: 44
+            }
+            pasos_pte_ids = set(mapa_clonacion.values())
+            detalles_pte_clon = {
+                detalle.id_paso_id: detalle 
+                for detalle in detalles_pte.filter(id_paso_id__in=pasos_pte_ids)
+            }
             for paso in pasos_a_crear:
-                detalle = OTDetalle.objects.create(
+                estatus_id = 1
+                f_inicio = None
+                f_entrega = None
+                f_termino = None
+                archivo_val = ""
+                comentario_val = ""
+
+                if paso.id in mapa_clonacion:
+                    id_pte_origen = mapa_clonacion[paso.id]
+                    detalle_origen = detalles_pte_clon.get(id_pte_origen)
+                    print("detalle_origen", detalle_origen)
+                    if detalle_origen:
+                        estatus_id = detalle_origen.estatus_paso_id
+                        f_inicio = detalle_origen.fecha_inicio
+                        f_termino = detalle_origen.fecha_termino
+                        f_entrega = detalle_origen.fecha_entrega
+                        archivo_val = detalle_origen.archivo
+                        comentario_val = ""
+
+                OTDetalle.objects.create(
                     id_ot_id=ote.id,
-                    estatus_paso_id=1,
                     id_paso_id=paso.id,
-                    comentario=""
+                    estatus_paso_id=estatus_id,
+                    fecha_inicio=f_inicio,
+                    fecha_termino=f_termino,
+                    fecha_entrega=f_entrega,
+                    archivo=archivo_val,
+                    comentario=comentario_val
                 )
                 
         return JsonResponse({
@@ -1006,9 +1036,10 @@ def crear_ot_desde_pte(request):
             'detalles': 'PTE no encontrada'
         })
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return JsonResponse({
             'exito': False,
             'tipo_aviso': 'error',
             'detalles': f'Error al crear OT: {str(e)}'
         })
-
