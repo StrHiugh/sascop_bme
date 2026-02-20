@@ -8,191 +8,259 @@
 {% endblock %}
 
 {% block titulos %}
-<div class="header-modulo">
-    <div class="header-modulo-container">
-        <div class="header-title-section">
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb mb-2">
-                    <li class="breadcrumb-item"><a href="{% url 'operaciones:index' %}" class="text-decoration-none">Inicio</a></li>
-                    <li class="breadcrumb-item active">Centro de Consulta</li>
-                </ol>
-            </nav>
-            <h1 class="h2 fw-bold mb-0">BÚSQUEDA Y GESTIÓN DOCUMENTAL</h1>
-        </div>
-        <div class="header-buttons-section">
-            <button class="btn btn-primary">
-                <i class="fas fa-file-export me-2"></i>Exportar Excel
-            </button>
-            <button class="btn btn-outline-secondary me-2" id="btn-panel-filtros">
-                <i class="fas fa-filter me-2"></i>Filtros
-            </button>
+    <div class="header-modulo">
+        <div class="header-modulo-container">
+            <div class="header-title-section">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-2">
+                        <li class="breadcrumb-item"><a href="{% url 'operaciones:index' %}" class="text-decoration-none">Inicio</a></li>
+                        <li class="breadcrumb-item active">Centro de Consulta</li>
+                    </ol>
+                </nav>
+                <h1 class="h2 fw-bold mb-0">BÚSQUEDA Y GESTIÓN DOCUMENTAL</h1>
+            </div>
+            <div class="header-buttons-section">
+                <button class="btn btn-outline-secondary me-2" id="btn-panel-filtros">
+                    <i class="fas fa-filter me-2"></i>Filtros
+                </button>
+                <button class="btn btn-primary">
+                    <i class="fas fa-file-export me-2"></i>Exportar Excel
+                </button>
+            </div>
         </div>
     </div>
-</div>
 {% endblock %}
 
 {% block content %}
-<div class="bm-content">
-    <div class="bm-cont-elementos">
-        <div class="bm-cont-elementos-body">
-            <div class="row mb-3">
-                <div class="col-md-6 col-lg-4">
-                    <div class="input-group">
-                        <span class="input-group-text bg-light border-end-0"><i class="fas fa-search"></i></span>
-                        <input type="text" class="form-control border-start-0" id="filtro-buscar" placeholder="Buscar por folio, cliente, documento...">
+    <div class="bm-content">
+        <div class="bm-cont-elementos">
+            <div class="bm-cont-elementos-body">
+                <div class="cc-kpis" id="cc-kpis-container" style="display:none;">
+                    <div class="cc-kpi">
+                        <div class="cc-kpi-label">Total registros</div>
+                        <div class="cc-kpi-value" id="cc-kpi-total">—</div>
+                        <div class="cc-kpi-sub">pasos en el periodo</div>
+                    </div>
+                    <div class="cc-kpi">
+                        <div class="cc-kpi-label">Archivos cargados</div>
+                        <div class="cc-kpi-value" id="cc-kpi-cargados">—</div>
+                        <div class="cc-kpi-sub" id="cc-kpi-pct-cargados">— % del total</div>
+                    </div>
+                    <div class="cc-kpi">
+                        <div class="cc-kpi-label">Archivos pendientes</div>
+                        <div class="cc-kpi-value" id="cc-kpi-pendientes">—</div>
+                        <div class="cc-kpi-sub" id="cc-kpi-pct-pendientes">— % del total</div>
+                    </div>
+                    <div class="cc-kpi">
+                        <div class="cc-kpi-label">Líderes activos</div>
+                        <div class="cc-kpi-value" id="cc-kpi-lideres">—</div>
+                        <div class="cc-kpi-sub">en el periodo</div>
                     </div>
                 </div>
-                <div class="col-md-2 col-lg-2">
-                    <div id="select-length"></div>
+                <div class="cc-chart-card" id="cc-chart-card" style="display:none;">
+                            <div class="cc-chart-header">
+                                    <div class="d-flex align-items-center justify-content-between w-100 pb-2 pb-md-0">
+                                        <div class="d-flex align-items-center gap-3">
+                                            <span class="cc-chart-title mb-0 pb-0" id="cc-chart-title-label">Gráficas</span>
+                                            <div class="cc-toggle-wrapper" id="timeline-toggle" style="display: none;">
+                                                <button class="cc-toggle-btn active" data-view="evolucion">Evolución</button>
+                                                <button class="cc-toggle-btn" data-view="aging">Atrasos</button>
+                                            </div>
+                                        </div>
+                                        <button class="btn btn-sm btn-outline-secondary" id="btn-expandir-grafica" title="Expandir Gráficas">
+                                            <i class="fas fa-expand"></i>
+                                        </button>
+                                    </div>
+
+                                    <div class="cc-tabs mt-2 mt-md-0" style="overflow-x: auto; white-space: nowrap;">
+                                        <button class="cc-tab-btn active" data-tab="lideres">
+                                            <i class="fas fa-users me-1"></i>Líderes
+                                        </button>
+                                        <button class="cc-tab-btn" data-tab="origenes">
+                                            <i class="fas fa-chart-pie me-1"></i>Orígenes
+                                        </button>
+                                        <button class="cc-tab-btn" data-tab="documentos">
+                                            <i class="fas fa-file-alt me-1"></i>Documentos
+                                        </button>
+                                        <button class="cc-tab-btn" data-tab="folios">
+                                            <i class="fas fa-exclamation-triangle me-1"></i>Folios
+                                        </button>
+                                        <button class="cc-tab-btn" data-tab="clientes">
+                                            <i class="fas fa-building me-1"></i>Clientes
+                                        </button>
+                                        <button class="cc-tab-btn" data-tab="frentes">
+                                            <i class="fas fa-map me-1"></i>Frentes (OT)
+                                        </button>
+                                        <button class="cc-tab-btn" data-tab="sitios">
+                                            <i class="fas fa-map-marker-alt me-1"></i>Sitios (OT)
+                                        </button>
+                                        <button class="cc-tab-btn" data-tab="embudo">
+                                            <i class="fas fa-filter me-1"></i>Embudo
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="cc-chart-body">
+                                    <div id="cc-chart-main"></div>
+                                </div>
+                            </div>
+                            <div class="cc-chart-card" id="cc-table-card">
+                                            <div class="cc-chart-header d-flex align-items-center justify-content-between pb-3 mb-3 border-bottom">
+                                                <span class="cc-chart-title mb-0 pb-0">Registros Detallados</span>
+                                                <button class="btn btn-sm btn-outline-secondary" id="btn-expandir-tabla" title="Expandir Tabla">
+                                                    <i class="fas fa-expand"></i>
+                                                </button>
+                                            </div>
+                                            <div class="row mb-3 align-items-center">
+                                                <div class="col-md-6 col-lg-4">
+                                                    <div class="input-group">
+                                                        <span class="input-group-text bg-light border-end-0"><i class="fas fa-search"></i></span>
+                                                        <input type="text" class="form-control border-start-0" id="filtro-buscar"
+                                                            placeholder="Buscar por folio, cliente, documento...">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-2 col-lg-2" id="select-length"></div>
+                                            </div>
+                                            <div class="table-responsive w-100">
+                                                <table id="tabla-resultados" class="table table-hover w-100"></table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <table id="tabla-resultados" class="table table-hover dataTable-width-100"></table>
+
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="panelFiltros" aria-labelledby="panelFiltrosLabel">
+        <div class="offcanvas-header bg-light border-bottom py-3">
+            <h5 class="offcanvas-title fw-bold" id="panelFiltrosLabel">
+                <i class="fas fa-sliders-h me-2 text-primary"></i>Filtros
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body">
+            <form id="form-filtros-bi">
+                <span class="section-title mt-0">Configuración</span>
+                <div class="mb-3">
+                    <label class="form-label">Origen de Datos</label>
+                    <div class="group-checkboxes group-origen" data-grupo-validacion="true">
+                        <div class="form-check custom-check-simple mb-0">
+                            <input class="form-check-input" type="checkbox" name="origen" value="PTE" id="orig_pte" checked>
+                            <label class="form-check-label small" for="orig_pte">PTE</label>
+                        </div>
+                        <div class="form-check custom-check-simple mb-0">
+                            <input class="form-check-input" type="checkbox" name="origen" value="OT" id="orig_ot" checked>
+                            <label class="form-check-label small" for="orig_ot">OT</label>
+                        </div>
+                        <div class="form-check custom-check-simple mb-0">
+                            <input class="form-check-input" type="checkbox" name="origen" value="PRO" id="orig_pro" checked disabled>
+                            <label class="form-check-label small" for="orig_pro">PROD</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Disponibilidad de Archivo</label>
+                    <div class="group-checkboxes justify-content-start gap-4">
+                        <div class="form-check mb-0">
+                            <input class="form-check-input" type="checkbox" id="chk_entregados" checked>
+                            <label class="form-check-label small" for="chk_entregados">Con archivo</label>
+                        </div>
+                        <div class="form-check mb-0">
+                            <input class="form-check-input" type="checkbox" id="chk_pendientes" checked>
+                            <label class="form-check-label small" for="chk_pendientes">Sin archivo</label>
+                        </div>
+                    </div>
+                </div>
+                <span class="section-title">Detalles del Documento</span>
+                <div class="mb-3">
+                    <label class="form-label">Tipo de Documento</label>
+                    <select class="form-select select2" id="filtro-tipo-doc" name="tipo_doc">
+                        <option value="">Todos los Tipos</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Estatus Proceso</label>
+                    <select class="form-select select2" id="filtro-estatus" name="estatus">
+                        <option value="">Todos los Estatus</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label"><i class="far fa-calendar-alt me-1 text-muted"></i>Fecha de Entrega</label>
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="form-floating-custom">
+                                <input type="date" class="form-control" id="fecha_inicio" name="fecha_inicio">
+                                <div class="form-text mt-1 text-xs text-muted">Desde</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-floating-custom">
+                                <input type="date" class="form-control" id="fecha_fin" name="fecha_fin">
+                                <div class="form-text mt-1 text-xs text-muted">Hasta</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <span class="section-title">Proyecto y Ubicación</span>
+                <div class="mb-3">
+                    <label class="form-label">Responsable</label>
+                    <select class="form-select select2" id="filtro-lider" name="lider">
+                        <option value="">Todos los Responsables</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Cliente</label>
+                    <select class="form-select select2" id="filtro-cliente" name="cliente">
+                        <option value="">Todos los Clientes</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Frente</label>
+                    <select class="form-select select2" id="filtro-frente" name="frente">
+                        <option value="">Todos los Frentes</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Sitio Específico</label>
+                    <select class="form-select select2" id="filtro-sitio" name="sitio">
+                        <option value="">Todos los Sitios</option>
+                    </select>
+                </div>
+                <div id="contenedor-switch-frente">
+                    <div class="d-flex align-items-center justify-content-between p-3 mt-4 bg-light rounded border">
+                        <label class="form-check-label small fw-bold text-dark mb-0" for="chk_buscar_por_frente">
+                            Buscar por frente
+                        </label>
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" role="switch" id="chk_buscar_por_frente" checked>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="offcanvas-footer">
+            <button type="button" class="btn btn-outline-secondary w-50" id="btn-limpiar-filtros">
+                <i class="fas fa-eraser me-2"></i>Limpiar
+            </button>
+            <button type="button" class="btn btn-primary w-50 fw-bold shadow-sm" id="btn-ejecutar">
+                <i class="fas fa-search me-2"></i>Buscar
+            </button>
         </div>
     </div>
-</div>
-
-<div class="offcanvas offcanvas-end" tabindex="-1" id="panelFiltros" aria-labelledby="panelFiltrosLabel">
-    <div class="offcanvas-header bg-light border-bottom py-3">
-        <h5 class="offcanvas-title fw-bold" id="panelFiltrosLabel">
-            <i class="fas fa-sliders-h me-2 text-primary"></i>Filtros
-        </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-    </div>
-
-    <div class="offcanvas-body">
-        <form id="form-filtros-bi">
-            <span class="section-title mt-0">Configuración</span>
-            <div class="mb-3">
-                <label class="form-label">Origen de Datos</label>
-                <div class="group-checkboxes group-origen" data-grupo-validacion="true">
-                    <div class="form-check custom-check-simple mb-0">
-                        <input class="form-check-input" type="checkbox" name="origen" value="PTE" id="orig_pte" checked>
-                        <label class="form-check-label small" for="orig_pte">PTE</label>
-                    </div>
-                    <div class="form-check custom-check-simple mb-0">
-                        <input class="form-check-input" type="checkbox" name="origen" value="OT" id="orig_ot" checked>
-                        <label class="form-check-label small" for="orig_ot">OT</label>
-                    </div>
-                    <div class="form-check custom-check-simple mb-0">
-                        <input class="form-check-input" type="checkbox" name="origen" value="PRO" id="orig_pro" checked disabled>
-                        <label class="form-check-label small" for="orig_pro">PROD</label>
-                    </div>
-                </div>
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label">Disponibilidad de Archivo</label>
-                <div class="group-checkboxes justify-content-start gap-4">
-                    <div class="form-check mb-0">
-                        <input class="form-check-input" type="checkbox" id="chk_entregados" checked>
-                        <label class="form-check-label small" for="chk_entregados">Con archivo</label>
-                    </div>
-                    <div class="form-check mb-0">
-                        <input class="form-check-input" type="checkbox" id="chk_pendientes" checked>
-                        <label class="form-check-label small" for="chk_pendientes">Sin archivo</label>
-                    </div>
-                </div>
-            </div>
-
-            <span class="section-title">Detalles del Documento</span>
-
-            <div class="mb-3">
-                <label class="form-label">Tipo de Documento</label>
-                <select class="form-select select2" id="filtro-tipo-doc" name="tipo_doc">
-                    <option value="">Todos los Tipos</option>
-                </select>
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label">Estatus Proceso</label>
-                <select class="form-select select2" id="filtro-estatus" name="estatus">
-                    <option value="">Todos los Estatus</option>
-                </select>
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label"><i class="far fa-calendar-alt me-1 text-muted"></i>Fecha de Entrega</label>
-                <div class="row g-3">
-                    <div class="col-6">
-                        <div class="form-floating-custom">
-                            <input type="date" class="form-control" id="fecha_inicio" name="fecha_inicio">
-                            <div class="form-text mt-1 text-xs text-muted">Desde</div>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="form-floating-custom">
-                            <input type="date" class="form-control" id="fecha_fin" name="fecha_fin">
-                            <div class="form-text mt-1 text-xs text-muted">Hasta</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <span class="section-title">Proyecto y Ubicación</span>
-
-            <div class="mb-3">
-                <label class="form-label">Responsable</label>
-                <select class="form-select select2" id="filtro-lider" name="lider">
-                    <option value="">Todos los Responsables</option>
-                </select>
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label">Cliente</label>
-                <select class="form-select select2" id="filtro-cliente" name="cliente">
-                    <option value="">Todos los Clientes</option>
-                </select>
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label">Frente</label>
-                <select class="form-select select2" id="filtro-frente" name="frente">
-                    <option value="">Todos los Frentes</option>
-                </select>
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label">Sitio Específico</label>
-                <select class="form-select select2" id="filtro-sitio" name="sitio">
-                    <option value="">Todos los Sitios</option>
-                </select>
-            </div>
-
-            <div id="contenedor-switch-frente">
-                <div class="d-flex align-items-center justify-content-between p-3 mt-4 bg-light rounded border">
-                    <label class="form-check-label small fw-bold text-dark mb-0" for="chk_buscar_por_frente">
-                        Buscar por frente
-                    </label>
-                    <div class="form-check form-switch mb-0">
-                        <input class="form-check-input" type="checkbox" role="switch" id="chk_buscar_por_frente" checked>
-                    </div>
-                </div>
-            </div>
-        </form>
-    </div>
-
-    <div class="offcanvas-footer">
-        <button type="button" class="btn btn-primary w-50 fw-bold shadow-sm" id="btn-ejecutar">
-            <i class="fas fa-search me-2"></i>Buscar
-        </button>
-        <button type="button" class="btn btn-outline-secondary w-50" id="btn-limpiar-filtros">
-            <i class="fas fa-eraser me-2"></i>Limpiar
-        </button>
-    </div>
-</div>
 {% endblock %}
-
 {% block scripts %}
-<script src="{% static 'operaciones/js/modulos/centro_consulta/centro_consulta.js' %}"></script>
-<script>
-    var urlObtenerResponsables = "{% url 'operaciones:obtener_responsables_proyecto' %}";
-    var urlObtenerClientes = "{% url 'operaciones:obtener_clientes' %}";
-    var urlObtenerSitios = "{% url 'operaciones:obtener_sitios' %}";
-    var urlObtenerSitiosPorFrente = "{% url 'operaciones:obtener_sitios_por_frente' %}";
-    var urlObtenerFrentes = "{% url 'operaciones:obtener_frente_afectacion_dos' %}";
-    var urlObtenerEstatus = "{% url 'operaciones:obtener_estatus_afectacion_uno' %}";
-    var urlObtenerTiposDoc = "{% url 'operaciones:obtener_documentos_unificados' %}";
-    var urlBuscarDocumentos = "{% url 'operaciones:api_busqueda_global' %}";
-    var csrfToken = "{{ csrf_token }}";
-</script>
+    <script src="{% static 'operaciones/js/modulos/centro_consulta/centro_consulta.js' %}"></script>
+    <script src="{% static 'operaciones/js/modulos/centro_consulta/centro_consulta_graficas.js' %}"></script>
+    <script>
+        var urlObtenerResponsables = "{% url 'operaciones:obtener_responsables_proyecto' %}";
+        var urlObtenerClientes = "{% url 'operaciones:obtener_clientes' %}";
+        var urlObtenerSitios = "{% url 'operaciones:obtener_sitios' %}";
+        var urlObtenerSitiosPorFrente = "{% url 'operaciones:obtener_sitios_por_frente' %}";
+        var urlObtenerFrentes = "{% url 'operaciones:obtener_frente_afectacion_dos' %}";
+        var urlObtenerEstatus = "{% url 'operaciones:obtener_estatus_afectacion_uno' %}";
+        var urlObtenerTiposDoc = "{% url 'operaciones:obtener_documentos_unificados' %}";
+        var urlBuscarDocumentos = "{% url 'operaciones:api_busqueda_global' %}";
+        var urlObtenerDashboard = "{% url 'operaciones:api_busqueda_global_graficas' %}";
+        var csrfToken = "{{ csrf_token }}";
+    </script>
 {% endblock %}

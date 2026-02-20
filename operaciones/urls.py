@@ -180,8 +180,10 @@ urlpatterns = [
 
     #URLs para modulo Centro de consultas
     path('centro_consulta/centro-consulta/', centro_consulta.fn_centro_consulta, name='centro_consulta'),
-    path('acentro_consulta/busqueda-global/', centro_consulta.fn_api_busqueda_global, name='api_busqueda_global'),
+    path('centro_consulta/busqueda-global/', centro_consulta.fn_api_busqueda_global, name='api_busqueda_global'),
     path('centro_consulta/documentos-unificados/', centro_consulta.obtener_catalogo_documentos_unificado, name='obtener_documentos_unificados'),
     path('catalogos/frentes/obtener_nivel_afectacion_dos/', centro_consulta.obtener_frente_afectacion_dos, name='obtener_frente_afectacion_dos'),
     path('catalogos/estatus/obtener_nivel_afectacion_uno/', centro_consulta.obtener_estatus_afectacion_uno, name='obtener_estatus_afectacion_uno'),
+    path('centro_consulta/busqueda-global-graficas/', centro_consulta.fn_api_obtener_dashboard, name='api_busqueda_global_graficas'),
+
 ]
