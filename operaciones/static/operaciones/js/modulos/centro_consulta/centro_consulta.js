@@ -295,23 +295,21 @@ $(document).ready(function () {
       serverSide: true,
       processing: true,
       pageLength: 10,
-      dom: "rtip",
+      dom: '<"row"><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
       responsive: true,
       searching: false,
       lengthChange: true,
       language: {
          "lengthMenu": "_MENU_",
          "processing": "Procesando...",
-         "info": "Mostrando _START_ a _END_ de _TOTAL_ registros",
+         "info": "Mostrando _END_ de _TOTAL_ registros.",
          "infoEmpty": "No hay registros disponibles",
          "infoFiltered": "(filtrado de _MAX_ registros totales)",
          "emptyTable": "Ningún dato disponible en esta tabla",
          "zeroRecords": "No se encontraron resultados",
          "paginate": {
-            "first": "Primero",
-            "last": "Último",
-            "next": "Siguiente",
-            "previous": "Anterior"
+            "previous": "‹",
+            "next": "›"
          }
       },
       ajax: function (parametrosDT, callbackDT) {
