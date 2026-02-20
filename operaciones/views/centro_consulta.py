@@ -8,6 +8,145 @@ from core.utils import ejecutar_query_sql
 from ..models import *
 import json
 
+def _construir_sql_base(filtros):
+    """
+    Construye de forma dinámica el bloque UNION.
+    (Optimizado con Filter Pushdown: Los filtros se inyectan DENTRO de las 
+    subconsultas para usar índices antes del UNION ALL).
+    """
+    params = {}
+    
+    condiciones_pte = ["ph.estatus != 0"]
+    condiciones_ot = ["o.estatus = 1"]
+
+    if filtros.get('lider_id'):
+        params['lider_id'] = filtros['lider_id']
+        condiciones_pte.append("ph.id_responsable_proyecto_id = %(lider_id)s")
+        condiciones_ot.append("o.id_responsable_proyecto_id = %(lider_id)s")
+
+    if filtros.get('cliente_id'):
+        params['cliente_id'] = filtros['cliente_id']
+        condiciones_pte.append("ph.id_cliente_id = %(cliente_id)s")
+        condiciones_ot.append("o.id_cliente_id = %(cliente_id)s")
+
+    if filtros.get('estatus_proceso'):
+        params['estatus_proceso'] = filtros['estatus_proceso']
+        condiciones_pte.append("pd.estatus_paso_id = %(estatus_proceso)s")
+        condiciones_ot.append("od.estatus_paso_id = %(estatus_proceso)s")
+
+    if filtros.get('nombre_documento'):
+        params['nombre_doc'] = filtros['nombre_documento']
+        condiciones_pte.append("p.descripcion = %(nombre_doc)s")
+        condiciones_ot.append("pot.descripcion = %(nombre_doc)s")
+
+    if filtros.get('texto_busqueda'):
+        params['texto'] = f"%{filtros['texto_busqueda']}%"
+        condiciones_pte.append("(p.descripcion ILIKE %(texto)s OR ph.oficio_pte ILIKE %(texto)s)")
+        condiciones_ot.append("(pot.descripcion ILIKE %(texto)s OR o.orden_trabajo ILIKE %(texto)s)")
+
+    if filtros.get('fecha_inicio') and filtros.get('fecha_fin'):
+        params['fecha_ini'] = filtros['fecha_inicio']
+        params['fecha_fin'] = filtros['fecha_fin']
+        condiciones_pte.append("(pd.fecha_entrega BETWEEN %(fecha_ini)s::date AND %(fecha_fin)s::date)")
+        condiciones_ot.append("(od.fecha_entrega BETWEEN %(fecha_ini)s::date AND %(fecha_fin)s::date)")
+
+    check_ent = filtros.get('check_entregados')
+    check_pend = filtros.get('check_no_entregados')
+    if check_ent and not check_pend:
+        condiciones_pte.append("LENGTH(TRIM(pd.archivo)) > 5")
+        condiciones_ot.append("LENGTH(TRIM(od.archivo)) > 5")
+    elif check_pend and not check_ent:
+        condiciones_pte.append("(pd.archivo IS NULL OR LENGTH(TRIM(pd.archivo)) <= 5)")
+        condiciones_ot.append("(od.archivo IS NULL OR LENGTH(TRIM(od.archivo)) <= 5)")
+
+    id_sitio = filtros.get('id_sitio')
+    frente_id = filtros.get('frente_id')
+    buscar_por_frente = str(filtros.get('buscar_por_frente', '1'))
+
+    params['id_sitio'] = int(id_sitio) if id_sitio else None
+    params['buscar_por_frente'] = buscar_por_frente
+
+    if id_sitio or frente_id:
+        condiciones_pte.append("FALSE")
+
+        if id_sitio:
+            if buscar_por_frente == '1' and frente_id:
+                params['frente_id'] = frente_id
+                condiciones_ot.append("""
+                    (o.id_frente_id = %(frente_id)s AND (
+                        (%(frente_id)s = 1 AND o.id_patio = %(id_sitio)s) OR 
+                        (%(frente_id)s = 2 AND o.id_embarcacion = %(id_sitio)s) OR 
+                        (%(frente_id)s = 4 AND o.id_plataforma = %(id_sitio)s)
+                    ))
+                """)
+            else:
+                condiciones_ot.append("(o.id_patio = %(id_sitio)s OR o.id_embarcacion = %(id_sitio)s OR o.id_plataforma = %(id_sitio)s)")
+        elif frente_id:
+            params['frente_id'] = frente_id
+            condiciones_ot.append("o.id_frente_id = %(frente_id)s")
+
+    where_pte = " AND ".join(condiciones_pte)
+    where_ot = " AND ".join(condiciones_ot)
+
+    bloques_origen = {
+        'PTE': f"""
+            SELECT
+                pd.id AS id_origen, 'PTE' AS tipo, COALESCE(ph.oficio_pte, 'SIN FOLIO') AS folio,
+                COALESCE(c.descripcion, 'CLIENTE NO ASIGNADO') AS cliente, COALESCE(rp.descripcion, 'SIN LÍDER') AS lider,
+                'N/A' AS frente, NULL::integer AS id_sitio_oficial, 'NO APLICA' AS sitio_oficial,
+                NULL as sitio_pat_desc, NULL as sitio_emb_desc, NULL as sitio_plat_desc,
+                COALESCE(p.descripcion, 'POR DEFINIR') AS documento,
+                CASE WHEN pd.fecha_entrega IS NULL THEN 'NO ENTREGADO' ELSE TO_CHAR(pd.fecha_entrega, 'DD/MM/YYYY') END AS fecha,
+                COALESCE(pd.archivo, '') AS archivo, pd.fecha_entrega AS _fecha_sort, pd.estatus_paso_id AS _fid_estatus_paso,
+                ph.id_cliente_id AS _fid_cliente, ph.id_responsable_proyecto_id AS _fid_lider, NULL::bigint AS _fid_frente,
+                NULL::integer AS _fid_patio, NULL::integer AS _fid_embarcacion, NULL::integer AS _fid_plataforma
+            FROM pte_detalle pd
+            INNER JOIN pte_header ph ON pd.id_pte_header_id = ph.id
+            LEFT JOIN cliente c ON ph.id_cliente_id = c.id
+            LEFT JOIN responsable_proyecto rp ON ph.id_responsable_proyecto_id = rp.id
+            LEFT JOIN paso p ON pd.id_paso_id = p.id
+            WHERE {where_pte}
+        """,
+        'OT': f"""
+            SELECT
+                od.id AS id_origen, 'OT' AS tipo, COALESCE(o.orden_trabajo, 'SIN OT') AS folio,
+                COALESCE(c.descripcion, 'CLIENTE NO ASIGNADO') AS cliente, COALESCE(rp.descripcion, 'SIN LÍDER') AS lider,
+                COALESCE(f.descripcion, 'SIN FRENTE') AS frente,
+                CASE WHEN o.id_frente_id = 1 THEN o.id_patio WHEN o.id_frente_id = 2 THEN o.id_embarcacion WHEN o.id_frente_id = 4 THEN o.id_plataforma ELSE NULL END AS id_sitio_oficial,
+                CASE WHEN o.id_frente_id = 1 THEN COALESCE(s_pat.descripcion, 'SIN PATIO') WHEN o.id_frente_id = 2 THEN COALESCE(s_emb.descripcion, 'SIN EMBARCACION') WHEN o.id_frente_id = 4 THEN COALESCE(s_plat.descripcion, 'SIN PLATAFORMA') ELSE 'SIN UBICACIÓN' END AS sitio_oficial,
+                s_pat.descripcion as sitio_pat_desc, s_emb.descripcion as sitio_emb_desc, s_plat.descripcion as sitio_plat_desc,
+                COALESCE(pot.descripcion, 'POR DEFINIR') AS documento,
+                CASE WHEN od.fecha_entrega IS NULL THEN 'NO ENTREGADO' ELSE TO_CHAR(od.fecha_entrega, 'DD/MM/YYYY') END AS fecha,
+                COALESCE(od.archivo, '') AS archivo, od.fecha_entrega AS _fecha_sort, od.estatus_paso_id AS _fid_estatus_paso,
+                o.id_cliente_id AS _fid_cliente, o.id_responsable_proyecto_id AS _fid_lider, o.id_frente_id AS _fid_frente,
+                o.id_patio AS _fid_patio, o.id_embarcacion AS _fid_embarcacion, o.id_plataforma AS _fid_plataforma
+            FROM ot_detalle od
+            INNER JOIN ot o ON od.id_ot_id = o.id
+            LEFT JOIN cliente c ON o.id_cliente_id = c.id
+            LEFT JOIN responsable_proyecto rp ON o.id_responsable_proyecto_id = rp.id
+            LEFT JOIN frente f ON o.id_frente_id = f.id
+            LEFT JOIN paso_ot pot ON od.id_paso_id = pot.id
+            LEFT JOIN sitio s_pat ON o.id_patio = s_pat.id
+            LEFT JOIN sitio s_emb ON o.id_embarcacion = s_emb.id
+            LEFT JOIN sitio s_plat ON o.id_plataforma = s_plat.id
+            WHERE {where_ot}
+        """
+    }
+
+    origenes_seleccionados = filtros.get('origenes', [])
+    if not origenes_seleccionados:
+        origenes_seleccionados = ['PTE', 'OT', 'PROD']
+        
+    consultas_a_unir = [bloques_origen[orig] for orig in origenes_seleccionados if orig in bloques_origen]
+    sql_union = " UNION ALL ".join(consultas_a_unir) if consultas_a_unir else "SELECT 1 WHERE FALSE"
+
+    clausula_from_where = f"""
+        FROM (
+            {sql_union}
+        ) AS T
+    """
+    
+    return clausula_from_where, params
 @login_required
 def fn_centro_consulta(request):
     """
@@ -50,276 +189,42 @@ def fn_api_busqueda_global(request):
 @login_required
 def fn_ejecutar_busqueda_global(request, payload, salto_bd, limite_bd):
     """
-    Ejecuta el bloque SQL maestro dividido en dos pasos.
-    Ahora recibe el 'request' por si necesitas registrar la actividad del usuario.
+    Construye la consulta DataTables reutilizando el Builder Dinámico.
     """
     filtros = payload.get("filtros", {})
+    clausula_from_where, params = _construir_sql_base(filtros)
+    
+    params["limite_bd"] = limite_bd
+    params["salto_bd"] = salto_bd
 
-    origenes = filtros.get("origenes", [])
-    lista_origenes = origenes if origenes else ["PTE", "OT", "PROD"]
-
-    check_entregados = filtros.get("check_entregados")
-    check_pendientes = filtros.get("check_no_entregados")
-
-    filtro_entregado = 1 if check_entregados else (1 if not check_entregados and not check_pendientes else 0)
-    filtro_no_entregado = 1 if check_pendientes else (1 if not check_entregados and not check_pendientes else 0)
-
-    fecha_ini_input = filtros.get("fecha_inicio")
-    fecha_fin_input = filtros.get("fecha_fin")
-    filtro_fechas_activo = 1 if (fecha_ini_input and fecha_fin_input) else 0
-
-    params = {
-        "fecha_ini": fecha_ini_input if fecha_ini_input else "1900-01-01", 
-        "fecha_fin": fecha_fin_input if fecha_fin_input else "2100-12-31",
-        "lider_id": filtros.get("lider_id") if filtros.get("lider_id") else None,
-        "cliente_id": filtros.get("cliente_id") if filtros.get("cliente_id") else None,
-        "frente_id": filtros.get("frente_id") if filtros.get("frente_id") else None,
-        "id_sitio": filtros.get("id_sitio") if filtros.get("id_sitio") else None,
-        "nombre_doc": filtros.get("nombre_documento") if filtros.get("nombre_documento") else None,
-        "estatus_proceso_id": filtros.get("estatus_proceso") if filtros.get("estatus_proceso") else None,
-        "texto": f"%{filtros.get('texto_busqueda', '')}%",
-        "filtro_entregado": filtro_entregado,
-        "filtro_no_entregado": filtro_no_entregado,
-        "buscar_por_frente": filtros.get("buscar_por_frente") if filtros.get("buscar_por_frente") else "1",
-        "tipos_seleccionados": tuple(lista_origenes),
-        "filtro_fechas_activo": filtro_fechas_activo,
-        "limite_bd": limite_bd,
-        "salto_bd": salto_bd
-    }
-
-    clausula_from_where = """
-        FROM (
-            -- [BLOQUE PTE]
-            SELECT
-                pd.id AS id_origen,
-                'PTE' AS tipo,
-                COALESCE(ph.oficio_pte, 'SIN FOLIO') AS folio,
-                COALESCE(c.descripcion, 'CLIENTE NO ASIGNADO') AS cliente,
-                COALESCE(rp.descripcion, 'SIN LÍDER') AS lider,
-                'N/A' AS frente,
-                NULL::integer AS id_sitio_oficial,
-                'NO APLICA' AS sitio_oficial,
-                NULL as sitio_pat_desc,
-                NULL as sitio_emb_desc,
-                NULL as sitio_plat_desc,
-                COALESCE(p.descripcion, 'POR DEFINIR') AS documento,
-                CASE
-                    WHEN pd.fecha_entrega IS NULL
-                        THEN
-                            'NO ENTREGADO'
-                    ELSE TO_CHAR(pd.fecha_entrega, 'DD/MM/YYYY')
-                END AS fecha,
-                COALESCE(pd.archivo, '') AS archivo,
-                pd.fecha_entrega AS _fecha_sort,
-                pd.estatus_paso_id AS _fid_estatus_paso,
-                ph.id_cliente_id AS _fid_cliente,
-                ph.id_responsable_proyecto_id AS _fid_lider,
-                NULL::bigint AS _fid_frente,
-                NULL::integer AS _fid_patio,
-                NULL::integer AS _fid_embarcacion,
-                NULL::integer AS _fid_plataforma
-            FROM
-                pte_detalle pd
-            INNER JOIN pte_header ph ON
-                pd.id_pte_header_id = ph.id
-            LEFT JOIN cliente c ON
-                ph.id_cliente_id = c.id
-            LEFT JOIN responsable_proyecto rp ON
-                ph.id_responsable_proyecto_id = rp.id
-            LEFT JOIN paso p ON
-                pd.id_paso_id = p.id
-            WHERE
-                ph.estatus != 0
-
-            UNION ALL
-
-            -- [BLOQUE OT]
-            SELECT
-                od.id AS id_origen,
-                'OT' AS tipo,
-                COALESCE(o.orden_trabajo, 'SIN OT') AS folio,
-                COALESCE(c.descripcion, 'CLIENTE NO ASIGNADO') AS cliente,
-                COALESCE(rp.descripcion, 'SIN LÍDER') AS lider,
-                COALESCE(f.descripcion, 'SIN FRENTE') AS frente,
-                CASE
-                    WHEN o.id_frente_id = 1
-                        THEN
-                            o.id_patio
-                    WHEN o.id_frente_id = 2
-                        THEN
-                            o.id_embarcacion
-                    WHEN o.id_frente_id = 4
-                        THEN o.id_plataforma
-                    ELSE
-                        NULL
-                END AS id_sitio_oficial,
-                CASE
-                    WHEN o.id_frente_id = 1
-                        THEN
-                            COALESCE(s_pat.descripcion, 'SIN PATIO')
-                    WHEN o.id_frente_id = 2
-                        THEN
-                            COALESCE(s_emb.descripcion, 'SIN EMBARCACION')
-                    WHEN o.id_frente_id = 4
-                        THEN
-                            COALESCE(s_plat.descripcion, 'SIN PLATAFORMA')
-                    ELSE 'SIN UBICACIÓN'
-                END AS sitio_oficial,
-                s_pat.descripcion as sitio_pat_desc,
-                s_emb.descripcion as sitio_emb_desc,
-                s_plat.descripcion as sitio_plat_desc,
-                COALESCE(pot.descripcion, 'POR DEFINIR') AS documento,
-                CASE
-                    WHEN od.fecha_entrega IS NULL
-                        THEN
-                            'NO ENTREGADO'
-                    ELSE
-                        TO_CHAR(od.fecha_entrega, 'DD/MM/YYYY')
-                END AS fecha,
-                COALESCE(od.archivo, '') AS archivo,
-                od.fecha_entrega AS _fecha_sort,
-                od.estatus_paso_id AS _fid_estatus_paso,
-                o.id_cliente_id AS _fid_cliente,
-                o.id_responsable_proyecto_id AS _fid_lider,
-                o.id_frente_id AS _fid_frente,
-                o.id_patio AS _fid_patio,
-                o.id_embarcacion AS _fid_embarcacion,
-                o.id_plataforma AS _fid_plataforma
-            FROM
-                ot_detalle od
-            INNER JOIN ot o ON
-                od.id_ot_id = o.id
-            LEFT JOIN cliente c ON
-                o.id_cliente_id = c.id
-            LEFT JOIN responsable_proyecto rp ON
-                o.id_responsable_proyecto_id = rp.id
-            LEFT JOIN frente f ON
-                o.id_frente_id = f.id
-            LEFT JOIN paso_ot pot ON
-                od.id_paso_id = pot.id
-            LEFT JOIN sitio s_pat ON
-                o.id_patio = s_pat.id
-            LEFT JOIN sitio s_emb ON
-                o.id_embarcacion = s_emb.id
-            LEFT JOIN sitio s_plat ON
-                o.id_plataforma = s_plat.id
-            WHERE
-                o.estatus = 1
-        ) AS T
-        WHERE
-            T.tipo IN %(tipos_seleccionados)s AND
-            (%(lider_id)s IS NULL OR T._fid_lider = %(lider_id)s) AND
-            (%(cliente_id)s IS NULL OR T._fid_cliente = %(cliente_id)s)AND
-            (%(nombre_doc)s IS NULL OR T.documento = %(nombre_doc)s) AND
-            (T.documento ILIKE %(texto)s OR T.folio ILIKE %(texto)s) AND
-            (%(estatus_proceso_id)s IS NULL OR T._fid_estatus_paso = %(estatus_proceso_id)s) AND
-            (CASE
-                WHEN %(id_sitio)s IS NULL
-                    THEN (%(frente_id)s IS NULL OR T._fid_frente = %(frente_id)s)
-                WHEN %(buscar_por_frente)s = '1'
-                    THEN
-                        (T._fid_frente = %(frente_id)s AND
-                        ((%(frente_id)s = 1 AND
-                        T._fid_patio = %(id_sitio)s::int) OR (%(frente_id)s = 2 AND
-                        T._fid_embarcacion = %(id_sitio)s::int) OR (%(frente_id)s = 4 AND
-                        T._fid_plataforma = %(id_sitio)s::int)))
-                ELSE
-                    (T._fid_patio = %(id_sitio)s::int OR
-                    T._fid_embarcacion = %(id_sitio)s::int OR
-                    T._fid_plataforma = %(id_sitio)s::int)
-            END)
-            AND (
-                (%(filtro_entregado)s = 1 AND
-                LENGTH(TRIM(T.archivo)) > 5)
-                OR
-                (%(filtro_no_entregado)s = 1 AND
-                (T.archivo IS NULL OR LENGTH(TRIM(T.archivo)) <= 5))
-            )
-            AND (
-                %(filtro_fechas_activo)s = 0
-                OR
-                (T._fecha_sort BETWEEN %(fecha_ini)s::date AND
-                %(fecha_fin)s::date)
-            )
-    """
-
-    sql_conteo = f"""
-    SELECT COUNT(*) AS total_registros
-    {clausula_from_where}
-    """
-
+    sql_conteo = f"SELECT COUNT(*) AS total_registros {clausula_from_where}"
+    
     sql_datos = f"""
     SELECT
-        T.id_origen,
-        T.tipo,
-        T.folio,
-        T.cliente,
-        T.lider,
-        T.frente,
-        T._fid_estatus_paso AS estatus_paso_id,
-
+        T.id_origen, T.tipo, T.folio, T.cliente, T.lider, T.frente, T._fid_estatus_paso AS estatus_paso_id,
         CASE
-            WHEN
-                %(buscar_por_frente)s = '0' AND
-                %(id_sitio)s IS NOT NULL AND
-                T._fid_plataforma = %(id_sitio)s::int
-                    THEN T._fid_plataforma
-            WHEN
-                %(buscar_por_frente)s = '0' AND
-                %(id_sitio)s IS NOT NULL AND
-                T._fid_embarcacion = %(id_sitio)s::int
-                    THEN
-                        T._fid_embarcacion
-            WHEN
-                %(buscar_por_frente)s = '0' AND
-                %(id_sitio)s IS NOT NULL AND
-                T._fid_patio = %(id_sitio)s::int
-                    THEN
-                        T._fid_patio
-            ELSE
-                T.id_sitio_oficial
+            WHEN %(buscar_por_frente)s = '0' AND %(id_sitio)s IS NOT NULL AND T._fid_plataforma = %(id_sitio)s::int THEN T._fid_plataforma
+            WHEN %(buscar_por_frente)s = '0' AND %(id_sitio)s IS NOT NULL AND T._fid_embarcacion = %(id_sitio)s::int THEN T._fid_embarcacion
+            WHEN %(buscar_por_frente)s = '0' AND %(id_sitio)s IS NOT NULL AND T._fid_patio = %(id_sitio)s::int THEN T._fid_patio
+            ELSE T.id_sitio_oficial
         END AS id_sitio,
-
         CASE
-            WHEN
-                %(buscar_por_frente)s = '0' AND
-                %(id_sitio)s IS NOT NULL AND
-                T._fid_plataforma = %(id_sitio)s::int
-                    THEN
-                        T.sitio_plat_desc
-            WHEN
-                %(buscar_por_frente)s = '0' AND
-                %(id_sitio)s IS NOT NULL AND
-                T._fid_embarcacion = %(id_sitio)s::int
-                    THEN
-                        T.sitio_emb_desc
-            WHEN
-                %(buscar_por_frente)s = '0' AND
-                %(id_sitio)s IS NOT NULL AND
-                T._fid_patio = %(id_sitio)s::int
-                    THEN
-                        T.sitio_pat_desc
-            ELSE
-                T.sitio_oficial
+            WHEN %(buscar_por_frente)s = '0' AND %(id_sitio)s IS NOT NULL AND T._fid_plataforma = %(id_sitio)s::int THEN T.sitio_plat_desc
+            WHEN %(buscar_por_frente)s = '0' AND %(id_sitio)s IS NOT NULL AND T._fid_embarcacion = %(id_sitio)s::int THEN T.sitio_emb_desc
+            WHEN %(buscar_por_frente)s = '0' AND %(id_sitio)s IS NOT NULL AND T._fid_patio = %(id_sitio)s::int THEN T.sitio_pat_desc
+            ELSE T.sitio_oficial
         END AS sitio,
-
-        T.documento,
-        T.fecha,
-        T.archivo
+        T.documento, T.fecha, T.archivo
     {clausula_from_where}
-    ORDER BY
-        T._fecha_sort ASC NULLS LAST
-    LIMIT
-        %(limite_bd)s OFFSET %(salto_bd)s;
+    ORDER BY T._fecha_sort ASC NULLS LAST
+    LIMIT %(limite_bd)s OFFSET %(salto_bd)s;
     """
 
     resultado_conteo = ejecutar_query_sql(sql_conteo, params)
     total_filtrados = resultado_conteo[0]["total_registros"] if resultado_conteo else 0
 
     resultados_paginados = ejecutar_query_sql(sql_datos, params)
-
     return resultados_paginados, total_filtrados
-
 
 @login_required
 def obtener_frente_afectacion_dos(solicitud):
@@ -404,216 +309,29 @@ def obtener_catalogo_documentos_unificado(request):
         return JsonResponse([], safe=False)
 
 def fn_ejecutar_query_graficas(payload):
-    filtros = payload.get("filtros", {})
-
-    origenes = filtros.get("origenes", [])
-    lista_origenes = origenes if origenes else ["PTE", "OT", "PROD"]
-
-    check_entregados = filtros.get("check_entregados")
-    check_pendientes = filtros.get("check_no_entregados")
-
-    filtro_entregado = 1 if check_entregados else (1 if not check_entregados and not check_pendientes else 0)
-    filtro_no_entregado = 1 if check_pendientes else (1 if not check_entregados and not check_pendientes else 0)
-
-    fecha_ini_input = filtros.get("fecha_inicio")
-    fecha_fin_input = filtros.get("fecha_fin")
-    filtro_fechas_activo = 1 if (fecha_ini_input and fecha_fin_input) else 0
-    texto_busqueda = filtros.get("texto_busqueda", "")
-
-    params = {
-        "fecha_ini": fecha_ini_input if fecha_ini_input else "1900-01-01", 
-        "fecha_fin": fecha_fin_input if fecha_fin_input else "2100-12-31",
-        "lider_id": filtros.get("lider_id") if filtros.get("lider_id") else None,
-        "cliente_id": filtros.get("cliente_id") if filtros.get("cliente_id") else None,
-        "frente_id": filtros.get("frente_id") if filtros.get("frente_id") else None,
-        "id_sitio": filtros.get("id_sitio") if filtros.get("id_sitio") else None,
-        "nombre_doc": filtros.get("nombre_documento") if filtros.get("nombre_documento") else None,
-        "estatus_proceso_id": filtros.get("estatus_proceso") if filtros.get("estatus_proceso") else None,
-        "texto": f"%{texto_busqueda}%",
-        "filtro_entregado": filtro_entregado,
-        "filtro_no_entregado": filtro_no_entregado,
-        "buscar_por_frente": filtros.get("buscar_por_frente") if filtros.get("buscar_por_frente") else "1",
-        "tipos_seleccionados": tuple(lista_origenes),
-        "filtro_fechas_activo": filtro_fechas_activo
-    }
-
-    sql = """
-    SELECT
-        T.lider,
-        T.tipo,
-        T.documento,
-        T.folio,
-        T.frente,
-        T.cliente,
-        T._fid_estatus_paso AS estatus_paso_id,
-
-        CASE
-            WHEN
-                %(buscar_por_frente)s = '0' AND
-                %(id_sitio)s IS NOT NULL AND
-                T._fid_plataforma = %(id_sitio)s::int
-                THEN
-                    T.sitio_plat_desc
-            WHEN
-                %(buscar_por_frente)s = '0' AND
-                %(id_sitio)s IS NOT NULL AND
-                T._fid_embarcacion = %(id_sitio)s::int
-                THEN
-                    T.sitio_emb_desc
-            WHEN
-                %(buscar_por_frente)s = '0' AND
-                %(id_sitio)s IS NOT NULL AND
-                T._fid_patio = %(id_sitio)s::int
-            THEN
-                T.sitio_pat_desc
-            ELSE
-                T.sitio_oficial
-        END AS sitio,
-
-        CASE
-            WHEN T.archivo IS NOT NULL AND LENGTH(TRIM(T.archivo)) > 5
-                THEN 1
-                ELSE 0
-        END AS tiene_archivo
-
-    FROM (
-        -- [BLOQUE PTE]
-        SELECT
-            pd.id AS id_origen,
-            'PTE' AS tipo,
-            COALESCE(ph.oficio_pte, 'SIN FOLIO') AS folio,
-            COALESCE(c.descripcion, 'CLIENTE NO ASIGNADO') AS cliente,
-            COALESCE(rp.descripcion, 'SIN LÍDER') AS lider,
-            'N/A' AS frente,
-            NULL::integer AS id_sitio_oficial,
-            'NO APLICA' AS sitio_oficial,
-            NULL as sitio_pat_desc,
-            NULL as sitio_emb_desc,
-            NULL as sitio_plat_desc,
-            COALESCE(p.descripcion, 'POR DEFINIR') AS documento,
-            COALESCE(pd.archivo, '') AS archivo,
-            pd.fecha_entrega AS _fecha_sort,
-            pd.estatus_paso_id AS _fid_estatus_paso,
-            ph.id_cliente_id AS _fid_cliente,
-            ph.id_responsable_proyecto_id AS _fid_lider,
-            NULL::bigint AS _fid_frente,
-            NULL::integer AS _fid_patio,
-            NULL::integer AS _fid_embarcacion,
-            NULL::integer AS _fid_plataforma
-        FROM
-            pte_detalle pd
-        INNER JOIN pte_header ph ON
-            pd.id_pte_header_id = ph.id
-        LEFT JOIN cliente c ON
-            ph.id_cliente_id = c.id
-        LEFT JOIN responsable_proyecto rp ON
-            ph.id_responsable_proyecto_id = rp.id
-        LEFT JOIN paso p ON
-            pd.id_paso_id = p.id
-        WHERE
-            ph.estatus != 0
-
-        UNION ALL
-
-        -- [BLOQUE OT]
-        SELECT
-            od.id AS id_origen,
-            'OT' AS tipo,
-            COALESCE(o.orden_trabajo, 'SIN OT') AS folio,
-            COALESCE(c.descripcion, 'CLIENTE NO ASIGNADO') AS cliente,
-            COALESCE(rp.descripcion, 'SIN LÍDER') AS lider,
-            COALESCE(f.descripcion, 'SIN FRENTE') AS frente,
-            CASE
-                WHEN o.id_frente_id = 1
-                    THEN o.id_patio
-                WHEN o.id_frente_id = 2
-                    THEN o.id_embarcacion
-                WHEN o.id_frente_id = 4
-                    THEN o.id_plataforma
-                ELSE NULL
-            END AS id_sitio_oficial,
-            CASE
-                WHEN o.id_frente_id = 1
-                    THEN COALESCE(s_pat.descripcion, 'SIN PATIO')
-                WHEN o.id_frente_id = 2
-                    THEN COALESCE(s_emb.descripcion, 'SIN EMBARCACION')
-                WHEN o.id_frente_id = 4
-                    THEN COALESCE(s_plat.descripcion, 'SIN PLATAFORMA')
-                ELSE 'SIN UBICACIÓN'
-            END AS sitio_oficial,
-            s_pat.descripcion as sitio_pat_desc,
-            s_emb.descripcion as sitio_emb_desc,
-            s_plat.descripcion as sitio_plat_desc,
-            COALESCE(pot.descripcion, 'POR DEFINIR') AS documento,
-            COALESCE(od.archivo, '') AS archivo,
-            od.fecha_entrega AS _fecha_sort,
-            od.estatus_paso_id AS _fid_estatus_paso,
-            o.id_cliente_id AS _fid_cliente,
-            o.id_responsable_proyecto_id AS _fid_lider,
-            o.id_frente_id AS _fid_frente,
-            o.id_patio AS _fid_patio,
-            o.id_embarcacion AS _fid_embarcacion,
-            o.id_plataforma AS _fid_plataforma
-        FROM
-            ot_detalle od
-        INNER JOIN ot o ON
-            od.id_ot_id = o.id
-        LEFT JOIN cliente c ON
-            o.id_cliente_id = c.id
-        LEFT JOIN responsable_proyecto rp ON
-            o.id_responsable_proyecto_id = rp.id
-        LEFT JOIN frente f ON
-            o.id_frente_id = f.id
-        LEFT JOIN paso_ot pot ON
-            od.id_paso_id = pot.id
-        LEFT JOIN sitio s_pat ON
-            o.id_patio = s_pat.id
-        LEFT JOIN sitio s_emb ON
-            o.id_embarcacion
-            = s_emb.id
-        LEFT JOIN sitio s_plat ON
-            o.id_plataforma = s_plat.id
-        WHERE
-            o.estatus = 1
-    ) AS T
-
-    WHERE
-        T.tipo IN %(tipos_seleccionados)s AND
-        (%(lider_id)s IS NULL OR T._fid_lider = %(lider_id)s) AND
-        (%(cliente_id)s IS NULL OR T._fid_cliente = %(cliente_id)s) AND
-        (%(nombre_doc)s IS NULL OR T.documento = %(nombre_doc)s) AND
-        (T.documento ILIKE %(texto)s OR T.folio ILIKE %(texto)s) AND
-        (%(estatus_proceso_id)s IS NULL OR T._fid_estatus_paso = %(estatus_proceso_id)s)
-
-        AND (CASE
-            WHEN %(id_sitio)s IS NULL
-                THEN (%(frente_id)s IS NULL OR T._fid_frente = %(frente_id)s)
-            WHEN %(buscar_por_frente)s = '1'
-                THEN
-                    (T._fid_frente = %(frente_id)s AND
-                    ((%(frente_id)s = 1 AND
-                    T._fid_patio = %(id_sitio)s::int) OR (%(frente_id)s = 2 AND
-                    T._fid_embarcacion = %(id_sitio)s::int) OR (%(frente_id)s = 4 AND
-                    T._fid_plataforma = %(id_sitio)s::int)))
-            ELSE
-                (T._fid_patio = %(id_sitio)s::int OR
-                T._fid_embarcacion = %(id_sitio)s::int OR
-                T._fid_plataforma = %(id_sitio)s::int)
-        END)
-
-        AND (
-            (%(filtro_entregado)s = 1 AND LENGTH(TRIM(T.archivo)) > 5)
-            OR
-            (%(filtro_no_entregado)s = 1 AND (T.archivo IS NULL OR LENGTH(TRIM(T.archivo)) <= 5))
-        )
-
-        AND (
-            %(filtro_fechas_activo)s = 0
-            OR
-            (T._fecha_sort BETWEEN %(fecha_ini)s::date AND %(fecha_fin)s::date)
-        )
     """
-    return ejecutar_query_sql(sql, params)
+    Construye la consulta del Dashboard reutilizando el Builder Dinámico.
+    """
+    filtros = payload.get("filtros", {})
+    clausula_from_where, params = _construir_sql_base(filtros)
+
+    sql_graficas = f"""
+    SELECT
+        T.lider, T.tipo, T.documento, T.folio, T.frente, T.cliente, T._fid_estatus_paso AS estatus_paso_id,
+        CASE
+            WHEN %(buscar_por_frente)s = '0' AND %(id_sitio)s IS NOT NULL AND T._fid_plataforma = %(id_sitio)s::int THEN T.sitio_plat_desc
+            WHEN %(buscar_por_frente)s = '0' AND %(id_sitio)s IS NOT NULL AND T._fid_embarcacion = %(id_sitio)s::int THEN T.sitio_emb_desc
+            WHEN %(buscar_por_frente)s = '0' AND %(id_sitio)s IS NOT NULL AND T._fid_patio = %(id_sitio)s::int THEN T.sitio_pat_desc
+            ELSE T.sitio_oficial
+        END AS sitio,
+        CASE
+            WHEN T.archivo IS NOT NULL AND LENGTH(TRIM(T.archivo)) > 5 THEN 1
+            ELSE 0
+        END AS tiene_archivo
+    {clausula_from_where}
+    """
+    
+    return ejecutar_query_sql(sql_graficas, params)
 
 @login_required
 def fn_api_obtener_dashboard(request):
