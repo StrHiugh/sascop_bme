@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
 from ..models import OTE, ImportacionAnexo, PartidaAnexoImportada, Produccion, ReporteMensual, Sitio, ReporteDiario, Estatus, ConceptoMaestro, PartidaProyectada, CicloGuardia, Superintendente, RegistroGPU, CronogramaVersion, TareaCronograma, AvanceCronograma
 from django.http import JsonResponse
+from ..registro_actividad import registrar_actividad
 from itertools import chain
 from django.db.models import Q, Case, F, When, IntegerField, Value, CharField, Sum, OuterRef, Subquery, Max
 from django.db.models.functions import Coalesce
@@ -579,6 +580,7 @@ def obtener_partidas_produccion(request):
 
 @login_required
 @require_http_methods(["POST"])
+@registrar_actividad
 def guardar_produccion_masiva(request):
     """
     Guarda producción masiva corrigiendo el cálculo del acumulado en días bloqueados.

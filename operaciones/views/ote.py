@@ -3,6 +3,7 @@ from django.http import JsonResponse, HttpResponse
 from django.utils import timezone
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
+from ..models import CronogramaVersion, TareaCronograma, DependenciaTarea
 from django.views.decorators.http import require_http_methods
 from django.shortcuts import render, get_object_or_404
 from ..models import OTE, OTDetalle, PasoOt, ImportacionAnexo, PartidaAnexoImportada, UnidadMedida, ConceptoMaestro, PartidaProyectada
@@ -1436,6 +1437,188 @@ def importar_anexo_ot(request):
     return JsonResponse({'exito': False, 'tipo_aviso':'advertencia', 'detalles': 'Método no permitido'})
     
 
+
+
+@csrf_exempt
+@login_required
+def importar_mpp_ot(request):
+    """
+    Procesa un archivo .mpp (Microsoft Project) y lo guarda como una nueva
+    CronogramaVersion, poblando TareaCronograma y DependenciaTarea.
+    Requiere Java instalado (JDK) y las librerías mpxj + jpype1.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'exito': False, 'tipo_aviso': 'advertencia', 'detalles': 'Método no permitido'})
+
+    ot_id = request.POST.get('ot_id')
+    archivo = request.FILES.get('archivo')
+
+    if not ot_id or not archivo:
+        return JsonResponse({'exito': False, 'tipo_aviso': 'advertencia', 'detalles': 'Faltan datos (OT o Archivo)'})
+
+    if not archivo.name.lower().endswith('.mpp'):
+        return JsonResponse({'exito': False, 'tipo_aviso': 'advertencia', 'detalles': 'El archivo debe tener extensión .mpp'})
+
+    try:
+        ot = OTE.objects.get(id=ot_id)
+    except OTE.DoesNotExist:
+        return JsonResponse({'exito': False, 'tipo_aviso': 'error', 'detalles': 'OT no encontrada'})
+
+    try:
+        import jpype
+        import mpxj
+    except ImportError as e:
+        return JsonResponse({'exito': False, 'tipo_aviso': 'error', 'detalles': f'Librería no instalada: {str(e)}. Instale jpype1 y mpxj.'})
+
+    # =========================================================================
+    # INICIO DE JVM (Basado en la nueva documentación de mpxj)
+    # =========================================================================
+    try:
+        if not jpype.isJVMStarted():
+            # Extraemos la ruta del JVM automáticamente para evitar el error de JAVA_HOME
+            jvm_path = jpype.getDefaultJVMPath()
+            
+            # Pasamos explícitamente el jvm_path a la función startJVM
+            jpype.startJVM(jvm_path, "-Djava.awt.headless=true", "-Xmx1024m")
+    except Exception as e:
+        return JsonResponse({'exito': False, 'tipo_aviso': 'error', 'detalles': f'Error al iniciar JVM. Asegúrese de tener el JDK de Java instalado. Detalle: {str(e)}'})
+
+    # =========================================================================
+    # PROCESAMIENTO DEL ARCHIVO MPP
+    # =========================================================================
+    try:
+        try:
+            from org.mpxj.reader import UniversalProjectReader
+            from org.mpxj import RelationType
+        except ImportError:
+            from net.sf.mpxj.reader import UniversalProjectReader
+            from net.sf.mpxj import RelationType
+
+        version = CronogramaVersion.objects.create(
+            id_ot=ot,
+            nombre_version=archivo.name,
+            archivo_mpp=archivo,
+            es_vigente=True
+        )
+        CronogramaVersion.objects.filter(id_ot=ot, es_vigente=True).exclude(pk=version.pk).update(es_vigente=False)
+
+        reader = UniversalProjectReader()
+        project = reader.read(version.archivo_mpp.path)
+
+        def java_date_to_py(j_date):
+            if not j_date:
+                return None
+            try:
+                # Si es versión vieja (java.util.Date)
+                if hasattr(j_date, 'getTime'):
+                    return datetime.fromtimestamp(j_date.getTime() / 1000.0).date()
+                # Si es versión nueva (java.time.LocalDateTime o java.time.LocalDate)
+                elif hasattr(j_date, 'getYear') and hasattr(j_date, 'getMonthValue'):
+                    from datetime import date
+                    return date(j_date.getYear(), j_date.getMonthValue(), j_date.getDayOfMonth())
+            except Exception:
+                pass
+            return None
+
+        # Extraemos las propiedades del proyecto para obtener las fechas generales
+        properties = project.getProjectProperties()
+        
+        version.fecha_inicio_proyecto = java_date_to_py(properties.getStartDate())
+        version.fecha_fin_proyecto = java_date_to_py(properties.getFinishDate())
+        version.save()
+
+        tasks_to_create = []
+        dependencies_to_create = []
+
+        for task in project.getTasks():
+            if task.getID() is None:
+                continue
+
+            padre = task.getParentTask()
+            padre_uid = padre.getUniqueID() if padre and padre.getID() is not None else None
+
+            recursos_str = ''
+            assignments = task.getResourceAssignments()
+            if assignments:
+                nombres = []
+                for assignment in assignments:
+                    res = assignment.getResource()
+                    if res:
+                        nombres.append(str(res.getName()))
+                recursos_str = ', '.join(nombres)
+
+            duracion = task.getDuration()
+            duracion_dias = float(duracion.getDuration()) if duracion else 0.0
+            pct = task.getPercentageComplete()
+            pct_val = float(pct) if pct is not None else 0.0
+
+            tasks_to_create.append(TareaCronograma(
+                version=version,
+                uid_project=task.getUniqueID(),
+                id_project=task.getID(),
+                wbs=str(task.getWBS() or ''),
+                nivel_esquema=task.getOutlineLevel() or 0,
+                es_resumen=task.hasChildTasks(),
+                padre_uid=padre_uid,
+                nombre=str(task.getName() or ''),
+                fecha_inicio=java_date_to_py(task.getStart()),
+                fecha_fin=java_date_to_py(task.getFinish()),
+                duracion_dias=duracion_dias,
+                porcentaje_mpp=pct_val,
+                porcentaje_completado=pct_val,
+                recursos=recursos_str,
+            ))
+
+            predecessors = task.getPredecessors()
+            if predecessors:
+                for rel in predecessors:
+                    tipo_rel = 'FS'
+                    java_type = rel.getType()
+                    if java_type == RelationType.START_START:
+                        tipo_rel = 'SS'
+                    elif java_type == RelationType.FINISH_FINISH:
+                        tipo_rel = 'FF'
+                    elif java_type == RelationType.START_FINISH:
+                        tipo_rel = 'SF'
+
+                    # MPXJ > 10.x usa getSourceTask() para obtener la tarea real de la que se depende
+                    # Agregamos soporte a versiones viejas por si acaso
+                    predecesor_task = None
+                    if hasattr(rel, 'getSourceTask'):
+                        predecesor_task = rel.getSourceTask()
+                    elif hasattr(rel, 'getTargetTask'):
+                        predecesor_task = rel.getTargetTask()
+                    elif hasattr(rel, 'getTask'):
+                        predecesor_task = rel.getTask()
+
+                    if predecesor_task:
+                        lag = rel.getLag()
+                        lag_dias = float(lag.getDuration()) if lag else 0.0
+                        dependencies_to_create.append(DependenciaTarea(
+                            version=version,
+                            tarea_predecesora_uid=predecesor_task.getUniqueID(),
+                            tarea_sucesora_uid=task.getUniqueID(),
+                            tipo=tipo_rel,
+                            lag_dias=lag_dias,
+                        ))
+
+        with transaction.atomic():
+            TareaCronograma.objects.filter(version=version).delete()
+            DependenciaTarea.objects.filter(version=version).delete()
+            TareaCronograma.objects.bulk_create(tasks_to_create, batch_size=2000)
+            DependenciaTarea.objects.bulk_create(dependencies_to_create, batch_size=2000)
+
+        return JsonResponse({
+            'exito': True,
+            'tipo_aviso': 'exito',
+            'detalles': f'Programa importado: {len(tasks_to_create)} tareas procesadas.',
+            'version_id': version.pk,
+        })
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'exito': False, 'tipo_aviso': 'error', 'detalles': f'Error al procesar archivo .mpp: {str(e)}'})
 
 
 def dashboard_stacked_view(request):

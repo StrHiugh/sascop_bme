@@ -193,6 +193,8 @@ class TareaCronograma(models.Model):
     fecha_fin = models.DateField(null=True)
     duracion_dias = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     porcentaje_mpp = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    porcentaje_completado = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    recursos = models.TextField(blank=True, default='')
 
     class Meta:
         db_table = 'importacion_cronograma_tarea'
@@ -211,3 +213,21 @@ class AvanceCronograma(models.Model):
 
     class Meta:
         db_table = 'importacion_cronograma_avance'
+
+class DependenciaTarea(models.Model):
+    """
+    Relaciones de precedencia entre tareas del cronograma.
+    """
+    version = models.ForeignKey(CronogramaVersion, on_delete=models.CASCADE, related_name='dependencias')
+    tarea_predecesora_uid = models.IntegerField()
+    tarea_sucesora_uid = models.IntegerField()
+    tipo = models.CharField(max_length=2, default='FS', choices=[
+        ('FS', 'Fin a Inicio'),
+        ('SS', 'Inicio a Inicio'),
+        ('FF', 'Fin a Fin'),
+        ('SF', 'Inicio a Fin'),
+    ])
+    lag_dias = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+
+    class Meta:
+        db_table = 'importacion_cronograma_dependencia'

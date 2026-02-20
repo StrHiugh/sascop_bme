@@ -49,6 +49,7 @@ urlpatterns = [
     path('ot/obtener_progreso_general_ot/', ote.obtener_progreso_general_ot, name='obtener_progreso_general_ot'),
     path('ot/datatable-importaciones/', ote.datatable_importaciones, name='datatable_importaciones'),
     path('ot/importar_anexo_ot/', ote.importar_anexo_ot, name='importar_anexo_ot'),
+    path('ot/importar-mpp/', ote.importar_mpp_ot, name='importar_mpp_ot'),
     path('ot/dashboard_stacked_view/', ote.dashboard_stacked_view, name='dashboard_stacked_view'),
     
 

@@ -534,14 +534,22 @@ $(document).ready(function() {
                 valores: valoresDias
             };
         });
-
+        const numero_partidas = partidasProcesadas.length;
+        let log = new RegistroActividad(10,otSeleccionada.id_ot,"REGISTRAR")
+        log.agregar_actividad({
+            nombre: "Agregó",
+            valor_actual: "",
+            valor_anterior: "",
+            detalle: `produccion a la ot: <b>${otSeleccionada.ot}</b> en el frente: <b>${$('#select-sitio option:selected').text()}</b> en el mes: <b>${$('#filtro-mes option:selected').text()}</b> y año: <b>${$('#filtro-anio').val()}</b>, tipo de tiempo: <b>${tipoTiempoActivo}</b>`
+        })
         const datos = {
             id_ot: otSeleccionada.id_ot,
             mes: $('#filtro-mes').val(),
             anio: $('#filtro-anio').val(),
             tipo_tiempo: tipoTiempoActivo,
             partidas: partidasProcesadas,
-            id_sitio: $('#select-sitio').val()
+            id_sitio: $('#select-sitio').val(),
+            registro_actividad: JSON.stringify(log.actividad),
         };
 
         iniciarLoader();
@@ -1443,7 +1451,7 @@ $(document).ready(function() {
             el: el,
             scrollX: true,
             scrollY: true,
-            bodyHeight: 360,
+            bodyHeight: 320,
             header: {
                 height: 60,
                 complexColumns: mergeHeaders
@@ -1460,9 +1468,7 @@ $(document).ready(function() {
             data: []
         });
 
-        // Evento de cambio para recalcular totales o actualizar gráficas
         gridAvances.on('afterChange', (ev) => {
-            // Aquí iría lógica para recalcular curva S localmente si se desea
             console.log('Cambio en grid avances:', ev);
         });
     }
