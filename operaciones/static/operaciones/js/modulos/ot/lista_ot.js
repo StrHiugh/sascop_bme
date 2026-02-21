@@ -377,8 +377,12 @@ $(document).ready(function () {
                 $("#descripcion_trabajo").val(ot.descripcion_trabajo);
                 $("#id_frente").val(ot.id_frente);
                 $("#plazo_dias").val(ot.plazo_dias);
-                ot.id_tipo_id == 4 ? $('#id_tipo').val('4').trigger('change') : $('#id_tipo').val('5').trigger('change');
-                $('#id_tipo option[value="5"]').prop('disabled', true);
+                const esTipo4 = ot.id_tipo_id == 4;
+                $('#id_tipo')
+                    .val(esTipo4 ? '4' : '5')
+                    .find('option[value="4"]').prop('disabled', !esTipo4).end()
+                    .find('option[value="5"]').prop('disabled', esTipo4)
+                    .trigger('change');
                 $("#total_homologado").val(ot.total_homologado);
                 $("#oficio_ot").val(ot.oficio_ot);
                 $("#comentario_general").val(ot.comentario);
