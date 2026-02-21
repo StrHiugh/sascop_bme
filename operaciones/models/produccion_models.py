@@ -168,9 +168,9 @@ class CronogramaVersion(models.Model):
     """
     id_ot = models.ForeignKey(OTE, on_delete=models.CASCADE, related_name='cronogramas')
     nombre_version = models.CharField(max_length=150)
-    archivo_mpp = models.FileField(upload_to='cronogramas/')
+    archivo_mpp = models.FileField(upload_to='operaciones/mpps/')
     fecha_carga = models.DateTimeField(auto_now_add=True)
-    es_vigente = models.BooleanField(default=True)
+    es_activo = models.BooleanField(default=True)
     fecha_inicio_proyecto = models.DateField(null=True, blank=True)
     fecha_fin_proyecto = models.DateField(null=True, blank=True)
 
