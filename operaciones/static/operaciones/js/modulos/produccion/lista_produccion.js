@@ -422,8 +422,6 @@ $(document).ready(function() {
     });
 
     $('#btn-confirmar-add-partida').on('click', function() {
-        const volumen = parseFloat($('#input-volumen-autorizar').val());
-
         if (!productoSeleccionadoCatalogo) {
             aviso("error", "Debe seleccionar un producto del catálogo");
             return;
@@ -436,7 +434,6 @@ $(document).ready(function() {
             data: {
                 id_ot: otSeleccionada.id_ot,
                 id_producto: productoSeleccionadoCatalogo.id,
-                volumen: volumen
             },
             headers: { 'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val() },
             success: function(res) {

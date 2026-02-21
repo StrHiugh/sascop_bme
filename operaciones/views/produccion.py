@@ -873,7 +873,6 @@ def vincular_partida_ot(request):
 
     id_ot = request.POST.get('id_ot')
     id_concepto = request.POST.get('id_producto') 
-    volumen = request.POST.get('volumen', 0)
 
     try:
         importacion = ImportacionAnexo.objects.filter(ot_id=id_ot, es_activo=True).first()
@@ -909,7 +908,7 @@ def vincular_partida_ot(request):
             id_partida=codigo_partida,
             descripcion_concepto=concepto.descripcion,
             unidad_medida=concepto.unidad_medida,
-            volumen_proyectado=volumen,
+            volumen_proyectado=0,
             precio_unitario_mn=concepto.precio_unitario_mn,
             precio_unitario_usd=concepto.precio_unitario_usd,
             orden_fila=ultimo_orden,
