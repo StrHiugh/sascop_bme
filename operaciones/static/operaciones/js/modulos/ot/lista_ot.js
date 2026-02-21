@@ -377,7 +377,7 @@ $(document).ready(function () {
                 $("#descripcion_trabajo").val(ot.descripcion_trabajo);
                 $("#id_frente").val(ot.id_frente);
                 $("#plazo_dias").val(ot.plazo_dias);
-                $('#id_tipo').val('4').trigger('change');
+                ot.id_tipo_id == 4 ? $('#id_tipo').val('4').trigger('change') : $('#id_tipo').val('5').trigger('change');
                 $('#id_tipo option[value="5"]').prop('disabled', true);
                 $("#total_homologado").val(ot.total_homologado);
                 $("#oficio_ot").val(ot.oficio_ot);
@@ -1234,13 +1234,13 @@ $(document).ready(function () {
                                         <label for="archivoMPP" class="form-label fw-bold">Seleccione el archivo de Microsoft Project (.mpp)</label>
                                         <input class="form-control" type="file" id="archivoMPP" name="archivo" accept=".mpp">
                                         <div class="text-muted mt-1 ms-1" style="font-size: 12px;">
-                                            <i class="fas fa-info-circle"></i> Solo se aceptan archivos con extensión <b>.mpp</b> (Microsoft Project).
+                                            <i class="fas fa-info-circle" style="color: #f05523;"></i> Solo se aceptan archivos con extensión <b>.mpp</b> (Microsoft Project).
                                         </div>
                                     </div>
                                 </form>
                             </div>
                             <div class="modal-footer">
-                                <button type="button" class="btn btn-success" id="btnGuardarMPP"><i class="fas fa-file-import me-1"></i>Importar</button>
+                                <button type="button" class="btn btn-primary" id="btnGuardarMPP">Importar</button>
                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                             </div>
                         </div>
@@ -1295,6 +1295,21 @@ $(document).ready(function () {
                     if (resultadoEl.length) {
                         resultadoEl.html('<span class="text-success"><i class="fas fa-check-circle me-1"></i>' + (res.detalles || 'Archivo importado correctamente') + '</span>');
                     }
+
+                    if (window.mppGrids[otId]) {
+                        window.mppGrids[otId].destroy();
+                        delete window.mppGrids[otId];
+                    }
+                    
+                    const tabActiva = $(`#programa-tab_${otId}`).hasClass('active');
+                    if (tabActiva) {
+                        cargarGridMPP(otId);
+                    } else {
+                        const resultadoEl = $(`#resultado-mpp_${otId}`);
+                        if (resultadoEl.length) {
+                            resultadoEl.html('<div class="text-success"><i class="fas fa-check-circle me-1"></i>Archivo importado correctamente. Ve a la pestaña para visualizarlo.</div>');
+                        }
+                    }
                 } else {
                     aviso(res.tipo_aviso || 'advertencia', res.detalles || 'Error al importar el archivo');
                 }
@@ -1324,7 +1339,7 @@ $(document).ready(function () {
                                         <label for="archivoAnexo" class="form-label">Seleccione el archivo Excel (.xlsx)</label>
                                         <input class="form-control" type="file" id="archivoAnexo" name="archivo" accept=".xlsx, .xls, .xlsm">
                                         <div class="text-muted text-12px mt-1 ms-1" style="font-size: 12px;">
-                                            <i class="fas fa-info-circle"></i> Asegúrese que el archivo contenga las columnas: PARTIDA, CONCEPTO, UNIDAD, VOLUMEN PTE, P.U.M.N., P.U.USD
+                                            <i class="fas fa-info-circle" style="color: #f05523;"></i> Asegúrese que el archivo contenga las columnas: PARTIDA, CONCEPTO, UNIDAD, VOLUMEN PTE, P.U.M.N., P.U.USD
                                         </div>
                                     </div>
                                     <div class="alert alert-light border mb-3">
@@ -1336,7 +1351,7 @@ $(document).ready(function () {
                                     </div>
                                     <div class="text-muted text-12px mt-1 ms-1">
                                         <small>
-                                            <i class="fas fa-info-circle"></i> 
+                                            <i class="fas fa-info-circle" style="color: #f05523;"></i> 
                                             Actívalo si ya cargaste el Anexo C y solo quieres actualizar el anexo existente o la sabana calendarizada con volúmenes proyectados.
                                             <br>
                                             Desactívalo para cargar un Anexo C o Sabana de recursos nuevo.
@@ -1555,7 +1570,7 @@ function fnHTMLTablaDetallePTE(otId) {
                     </div>
                     <div class="tab-pane fade" id="programa_${otId}" role="tabpanel" aria-labelledby="programa-tab_${otId}">
                         <div class="actions-toolbar mb-2 d-flex justify-content-end align-items-center gap-3">
-                            <button class="btn btn-sm btn-success btn-importar-mpp shadow-sm" data-ot="${otId}">
+                            <button class="btn btn-sm btn-primary btn-importar-mpp shadow-sm" data-ot="${otId}">
                                 <i class="fas fa-file-import me-2"></i>Importar archivo .mpp
                             </button>
                         </div>
@@ -1601,7 +1616,7 @@ function fnHTMLTablaDetallePTE(otId) {
                     </div>
                     <div class="tab-pane fade" id="programa_${otId}" role="tabpanel" aria-labelledby="programa-tab_${otId}">
                         <div class="actions-toolbar mb-2 d-flex justify-content-end align-items-center gap-3">
-                            <button class="btn btn-sm btn-success btn-importar-mpp shadow-sm" data-ot="${otId}">
+                            <button class="btn btn-sm btn-primary btn-importar-mpp shadow-sm" data-ot="${otId}">
                                 <i class="fas fa-file-import me-2"></i>Importar archivo .mpp
                             </button>
                         </div>
@@ -2302,4 +2317,66 @@ function actualizarProgresoGeneralOT(otId) {
     });
 }
 
+window.mppGrids = window.mppGrids || {};
 
+function cargarGridMPP(otId) {
+    const contenedorId = `resultado-mpp_${otId}`;
+    const contenedor = document.getElementById(contenedorId);
+    
+    if (!contenedor) return;
+
+contenedor.innerHTML = '<div class="text-center p-4"><i class="fas fa-spinner fa-spin fa-2x" style="color: #f05523;"></i><p class="mt-2 text-secondary fw-bold">Cargando cronograma...</p></div>';
+    $.ajax({
+        url: urlObtenerArbolMPP,
+        type: "GET",
+        data: { ot_id: otId },
+        success: function (response) {
+            if (response.estatus === "ok" && response.data.length > 0) {
+                contenedor.innerHTML = '';
+                
+                tui.Grid.applyTheme('striped');
+
+                const grid = new tui.Grid({
+                    el: contenedor,
+                    data: response.data,
+                    bodyHeight: 450,
+                    rowHeight: 'auto',
+                    treeColumnOptions: {
+                        name: 'nombre',
+                        useCascadingCheckbox: false,
+                        useIcon: false
+                    },
+                    columns: [
+                        { header: 'Act.', name: 'wbs', width: 80, align: 'center' },
+                        { header: 'Nombre de la Tarea', name: 'nombre', minWidth: 300, whiteSpace: 'normal' },
+                        { header: 'Días', name: 'duracion_dias', width: 60, align: 'center', formatter: ({value}) => `${value}d` },
+                        { header: 'Inicio', name: 'fecha_inicio', width: 90, align: 'center' },
+                        { header: 'Fin', name: 'fecha_fin', width: 90, align: 'center' },
+                        { 
+                            header: 'Pond.', name: 'porcentaje_mpp', width: 80, align: 'center',
+                            formatter: ({value}) => `<span style="color: ${value === 100 ? '#95c93d' : (value === 0 ? '#54565a' : '#f05523')}; font-weight: bold;">${value}%</span>`
+                        },
+                    ]
+                });
+
+                window.mppGrids[otId] = grid;
+            } else {
+                contenedor.innerHTML = '<div class="alert alert-light border text-center text-secondary p-4"><i class="fas fa-calendar-times fa-2x mb-2"></i><br>No se ha cargado ningún programa de actividades vigente.</div>';
+            }
+        },
+        error: function() {
+            contenedor.innerHTML = '<div class="alert alert-danger p-3"><i class="fas fa-exclamation-triangle me-2"></i>Error al consultar el cronograma.</div>';
+        }
+    });
+}
+
+$(document).on('shown.bs.tab', 'button[id^="programa-tab_"]', function (event) {
+    const targetId = $(event.target).attr('id'); // ej: programa-tab_15
+    const otId = targetId.split('_')[1];
+
+    if (window.mppGrids[otId]) {
+        window.mppGrids[otId].refreshLayout();
+    } else {
+        cargarGridMPP(otId);
+    }
+});
