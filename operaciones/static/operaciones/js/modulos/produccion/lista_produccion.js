@@ -815,6 +815,23 @@ $(document).ready(function() {
                 rowHeight: 50,
                 selectionUnit: 'cell', 
                 columnOptions: { resizable: true, frozenCount: 2 },
+                contextMenu: ({ rowKey, columnName }) => (
+                    [
+                        [
+                            {
+                                name: 'export',
+                                label: 'Exportar Tabla',
+                                subMenu: [
+                                    {
+                                        name: 'excelExport',
+                                        label: 'Exportar como Excel',
+                                        action: () => gridReportesDiarios.export('xlsx', { includeHeader: true, useFormattedValue: true, fileName: 'Reportes_Diarios' })
+                                    }
+                                ]
+                            }
+                        ]
+                    ]
+                ),
                 columns: [
                     { header: 'OT', name: 'ot', width: 100, filter: 'select', align: 'left', validation: { required: true } },
                     { header: 'Descripción', name: 'desc',filter: 'select', width: 250, align: 'left' },
@@ -875,6 +892,28 @@ $(document).ready(function() {
                 bodyHeight: alturaCalculada,
                 rowHeight: 50,
                 columnOptions: { resizable: true, frozenCount: 5 }, 
+                contextMenu: ({ rowKey, columnName }) => (
+                    [
+                        [
+                            {
+                                name: 'export',
+                                label: 'Exportar Tabla',
+                                subMenu: [
+                                    {
+                                        name: 'csvExport',
+                                        label: 'Exportar como CSV',
+                                        action: () => gridProduccion.export('csv', { includeHeader: true, useFormattedValue: true, fileName: 'Sábana_Produccion' })
+                                    },
+                                    {
+                                        name: 'excelExport',
+                                        label: 'Exportar como Excel',
+                                        action: () => gridProduccion.export('xlsx', { includeHeader: true, useFormattedValue: true, fileName: 'Sábana_Produccion' })
+                                    }
+                                ]
+                            }
+                        ]
+                    ]
+                ),
                 columns: [
                     { header: 'Partida', name: 'codigo',filter: 'select', width: 90, align: 'center' },
                     { header: 'Concepto', name: 'concepto',filter: 'select', width: 150, align: 'left' },
@@ -958,6 +997,23 @@ $(document).ready(function() {
                 bodyHeight: 640,
                 rowHeight: 60, 
                 columnOptions: { resizable: true, frozenCount: 4 },
+                contextMenu: ({ rowKey, columnName }) => (
+                    [
+                        [
+                            {
+                                name: 'export',
+                                label: 'Exportar Tabla',
+                                subMenu: [
+                                    {
+                                        name: 'excelExport',
+                                        label: 'Exportar como Excel',
+                                        action: () => gridGpus.export('xlsx', { includeHeader: true, useFormattedValue: true, fileName: 'Tablero_GPUs' })
+                                    }
+                                ]
+                            }
+                        ]
+                    ]
+                ),
                 columns: [
                     { header: 'Partida', name: 'codigo',filter: 'select', width: 90, align: 'center' },
                     { header: 'Concepto', name: 'descripcion',filter: 'select', width: 150, align: 'left' },
