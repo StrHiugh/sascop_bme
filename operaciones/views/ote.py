@@ -1440,7 +1440,7 @@ def importar_anexo_ot(request):
 @login_required
 def importar_mpp_ot(request):
     """
-    Procesa un archivo .mpp
+    Procesa un archivo .mpp 
     """
     if request.method != 'POST':
         return JsonResponse({'exito': False, 'tipo_aviso': 'advertencia', 'detalles': 'Método no permitido'})
@@ -1467,18 +1467,43 @@ def importar_mpp_ot(request):
 
     try:
         if not jpype.isJVMStarted():
-            jvm_path = jpype.getDefaultJVMPath()
-            jpype.startJVM(jvm_path, "-Djava.awt.headless=true", "-Xmx1024m")
+            import os
+            jars = []
+            
+            if hasattr(mpxj, 'CLASSPATH'):
+                cp = mpxj.CLASSPATH
+                if isinstance(cp, str):
+                    jars.extend(cp.split(os.pathsep))
+                elif isinstance(cp, list):
+                    jars.extend(cp)
+            
+            mpxj_dir = os.path.dirname(mpxj.__file__)
+            for root, dirs, files in os.walk(mpxj_dir):
+                for f in files:
+                    if f.endswith('.jar'):
+                        jars.append(os.path.join(root, f))
+            
+            jars = list(set(jars))
+            classpath_str = os.pathsep.join(jars)
+
+            jpype.startJVM(
+                jpype.getDefaultJVMPath(),
+                "-Djava.awt.headless=true",
+                "-Xmx1024m",
+                classpath=classpath_str
+            )
     except Exception as e:
-        return JsonResponse({'exito': False, 'tipo_aviso': 'error', 'detalles': f'Error al iniciar JVM. Asegúrese de tener el JDK de Java instalado. Detalle: {str(e)}'})
+        return JsonResponse({'exito': False, 'tipo_aviso': 'error', 'detalles': f'Error al iniciar JVM. Verifique instalación de JDK: {str(e)}'})
 
     try:
+        import jpype.imports 
+        
         try:
             from org.mpxj.reader import UniversalProjectReader
-            from org.mpxj import RelationType, TaskField
+            from org.mpxj import RelationType
         except ImportError:
             from net.sf.mpxj.reader import UniversalProjectReader
-            from net.sf.mpxj import RelationType, TaskField
+            from net.sf.mpxj import RelationType
 
         version = CronogramaVersion.objects.create(
             id_ot=ot,
@@ -1491,55 +1516,56 @@ def importar_mpp_ot(request):
         reader = UniversalProjectReader()
         project = reader.read(version.archivo_mpp.path)
 
-        from datetime import datetime, date, timedelta
-
-        def _java_to_py_base(j_date):
-            if not j_date: return None
+        def java_date_to_py(j_date):
+            if not j_date:
+                return None
             try:
-                if hasattr(j_date, 'getTime'):
-                    return datetime.fromtimestamp(j_date.getTime() / 1000.0)
-                elif hasattr(j_date, 'getYear') and hasattr(j_date, 'getMonthValue'):
-                    h = j_date.getHour() if hasattr(j_date, 'getHour') else 0
-                    m = j_date.getMinute() if hasattr(j_date, 'getMinute') else 0
-                    return datetime(j_date.getYear(), j_date.getMonthValue(), j_date.getDayOfMonth(), h, m)
-            except Exception: pass
-            return None
-
-        def java_date_start(j_date):
-            dt = _java_to_py_base(j_date)
-            return dt.date() if dt else None
-
-        def java_date_finish(j_date):
-            dt = _java_to_py_base(j_date)
-            if not dt: return None
-            if dt.hour == 0 and dt.minute == 0:
-                return (dt - timedelta(days=1)).date()
-            return dt.date()
+                return datetime.fromtimestamp(j_date.getTime() / 1000.0).date()
+            except Exception:
+                return None
 
         properties = project.getProjectProperties()
-        version.fecha_inicio_proyecto = java_date_start(properties.getStartDate())
-        version.fecha_fin_proyecto = java_date_finish(properties.getFinishDate())
+        version.fecha_inicio_proyecto = java_date_to_py(properties.getStartDate())
+        version.fecha_fin_proyecto = java_date_to_py(properties.getFinishDate())
         version.save()
 
         columna_pond_oficial = None
+        columna_avance_oficial = None
         
         try:
-            print("\n[DEBUG] --- ESCANEANDO CAMPOS PERSONALIZADOS DEL MPP ---")
+            
             for cf in project.getCustomFields():
                 alias_original = str(cf.getAlias() or '')
                 alias = alias_original.strip().lower()
                 
-                palabras_clave = ['pond', 'peso', 'avance real', 'fisico', 'físico', '% avance']
-                
-                if alias and any(palabra in alias for palabra in palabras_clave):
+                if alias in ['pond.', 'pond', 'ponderador', 'peso']:
                     columna_pond_oficial = cf.getFieldType()
-                    print(f"[DEBUG] ¡EXITO! Columna POND encontrada: {columna_pond_oficial} (Alias: {alias_original})")
                     break
-            print("[DEBUG] --------------------------------------------------\n")
-        except Exception as e:
-            print(f"Error escaneando columnas: {e}")
+            
+            if not columna_pond_oficial:
+                for cf in project.getCustomFields():
+                    alias = str(cf.getAlias() or '').strip().lower()
+                    if 'pond' in alias or 'peso' in alias:
+                        columna_pond_oficial = cf.getFieldType()
+                        break
 
-        # NUEVO EXTRACTOR SÚPER INTELIGENTE (Soluciona valores que no se importaban)
+            for cf in project.getCustomFields():
+                alias_original = str(cf.getAlias() or '')
+                alias = alias_original.strip().lower()
+                
+                if alias in ['avance real', '% avance', 'fisico', 'físico']:
+                    columna_avance_oficial = cf.getFieldType()
+                    break
+            
+            if not columna_avance_oficial:
+                for cf in project.getCustomFields():
+                    alias = str(cf.getAlias() or '').strip().lower()
+                    if any(p in alias for p in ['avance real', '% avance', 'fisico', 'físico']):
+                        columna_avance_oficial = cf.getFieldType()
+                        break
+                        
+        except Exception as e:
+
         def extract_number(raw_val):
             if raw_val is None: return 0.0
             try:
@@ -1547,9 +1573,8 @@ def importar_mpp_ot(request):
                 if isinstance(raw_val, (int, float)): return float(raw_val)
                 
                 s = str(raw_val).replace('%', '').strip()
-                s = s.replace(' ', '') # Quitar espacios
+                s = s.replace(' ', '') 
                 
-                # Manejar separadores de miles y decimales (ej. 1,250.50 o 1.250,50)
                 if ',' in s and '.' in s:
                     if s.rfind(',') > s.rfind('.'):
                         s = s.replace('.', '').replace(',', '.')
@@ -1561,6 +1586,7 @@ def importar_mpp_ot(request):
                 return float(s)
             except:
                 return 0.0
+
 
         tasks_to_create = []
         dependencies_to_create = []
@@ -1575,47 +1601,65 @@ def importar_mpp_ot(request):
             recursos_str = ''
             assignments = task.getResourceAssignments()
             if assignments:
-                nombres = [str(res.getName()) for assignment in assignments if (res := assignment.getResource())]
+                nombres = []
+                for assignment in assignments:
+                    res = assignment.getResource()
+                    if res:
+                        nombres.append(str(res.getName()))
                 recursos_str = ', '.join(nombres)
 
             duracion = task.getDuration()
             duracion_dias = float(duracion.getDuration()) if duracion else 0.0
+            duracion_dias = min(max(duracion_dias, 0.0), 99999.99)
             
-            # PREVENCIÓN DE DESBORDAMIENTO (Solución Error 1)
-            # Topamos la duración a 999.99 días máximo para que la BD no explote
-            duracion_dias = min(max(duracion_dias, 0.0), 999.99)
+            avance_real = 0.0
             
-            pct_val = 0.0
-            pond_asignado = False
-
-            # Intento 1: Leer desde la columna POND mapeada
-            if columna_pond_oficial:
+            if columna_avance_oficial:
                 try:
-                    raw = None
-                    if hasattr(task, 'getCurrentValue'):
-                        raw = task.getCurrentValue(columna_pond_oficial)
-                    elif hasattr(task, 'get'):
-                        raw = task.get(columna_pond_oficial)
-                    
-                    if raw is not None:
-                        pct_val = extract_number(raw)
-                        pond_asignado = True # Marcamos que sí encontró un dato, ¡incluso si es 0.0!
+                    raw_av = None
+                    if hasattr(task, 'getCachedValue'): raw_av = task.getCachedValue(columna_avance_oficial)
+                    if raw_av is None and hasattr(task, 'get'): raw_av = task.get(columna_avance_oficial)
+                    val_av = extract_number(raw_av)
+                    if val_av > 0: avance_real = val_av
                 except: pass
 
-            # Intento 2: Fallback SOLO si no se encontró la columna POND o venía vacía
-            if not pond_asignado:
+            if avance_real == 0.0:
                 for func_name in ['getPercentageComplete', 'getPhysicalPercentComplete']:
                     if hasattr(task, func_name):
                         try:
                             val = extract_number(getattr(task, func_name)())
                             if val > 0:
-                                pct_val = val
+                                avance_real = val
                                 break
                         except: pass
+            
+            avance_real = min(max(avance_real, 0.0), 999.99)
 
-            # PREVENCIÓN DE DESBORDAMIENTO (Solución Error 1)
-            # Topamos el porcentaje a 999.99 para evitar que un error de dedo en Project truene la BD
-            pct_val = min(max(pct_val, 0.0), 999.99)
+            ponderador = 0.0
+            if columna_pond_oficial:
+                try:
+                    raw = None
+                    
+                    if hasattr(task, 'getCachedValue'):
+                        raw = task.getCachedValue(columna_pond_oficial)
+                    
+                    if raw is None:
+                        field_str = str(columna_pond_oficial).lower()
+                        idx_str = ''.join(filter(str.isdigit, field_str))
+                        if idx_str:
+                            idx = int(idx_str)
+                            if 'number' in field_str and hasattr(task, 'getNumber'):
+                                raw = task.getNumber(idx)
+                            elif 'text' in field_str and hasattr(task, 'getText'):
+                                raw = task.getText(idx)
+                    
+                    if raw is None and hasattr(task, 'get'):
+                        raw = task.get(columna_pond_oficial)
+
+                    ponderador = extract_number(raw)
+                except Exception as e:
+
+            ponderador = min(max(ponderador, 0.0), 999.99)
 
             tasks_to_create.append(TareaCronograma(
                 version=version,
@@ -1626,11 +1670,11 @@ def importar_mpp_ot(request):
                 es_resumen=task.hasChildTasks(),
                 padre_uid=padre_uid,
                 nombre=str(task.getName() or ''),
-                fecha_inicio=java_date_start(task.getStart()),
-                fecha_fin=java_date_finish(task.getFinish()),
+                fecha_inicio=java_date_to_py(task.getStart()),
+                fecha_fin=java_date_to_py(task.getFinish()),
                 duracion_dias=duracion_dias,
-                porcentaje_mpp=pct_val,
-                porcentaje_completado=pct_val,
+                porcentaje_mpp=ponderador,
+                porcentaje_completado=avance_real,
                 recursos=recursos_str,
             ))
 
@@ -1639,22 +1683,27 @@ def importar_mpp_ot(request):
                 for rel in predecessors:
                     tipo_rel = 'FS'
                     java_type = rel.getType()
-                    if java_type == RelationType.START_START: tipo_rel = 'SS'
-                    elif java_type == RelationType.FINISH_FINISH: tipo_rel = 'FF'
-                    elif java_type == RelationType.START_FINISH: tipo_rel = 'SF'
+                    if java_type == RelationType.START_START:
+                        tipo_rel = 'SS'
+                    elif java_type == RelationType.FINISH_FINISH:
+                        tipo_rel = 'FF'
+                    elif java_type == RelationType.START_FINISH:
+                        tipo_rel = 'SF'
 
                     predecesor_task = None
-                    if hasattr(rel, 'getSourceTask'): predecesor_task = rel.getSourceTask()
-                    elif hasattr(rel, 'getTargetTask'): predecesor_task = rel.getTargetTask()
-                    elif hasattr(rel, 'getTask'): predecesor_task = rel.getTask()
+                    if hasattr(rel, 'getSourceTask'):
+                        predecesor_task = rel.getSourceTask()
+                        if predecesor_task and predecesor_task.getUniqueID() == task.getUniqueID() and hasattr(rel, 'getTargetTask'):
+                            predecesor_task = rel.getTargetTask()
+                    elif hasattr(rel, 'getTask'):
+                        predecesor_task = rel.getTask()
 
                     if predecesor_task:
                         lag = rel.getLag()
                         lag_dias = float(lag.getDuration()) if lag else 0.0
                         
-                        # PREVENCIÓN DE DESBORDAMIENTO EN PREDECESORAS (Solución Error 1)
-                        lag_dias = min(max(lag_dias, -999.99), 999.99)
-
+                        lag_dias = min(max(lag_dias, -99999.99), 99999.99)
+                        
                         dependencies_to_create.append(DependenciaTarea(
                             version=version,
                             tarea_predecesora_uid=predecesor_task.getUniqueID(),
@@ -1672,7 +1721,7 @@ def importar_mpp_ot(request):
         return JsonResponse({
             'exito': True,
             'tipo_aviso': 'exito',
-            'detalles': f'Programa importado: {len(tasks_to_create)} tareas procesadas.',
+            'detalles': f'Programa importado correctamente: {len(tasks_to_create)} tareas procesadas.',
             'version_id': version.pk,
         })
 
