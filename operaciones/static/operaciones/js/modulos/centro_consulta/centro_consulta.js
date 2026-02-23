@@ -159,58 +159,45 @@ const fnObtenerFiltrosActuales = () => {
 
 let filtrosActivos = {};
 
-const fnActualizarPeriodo = () => {
-    const fechaInicio = $("#fecha_inicio").val();
-    const fechaFin = $("#fecha_fin").val();
-    const containerPeriodo = $("#cc-periodo-container");
-    const periodoTexto = $("#cc-periodo-texto");
-    const tablaPeriodoTexto = $("#tabla-periodo-texto");
-    
-    console.log("Actualizando período:", fechaInicio, fechaFin); // Para debug
-    
-    if (!fechaInicio || !fechaFin) {
-        periodoTexto.text("Período no definido");
-        tablaPeriodoTexto.text("Período no definido");
-        containerPeriodo.hide(); // Ocultar si no hay fechas
-        return;
-    }
 
-    // Validar que las fechas no estén vacías
-    if (fechaInicio === "" || fechaFin === "") {
-        containerPeriodo.hide();
-        return;
-    }
+const fnActualizarPeriodo = (filtros = null) => {
+   const containerPeriodo = $("#cc-periodo-container");
+   const periodoTexto = $("#cc-periodo-texto");
+   const tablaPeriodoTexto = $("#tabla-periodo-texto");
 
-    const formatearFecha = (fechaStr) => {
-        if (!fechaStr) return "??/??/????";
-        try {
-            const fecha = new Date(fechaStr + "T12:00:00"); // Usar mediodía para evitar problemas de zona horaria
-            if (isNaN(fecha.getTime())) return "Fecha inválida";
-            
-            const dia = fecha.getDate().toString().padStart(2, "0");
-            const mes = (fecha.getMonth() + 1).toString().padStart(2, "0");
-            const anio = fecha.getFullYear();
-            return `${dia}/${mes}/${anio}`;
-        } catch (e) {
-            console.error("Error formateando fecha:", e);
-            return fechaStr;
-        }
-    };
-    
-    const fechaInicioFormateada = formatearFecha(fechaInicio);
-    const fechaFinFormateada = formatearFecha(fechaFin);
-    const textoPeriodo = `${fechaInicioFormateada} - ${fechaFinFormateada}`;
-    
-    console.log("Texto período:", textoPeriodo); // Para debug
-    
-    periodoTexto.text(textoPeriodo);
-    tablaPeriodoTexto.text(textoPeriodo);
-    containerPeriodo.show(); // Mostrar el contenedor
-    console.log("Período actualizado:", $("#cc-periodo-texto").text());
+   const fInicio = (filtros && filtros.fecha_inicio !== undefined) ? filtros.fecha_inicio : $("#fecha_inicio").val();
+   const fFin = (filtros && filtros.fecha_fin !== undefined) ? filtros.fecha_fin : $("#fecha_fin").val();
+
+   if (!fInicio || !fFin || fInicio === "" || fFin === "") {
+      const textoHistorico = "Periodo Histórico";
+      periodoTexto.text(textoHistorico);
+      tablaPeriodoTexto.text(textoHistorico);
+      containerPeriodo.show();
+      return;
+   }
+
+   const formatearLegible = (fechaStr) => {
+      const partes = fechaStr.split("-");
+      const meses = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
+      return `${partes[2]}/${meses[parseInt(partes[1]) - 1]}/${partes[0]}`;
+   };
+
+   const textoFinal = `${formatearLegible(fInicio)} - ${formatearLegible(fFin)}`;
+   periodoTexto.text(textoFinal);
+   tablaPeriodoTexto.text(textoFinal);
+   containerPeriodo.show();
 };
 
 const fnActualizarTodo = (botonEjecutar = null) => {
    const textoOriginal = botonEjecutar ? botonEjecutar.html() : "";
+   filtrosActivos = fnObtenerFiltrosActuales();
+
+   if (filtrosActivos.fecha_inicio === "" || filtrosActivos.fecha_fin === "") {
+      filtrosActivos.fecha_inicio = null;
+      filtrosActivos.fecha_fin = null;
+   }
+
+   fnActualizarPeriodo(filtrosActivos);
 
    if (botonEjecutar) {
       botonEjecutar.prop("disabled", true).html("<i class=\"fas fa-spinner fa-spin me-2\"></i>Consultando...");
@@ -237,8 +224,6 @@ const fnActualizarTodo = (botonEjecutar = null) => {
          if (respuestaDashboard.estatus === "ok") {
             ccDashboard.actualizar(respuestaDashboard.data);
          }
-
-         fnActualizarPeriodo();
 
          const existePanel = typeof panelFiltrosOffcanvas !== "undefined" && panelFiltrosOffcanvas ? true : false;
          if (existePanel) {
@@ -362,6 +347,7 @@ $(document).ready(function () {
    const elementoDOMPanel = document.getElementById("panelFiltros");
    fnEstadoInicialPanel();
    filtrosActivos = fnObtenerFiltrosEstaticos();
+   fnActualizarPeriodo(filtrosActivos);
    tablaResultados = $("#tabla-resultados").DataTable({
       serverSide: true,
       processing: true,
@@ -431,7 +417,7 @@ $(document).ready(function () {
    });
    peticionInicialDashboard.then(res => {
       ccDashboard.actualizar(res.data);
-      fnActualizarPeriodo();
+      fnActualizarPeriodo(filtrosActivos);
    });
 
    if (typeof $.validator !== "undefined") {
