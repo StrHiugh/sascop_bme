@@ -24,10 +24,6 @@ def fn_centro_consulta(request):
    context = {}
    return render(request, "operaciones/centro_consulta/centro_consulta.html", context)
 
-# ---------------------------------------------------------------------------
-# Construcción Dinámica de SQL y Parámetros
-# ---------------------------------------------------------------------------
-
 def fn_obtener_subconsulta_origenes(lista_origenes):
    """
    Arma dinámicamente la subconsulta con solo los bloques necesarios.
@@ -196,27 +192,22 @@ def fn_construir_where_dinamico(filtros):
    condiciones = []
    params = {}
 
-   # -- Líder ----------------------------------------------------------------
    if lista_lideres:
       condiciones.append("T._fid_lider::text IN %(ids_lideres)s")
       params["ids_lideres"] = tuple(lista_lideres)
 
-   # -- Cliente --------------------------------------------------------------
    if lista_clientes:
       condiciones.append("T._fid_cliente::text IN %(ids_clientes)s")
       params["ids_clientes"] = tuple(lista_clientes)
 
-   # -- Documento ------------------------------------------------------------
    if lista_documentos:
       condiciones.append("T.documento IN %(nombres_documentos)s")
       params["nombres_documentos"] = tuple(lista_documentos)
 
-   # -- Estatus --------------------------------------------------------------
    if lista_estatus:
       condiciones.append("T._fid_estatus_paso::text IN %(ids_estatus)s")
       params["ids_estatus"] = tuple(lista_estatus)
 
-   # -- Texto libre ----------------------------------------------------------
    if texto_busqueda:
       condiciones.append("""
          (
@@ -228,7 +219,6 @@ def fn_construir_where_dinamico(filtros):
       """)
       params["texto"] = f"%{texto_busqueda}%"
 
-   # -- Frente / Sitio -------------------------------------------------------
    if lista_sitios:
       params["ids_sitios"] = tuple(lista_sitios)
       if buscar_por_frente == "1":
@@ -265,37 +255,28 @@ def fn_construir_where_dinamico(filtros):
       condiciones.append("T._fid_frente::text IN %(ids_frentes)s")
       params["ids_frentes"] = tuple(lista_frentes)
 
-   # -- Entregado / Pendiente ------------------------------------------------
    if filtro_entregado and filtro_pendiente:
-      pass   # Sin restricción: se muestran todos
+      pass
    elif filtro_entregado:
       condiciones.append("(T.archivo IS NOT NULL AND LENGTH(TRIM(T.archivo)) > 5)")
    elif filtro_pendiente:
       condiciones.append("(T.archivo IS NULL OR LENGTH(TRIM(T.archivo)) <= 5)")
 
-   # -- Rango de fechas ------------------------------------------------------
    if fecha_ini_input and fecha_fin_input:
       condiciones.append("T._fecha_sort BETWEEN %(fecha_ini)s::date AND %(fecha_fin)s::date")
       params["fecha_ini"] = fecha_ini_input
       params["fecha_fin"] = fecha_fin_input
 
-   # -- Ensamblar ------------------------------------------------------------
    if condiciones:
       clausula_where = "WHERE\n         " + "\n         AND ".join(condiciones)
    else:
       clausula_where = ""
 
-   # Parámetros extra que el SELECT principal necesita
    params["buscar_por_frente"] = buscar_por_frente
    params["sw_sitio"]          = 1 if lista_sitios else 0
    params["ids_sitios"]        = params.get("ids_sitios", ('-1',))
 
    return clausula_where, params
-
-
-# ---------------------------------------------------------------------------
-# Funciones Maestras (Tabla y Gráficas)
-# ---------------------------------------------------------------------------
 
 @csrf_exempt
 @require_http_methods(["POST"])
@@ -482,10 +463,6 @@ def fn_ejecutar_query_graficas(payload):
    return fn_ejecutar_query_sql_lotes(sql, params), modo_sitio_libre
 
 
-# ---------------------------------------------------------------------------
-# Endpoints de Catálogos
-# ---------------------------------------------------------------------------
-
 @login_required
 def fn_obtener_frente_afectacion_dos(solicitud):
    try:
@@ -547,88 +524,6 @@ def fn_obtener_catalogo_documentos_unificado(request):
       print(f"Error obteniendo catálogo unificado: {str(e)}")
       return JsonResponse([], safe=False)
 
-
-# ---------------------------------------------------------------------------
-# Procesamiento Matemático del Dashboard
-# ---------------------------------------------------------------------------
-
-# def fn_agrupar_datos_dashboard(registros_db, modo_sitio_libre=False):
-#    totales        = {"cargados": 0, "pendientes": 0}
-#    origenes       = {"PTE": 0, "OT": 0}
-#    lideres        = {}
-#    documentos     = {}
-#    clientes       = {}
-#    estatus_embudo = {}
-#    frentes        = {}
-#    sitios         = {}
-#    folios         = {}
-
-#    for fila in registros_db:
-#       lider               = fila.get("lider", "SIN LÍDER")
-#       tipo                = fila.get("tipo", "DESCONOCIDO")
-#       documento           = fila.get("documento", "SIN DOCUMENTO")
-#       folio               = fila.get("folio", "SIN FOLIO")
-#       frente              = fila.get("frente", "SIN FRENTE")
-#       sitio               = fila.get("sitio", "SIN SITIO")
-#       cliente             = fila.get("cliente", "SIN CLIENTE")
-#       descripcion_estatus = fila.get("_descripcion_estatus")
-#       texto_estatus       = descripcion_estatus if descripcion_estatus else "ESTATUS DESCONOCIDO"
-
-#       valor_archivo = fila.get("tiene_archivo", 0)
-#       es_cargado    = True if valor_archivo == 1 else False
-
-#       totales["cargados"]   += 1 if es_cargado else 0
-#       totales["pendientes"] += 0 if es_cargado else 1
-
-#       if tipo in origenes:
-#          origenes[tipo] += 1
-
-#       for tabla, clave in [(lideres, lider), (documentos, documento), (clientes, cliente)]:
-#          if clave not in tabla:
-#             tabla[clave] = {"cargados": 0, "pendientes": 0}
-#          tabla[clave]["cargados"]   += 1 if es_cargado else 0
-#          tabla[clave]["pendientes"] += 0 if es_cargado else 1
-
-#       llave_estatus = texto_estatus
-#       estatus_embudo[llave_estatus] = estatus_embudo.get(llave_estatus, 0) + 1
-
-#       if tipo == "OT":
-#          frentes[frente] = frentes.get(frente, 0) + 1
-#          if modo_sitio_libre:
-#             for desc_sitio in [
-#                   fila.get("sitio_pat_desc"),
-#                   fila.get("sitio_emb_desc"),
-#                   fila.get("sitio_plat_desc"),
-#             ]:
-#                   if desc_sitio:
-#                      sitios[desc_sitio] = sitios.get(desc_sitio, 0) + 1
-#          else:
-#             sitio_resuelto = fila.get("sitio", "SIN SITIO")
-#             sitios[sitio_resuelto] = sitios.get(sitio_resuelto, 0) + 1
-
-#       aplica_para_avance = False if documento == "NO APLICA" else True
-
-#       if aplica_para_avance:
-#          if folio not in folios:
-#             folios[folio] = {"cargados": 0, "pendientes": 0}
-#          folios[folio]["cargados"]   += 1 if es_cargado else 0
-#          folios[folio]["pendientes"] += 0 if es_cargado else 1
-
-#    datos_procesados = {
-#       "totales_generales":     totales,
-#       "distribucion_origenes": [{"origen": llave, "total": valor} for llave, valor in origenes.items()],
-#       "rendimiento_lideres":   [{"nombre": llave, "cargados": valor["cargados"], "pendientes": valor["pendientes"]} for llave, valor in lideres.items()],
-#       "tipos_documentos":      [{"documento": llave, "cargados": valor["cargados"], "pendientes": valor["pendientes"]} for llave, valor in documentos.items()],
-#       "estatus_clientes":      [{"cliente": llave, "cargados": valor["cargados"], "pendientes": valor["pendientes"]} for llave, valor in clientes.items()],
-#       "embudo_estatus":        [{"estatus": llave, "total": valor} for llave, valor in estatus_embudo.items()],
-#       "frentes_ot":            [{"frente": llave, "total": valor} for llave, valor in frentes.items()],
-#       "sitios_ot":             [{"sitio": llave, "total": valor} for llave, valor in sitios.items()],
-#       "avance_folios":         [{"folio": llave, "cargados": valor["cargados"], "pendientes": valor["pendientes"]} for llave, valor in folios.items()]
-#    }
-
-#    return datos_procesados
-
-
 def fn_agrupar_datos_dashboard(registros_db, modo_sitio_libre=False):
    totales        = {"cargados": 0, "pendientes": 0, "no_aplica": 0}
    origenes       = {"PTE": 0, "OT": 0}
@@ -656,7 +551,6 @@ def fn_agrupar_datos_dashboard(registros_db, modo_sitio_libre=False):
       es_cargado    = True if valor_archivo == 1 else False
       es_no_aplica  = True if (estatus_id == 14 or documento == "NO APLICA") else False
 
-      # 1. Gráficas de Volumetría y Distribución
       if tipo in origenes:
          origenes[tipo] += 1
 
@@ -677,7 +571,6 @@ def fn_agrupar_datos_dashboard(registros_db, modo_sitio_libre=False):
             sitio_resuelto = fila.get("sitio", "SIN SITIO")
             sitios[sitio_resuelto] = sitios.get(sitio_resuelto, 0) + 1
 
-      # 2. Contadores Absolutos (Incluyendo NO APLICA en su propia categoría)
       if es_no_aplica:
          totales["no_aplica"] += 1
       elif es_cargado:
@@ -685,7 +578,6 @@ def fn_agrupar_datos_dashboard(registros_db, modo_sitio_libre=False):
       else:
          totales["pendientes"] += 1
 
-      # 3. Lógica por Categorías (Líderes, Documentos, Clientes, Folios)
       for tabla, clave in [(lideres, lider), (documentos, documento), (clientes, cliente), (folios, folio)]:
          if clave not in tabla:
             tabla[clave] = {"cargados": 0, "pendientes": 0, "no_aplica": 0}
@@ -697,7 +589,6 @@ def fn_agrupar_datos_dashboard(registros_db, modo_sitio_libre=False):
          else:
             tabla[clave]["pendientes"] += 1
 
-   # 4. Armamos la respuesta incluyendo la nueva llave en todos los niveles
    datos_procesados = {
       "totales_generales":     totales,
       "distribucion_origenes": [{"origen": llave, "total": valor} for llave, valor in origenes.items()],

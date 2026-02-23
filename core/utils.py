@@ -16,7 +16,6 @@ from django.db.models import Count, Case, When, Value, CharField
 from django.db.models.functions import Concat
 from django.db import connection
 
-# Imports para PDF
 from reportlab.lib.pagesizes import letter,landscape
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image as ImageRL, PageBreak, KeepTogether
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -25,11 +24,8 @@ from reportlab.lib import colors
 from scipy.interpolate import make_interp_spline
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image as ImageRL, PageBreak, KeepTogether, Table, TableStyle, CondPageBreak
 import base64
-
-# Configuración del Backend de Matplotlib
 plt.switch_backend("Agg")
 
-# Colores Institucionales
 COLOR_FUERZA = "#f05523"
 COLOR_SERIEDAD = "#20145f"
 COLOR_CONFIANZA = "#51c2eb"
@@ -38,7 +34,6 @@ COLOR_SOLIDEZ = "#54565a"
 
 PALETA_SASCOP = [COLOR_FUERZA, COLOR_SOLIDEZ, COLOR_DINAMISMO, COLOR_CONFIANZA, COLOR_SERIEDAD]
 
-# Configuración global de estilos
 plt.rcParams["font.family"] = "sans-serif"
 plt.rcParams["font.sans-serif"] = ["Segoe UI", "Roboto", "Helvetica Neue", "Arial", "sans-serif"]
 plt.rcParams["axes.titleweight"] = "bold"
@@ -47,15 +42,10 @@ plt.rcParams["axes.labelcolor"] = "#555555"
 plt.rcParams["axes.edgecolor"] = "#dcdcdc"
 plt.rcParams["grid.color"] = "#eaeaea"
 
-# Colores globales
+
 COLOR_CARGADOS = "#00a65a"
 COLOR_NULOS = "#dd4b39"
 COLOR_TEXTO_BLANCO = "#ffffff"
-
-
-# ==========================================
-#   HELPERS Y CONSULTAS SQL
-# ==========================================
 
 def fn_obtener_color_texto(hex_color):
    """Calcula si el texto debe ser blanco o negro según el fondo."""
@@ -178,10 +168,6 @@ def fn_obtener_resumen_ot_pasos_cargados():
    """
    return ejecutar_query_sql(sql)
 
-
-# ==========================================
-#  GENERACIÓN DE GRÁFICAS
-# ==========================================
 
 def fn_generar_grafica_buffer(datos_queryset):
    datos_organizados = {}
@@ -671,13 +657,8 @@ def fn_ejecutar_query_sql_lotes(sql, parametros=None, tamano_lote=2000):
 
 
 
-# ==========================================
 #  CORREO Y PDF CENTRO CONSULTA
-# ==========================================
-
-
 def fn_dibujar_elementos_fijos_horizontal(canvas, doc):
-   """Dibuja el pie de página institucional adaptado al ancho horizontal (Landscape)."""
    canvas.saveState()
    ancho, alto = landscape(letter)
 
@@ -701,10 +682,6 @@ def fn_dibujar_elementos_fijos_horizontal(canvas, doc):
 
 
 def fn_generar_pdf_graficas(graficas_base64):
-   """
-   Genera un documento PDF horizontal optimizado en sus dimensiones para evitar
-   desfases de página y maximizar el uso del espacio.
-   """
    buffer_pdf = io.BytesIO()
    documento = SimpleDocTemplate(
       buffer_pdf,
@@ -716,7 +693,7 @@ def fn_generar_pdf_graficas(graficas_base64):
    )
 
    estilos = getSampleStyleSheet()
-   
+
    estilo_encabezado = ParagraphStyle(
       "EncabezadoPrincipal",
       parent=estilos["Heading1"],
@@ -725,7 +702,7 @@ def fn_generar_pdf_graficas(graficas_base64):
       spaceAfter=10,
       alignment=1
    )
-   
+
    estilo_titulo = ParagraphStyle(
       "TituloGrafica",
       parent=estilos["Heading2"],
@@ -780,10 +757,6 @@ def fn_generar_pdf_graficas(graficas_base64):
    return buffer_pdf.getvalue()
 
 def fn_enviar_correo_reporte_bi(lista_destinatarios, graficas_base64, archivo_excel=None, mensaje_limite=""):
-   """
-   Construye y envía el correo adjuntando el PDF de las gráficas
-   y el archivo Excel si cumple con las restricciones de peso.
-   """
    try:
       contexto_template = {
          "advertencia": mensaje_limite

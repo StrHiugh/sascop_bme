@@ -1,5 +1,3 @@
-/* static/operaciones/js/modulos/centro_consulta/centro_consulta.js */
-
 const fnObtenerFiltrosEstaticos = () => {
    const fechaActual = new Date();
    const primerDiaMes = new Date(fechaActual.getFullYear(), fechaActual.getMonth(), 1);
@@ -589,10 +587,6 @@ $(document).ready(function () {
       }, 350);
    });
 
-   // ============================================================
-   // EXPORTACIÓN A EXCEL
-   // ============================================================
-
    $("#btn-exportar-excel").on("click", function (eventoClick) {
       eventoClick.preventDefault();
 
@@ -647,10 +641,6 @@ $(document).ready(function () {
       });
    });
 
-
-/*============================================================
-   LÓGICA DE ENVÍO POR CORREO
-============================================================ */
 
    const modalCorreoInstancia = new bootstrap.Modal($("#modal-enviar-correo")[0]);
    const modalExitoInstancia = new bootstrap.Modal($("#modal-exito-correo")[0]);
@@ -797,5 +787,4 @@ $(document).ready(function () {
          botonProcesar.prop("disabled", false).html(textoOriginal);
       });
    });
-
 });

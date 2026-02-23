@@ -1,10 +1,4 @@
-/* =============================================================================
-   centro_consulta_graficas.js
-============================================================================= */
-
 const ccDashboard = (() => {
-
-   // ── Paleta Institucional ──────────────────────────────────────────────────
    const colores = {
       naranja: "#f05523",
       naranjaSuave: "#fde0d4",
@@ -189,14 +183,12 @@ const fnOptDonut = (datos, llaveNombre, esGraficaSitios = false) => {
       ]
    };
 
-   // Si es la gráfica de sitios, aplicamos configuración especial
    if (esGraficaSitios) {
       const cantidadElementos = listaValida.length;
       const totalSitios = cantidadElementos;
 
       return {
          ...configBase,
-         // Título personalizado - usando title en lugar de graphic (más confiable)
          title: {
             text: `{big|${totalSitios.toLocaleString('es-MX')}}\n{small|sitios}`,
             top: 15,

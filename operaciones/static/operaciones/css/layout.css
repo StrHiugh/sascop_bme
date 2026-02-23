@@ -1551,11 +1551,6 @@ select:focus {
 .tui-grid-cell-content { width: 100%; height: 100%; }
 .tui-grid-cell-has-input .tui-grid-cell-content { padding: 0 !important; }
 
-/* ============================================================
-    ESTILOS PARA SELECT2 MULTIPLE
-============================================================ */
-
-/* Contenedor principal del input múltiple */
 .select2-container--default .select2-selection--multiple {
     border: 1px solid #ced4da;
     border-radius: 6px;
@@ -1563,10 +1558,9 @@ select:focus {
     padding: 2px 4px;
 }
 
-/* La etiqueta de la opción seleccionada */
 .select2-container--default .select2-selection--multiple .select2-selection__choice {
     background-color: #feefe9;
-    border: 1px solid #f05523; /* Naranja estandar */
+    border: 1px solid #f05523;
     border-radius: 4px;
     color: #f05523;
     font-size: 0.78rem;
@@ -1577,7 +1571,6 @@ select:focus {
     position: relative;
 }
 
-/* La 'X' para eliminar la etiqueta */
 .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
     color: #f05523;
     border-right: 1px solid transparent;
@@ -1592,7 +1585,6 @@ select:focus {
     font-weight: bold;
 }
 
-/* Hover de la 'X' */
 .select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
     background-color: #f05523;
     color: white;
