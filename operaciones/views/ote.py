@@ -1565,6 +1565,7 @@ def importar_mpp_ot(request):
                         break
                         
         except Exception as e:
+            pass
 
         def extract_number(raw_val):
             if raw_val is None: return 0.0
@@ -1658,7 +1659,8 @@ def importar_mpp_ot(request):
 
                     ponderador = extract_number(raw)
                 except Exception as e:
-
+                    pass
+                    
             ponderador = min(max(ponderador, 0.0), 999.99)
 
             tasks_to_create.append(TareaCronograma(
