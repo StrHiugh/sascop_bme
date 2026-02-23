@@ -47,8 +47,6 @@ def registrar_actividad(view_func):
                             pass
                     else:
                         registro_data = request.POST.get('registro_actividad')
-                    print ("llego aquii")
-                    print (registro_data)
                     if registro_data:
                         _procesar_registro_actividad(request, registro_data, response_data)
                         
