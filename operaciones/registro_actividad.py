@@ -27,6 +27,7 @@ def registrar_actividad(view_func):
     """
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
+        # 1. Ejecutamos la vista original primero para obtener la respuesta
         response = view_func(request, *args, **kwargs)
         
         if (request.method == 'POST' and 
@@ -37,12 +38,23 @@ def registrar_actividad(view_func):
                 response_data = json.loads(response.content)
                 
                 if response_data.get('exito'):
-                    registro_data = request.POST.get('registro_actividad')
-                    _procesar_registro_actividad(request, registro_data, response_data)
-                    
-            except (ValueError, json.JSONDecodeError) as e:
-                return
-        
+                    registro_data = None
+                    if request.content_type == 'application/json':
+                        try:
+                            cuerpo_json = json.loads(request.body.decode('utf-8'))
+                            registro_data = cuerpo_json.get('registro_actividad')
+                        except json.JSONDecodeError:
+                            pass
+                    else:
+                        registro_data = request.POST.get('registro_actividad')
+                    print ("llego aquii")
+                    print (registro_data)
+                    if registro_data:
+                        _procesar_registro_actividad(request, registro_data, response_data)
+                        
+            except (ValueError, json.JSONDecodeError):
+                pass
+                
         return response
     return _wrapped_view
 
@@ -58,7 +70,7 @@ def _procesar_registro_actividad(request, registro_data, response_data):
         evento_principal = registro_json.get("evento", "EDITAR")
         registro_id = registro_json.get("registro_id")
         cambios = registro_json.get("cambios", [])
-        
+        print ("llego aquii")
         if evento_principal in ["REGISTRAR", "REACTIVAR", "CREAR"]:
             registro_id = response_data.get('registro_id', registro_id)
         

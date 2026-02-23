@@ -75,7 +75,7 @@ $(document).ready(function () {
                             </a>
                         `;
                     }
-                    
+
                     return ampliar;
                 },
                 "orderable": false
@@ -111,14 +111,14 @@ $(document).ready(function () {
                 "data": "progreso_final",
                 "title": "Progreso",
                 "width": "20%",
-                "render": function(data, type, row) {
-                    let color = '#95c93d'; 
-                    if (data < 25) color = '#f05523'; 
-                    else if (data < 75) color = '#fad91f'; 
-                    
+                "render": function (data, type, row) {
+                    let color = '#95c93d';
+                    if (data < 25) color = '#f05523';
+                    else if (data < 75) color = '#fad91f';
+
                     const porcentaje = isNaN(data) ? 0 : Math.max(0, Math.min(100, data));
                     const tooltip = `Tiempo: ${row.progreso_tiempo}% | Pasos: ${row.progreso_pasos}%`;
-                    
+
                     return `
                         <div title="${tooltip}" data-bs-toggle="tooltip">
                             <div class="progress" style="height: 18px; cursor: pointer;">
@@ -140,17 +140,17 @@ $(document).ready(function () {
                 "orderable": true
             },
             {
-                "data": "progreso_tiempo", 
+                "data": "progreso_tiempo",
                 "title": "Progreso Tiempo",
                 "visible": false,
                 "render": function(data, type, row) {
-                    let color = '#55c0e9'; 
-                    
+                    let color = '#55c0e9';
+
                     if (row.dias_restantes <= 7 && data < 100) color = '#f05523';
-                    else if (row.dias_restantes <= 14) color = '#fad91f';       
-                    
+                    else if (row.dias_restantes <= 14) color = '#fad91f';
+
                     const porcentaje = isNaN(data) ? 0 : Math.max(0, Math.min(100, data));
-                    
+
                     return `
                         <div title="${row.dias_transcurridos} días transcurridos | ${row.dias_restantes} días restantes">
                             <div class="progress" style="height: 15px;">
@@ -168,15 +168,15 @@ $(document).ready(function () {
             },
             {
                 "data": "progreso_pasos",
-                "title": "Progreso Pasos", 
+                "title": "Progreso Pasos",
                 "visible": false,
-                "render": function(data, type, row) {
-                    let color = '#95c93d'; 
-                    if (data < 25) color = '#f05523'; 
-                    else if (data < 75) color = '#fad91f'; 
-                    
+                "render": function (data, type, row) {
+                    let color = '#95c93d';
+                    if (data < 25) color = '#f05523';
+                    else if (data < 75) color = '#fad91f';
+
                     const porcentaje = isNaN(data) ? 0 : Math.max(0, Math.min(100, data));
-                    
+
                     return `
                         <div title="${row.pasos_completados} de ${row.total_pasos} pasos completados">
                             <div class="progress" style="height: 15px;">
@@ -199,14 +199,14 @@ $(document).ready(function () {
                 "className": "text-center",
                 "render": function (data, type, row) {
                     const estatusColors = {
-                        'POR DEFINIR': '#54565a',            
-                        'ASIGNADA': '#fad91f',               
-                        'CANCELADA': '#f05523',              
-                        'DIFERIDA': '#f05523',               
-                        'EN EJECUCION': '#55c0e9',           
-                        'SUSPENDIDA': '#54565a',             
-                        'TERMINADA': '#95c93d',              
-                        'POR CANCELAR': '#f05523'            
+                        'POR DEFINIR': '#54565a',
+                        'ASIGNADA': '#fad91f',
+                        'CANCELADA': '#f05523',
+                        'DIFERIDA': '#f05523',
+                        'EN EJECUCION': '#55c0e9',
+                        'SUSPENDIDA': '#54565a',
+                        'TERMINADA': '#95c93d',
+                        'POR CANCELAR': '#f05523'
                     };
 
                     const btnColor = estatusColors[data] || '#54565a';
@@ -280,7 +280,7 @@ $(document).ready(function () {
 
     $("#filtro-buscar").keypress(function (event) {
         if (event.which == 13) {
-        tablaOt.draw();
+            tablaOt.draw();
         }
     });
 
@@ -377,8 +377,12 @@ $(document).ready(function () {
                 $("#descripcion_trabajo").val(ot.descripcion_trabajo);
                 $("#id_frente").val(ot.id_frente);
                 $("#plazo_dias").val(ot.plazo_dias);
-                $('#id_tipo').val('4').trigger('change'); 
-                $('#id_tipo option[value="5"]').prop('disabled', true);
+                const esTipo4 = ot.id_tipo_id == 4;
+                $('#id_tipo')
+                    .val(esTipo4 ? '4' : '5')
+                    .find('option[value="4"]').prop('disabled', !esTipo4).end()
+                    .find('option[value="5"]').prop('disabled', esTipo4)
+                    .trigger('change');
                 $("#total_homologado").val(ot.total_homologado);
                 $("#oficio_ot").val(ot.oficio_ot);
                 $("#comentario_general").val(ot.comentario);
@@ -401,7 +405,7 @@ $(document).ready(function () {
                         if (ot.id_patio) {
                             $('#check_fase_patio').prop('checked', true).trigger('change');
                             $("#id_patio_fase").val(ot.id_patio).trigger('change');
-                            
+
                             if (ot.fecha_inicio_patio) $("#fecha_inicio_patio").val(ot.fecha_inicio_patio);
                             if (ot.fecha_fin_patio) $("#fecha_fin_patio").val(ot.fecha_fin_patio);
                         } else {
@@ -449,7 +453,7 @@ $(document).ready(function () {
 
     function abrirModalCrearOT() {
         $("#formCrearOT")[0].reset();
-        $("#ot_id").val(""); 
+        $("#ot_id").val("");
         $("#modalCrearOTLabel").text("Crear reprogramación");
         const $divOTPrincipal = $('#ot_principal').closest('.mb-3');
         const $divNumReprogramacion = $('#num_reprogramacion').closest('.mb-3');
@@ -458,11 +462,11 @@ $(document).ready(function () {
         $divNumReprogramacion.hide().attr('hidden', 'hidden');
         $('#num_reprogramacion').val('').prop('disabled', true);
         $('#ot_principal').val('').prop('disabled', true).empty();
-        $('#id_tipo option').prop('disabled', false); 
-        $('#id_tipo').val('5').trigger('change'); 
+        $('#id_tipo option').prop('disabled', false);
+        $('#id_tipo').val('5').trigger('change');
         $('#id_tipo option[value="4"]').prop('disabled', true);
         $('#id_tipo').addClass('pe-none bg-light');
-        $('#id_frente').val('').trigger('change'); 
+        $('#id_frente').val('').trigger('change');
         $('#id_embarcacion, #id_plataforma, #id_intercom, #id_patio').empty();
         $('#check_fase_patio').prop('checked', false).prop('disabled', false).trigger('change');
         cargarClientes();
@@ -474,10 +478,10 @@ $(document).ready(function () {
                 const $select = $('#ot_principal');
                 const $container = $select.next('.select2-container');
                 if (!$select.prop('disabled')) {
-                    $select.select2('focus'); 
+                    $select.select2('focus');
                 }
                 $container.addClass('resaltar-atencion');
-                $select.one('select2:open change', function() {
+                $select.one('select2:open change', function () {
                     $container.removeClass('resaltar-atencion');
                 });
             }, 1000);
@@ -494,7 +498,7 @@ $(document).ready(function () {
             .done(function (respuesta) {
                 if (respuesta.exito) {
                     const ot = respuesta.datos;
-                    $("#orden_trabajo").val(ot.orden_trabajo); 
+                    $("#orden_trabajo").val(ot.orden_trabajo);
                     $("#oficio_solicitud").val(ot.oficio_solicitud);
                     $("#descripcion_trabajo").val(ot.descripcion_trabajo);
                     $("#oficio_ot").val(ot.oficio_ot);
@@ -545,7 +549,7 @@ $(document).ready(function () {
                 const select = $('#id_cliente');
                 select.empty();
                 select.append('<option value="" selected disabled>Seleccione un cliente</option>');
-                
+
                 if (data && data.length > 0) {
                     data.forEach(function(cliente) {
                         select.append(`<option value="${cliente.id}">${cliente.descripcion}</option>`);
@@ -576,7 +580,7 @@ $(document).ready(function () {
             enlaceInput.value = '';
             window.pasoActual = null;
         }
-        
+
         modal.show();
         setTimeout(() => {
             enlaceInput.focus();
@@ -648,7 +652,7 @@ $(document).ready(function () {
                 detalle:` ${$("#id_tipo option:selected").text()} con folio: ${$("#orden_trabajo").val()}`
             })
             formData.append('registro_actividad', JSON.stringify(REGISTRO_ACTIVIDAD.actividad));
-        }   
+        }
 
 
         $.ajax({
@@ -689,13 +693,13 @@ $(document).ready(function () {
         var estatus = $("#estatus").val();
         var tipo = $("#tipo").val();
         var responsable = $("#id_responsable_proyecto").val();
-        
+
         tablaOt.draw();
-        
+
         var filtrosOffcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('panelFiltros'));
         filtrosOffcanvas.hide();
         iniciarLoader();
-        setTimeout(function() {
+        setTimeout(function () {
             finalizarLoader();
         }, 1300);
     });
@@ -708,20 +712,20 @@ $(document).ready(function () {
         $("#anio").val("");
         $("#cliente").val("");
         tablaOt.draw();
-        
+
         var filtrosOffcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('panelFiltros'));
         filtrosOffcanvas.hide();
         iniciarLoader();
-        setTimeout(function() {
+        setTimeout(function () {
             finalizarLoader();
         }, 1300);
     });
 
     $(document).on("click", ".eliminar_ot", function () {
         const id = $(this).data('id');
-        let datos = tablaOt.row($(this).parents('tr')).data() ? 
-                    tablaOt.row($(this).parents('tr')).data() : 
-                    tablaReprogramaciones.row($(this).parents('tr')).data();
+        let datos = tablaOt.row($(this).parents('tr')).data() ?
+            tablaOt.row($(this).parents('tr')).data() :
+            tablaReprogramaciones.row($(this).parents('tr')).data();
         BMensaje({
             titulo: "Confirmación",
             subtitulo: "¿Estás seguro de eliminar esta OT?",
@@ -730,18 +734,19 @@ $(document).ready(function () {
                     texto: "Sí, continuar",
                     clase: "btn-primary",
                     funcion: function () {
-                        let log = new RegistroActividad(4,datos.id,"ELIMINAR");
+                        let log = new RegistroActividad(4, datos.id, "ELIMINAR");
                         log.agregar_actividad({
-                            nombre:"Eliminó",
-                            valor_actual:"",
-                            valor_anterior:"",
-                            detalle:`<b>una OT</b> con folio: <b>${datos.orden_trabajo}</b>`})
+                            nombre: "Eliminó",
+                            valor_actual: "",
+                            valor_anterior: "",
+                            detalle: `<b>una OT</b> con folio: <b>${datos.orden_trabajo}</b>`
+                        })
 
                         const url = urlEliminarOT;
                         const method = "POST";
                         BMAjax(
                             url,
-                            { 
+                            {
                                 id: id,
                                 registro_actividad: JSON.stringify(log.actividad),
                             },
@@ -791,7 +796,7 @@ $(document).ready(function () {
         }
     });
 
-    $('#check_fase_patio').on('change', function() {
+    $('#check_fase_patio').on('change', function () {
         const isChecked = $(this).is(':checked');
         const $contenedoresPatio = $('.contenedor-fase-patio');
         const $selectPatio = $('#id_patio_fase');
@@ -799,10 +804,10 @@ $(document).ready(function () {
         if (isChecked) {
             $contenedoresPatio.removeAttr('hidden');
             $selectPatio.prop('required', true);
-            
+
             // Cargar patios si está vacío
             if ($selectPatio.children('option').length <= 1) {
-                cargarSitios(3, '#id_patio_fase'); 
+                cargarSitios(3, '#id_patio_fase');
             }
         } else {
             $contenedoresPatio.attr('hidden', true);
@@ -817,13 +822,13 @@ $(document).ready(function () {
             url: urlObtenerResponsables,
             type: 'GET',
             dataType: 'json',
-            success: function(data) {
+            success: function (data) {
                 const select = $('#id_responsable_proyecto');
                 select.empty();
                 select.append('<option value="" selected disabled>Seleccione un responsable</option>');
-                
+
                 if (data && data.length > 0) {
-                    data.forEach(function(responsable) {
+                    data.forEach(function (responsable) {
                         select.append(`<option value="${responsable.id}">${responsable.descripcion}</option>`);
                     });
                     select.select2({
@@ -844,13 +849,13 @@ $(document).ready(function () {
                     select.append('<option value="" disabled>No hay responsables disponibles</option>');
                 }
             },
-            error: function(xhr, status, error) {
+            error: function (xhr, status, error) {
                 const select = $('#id_responsable_proyecto');
                 select.empty().append('<option value="" disabled>Error al cargar responsables</option>');
             }
         });
     }
-    
+
     function obtenerSitios() {
         $.ajax({
             url: urlObtenerSitios,
@@ -947,9 +952,9 @@ $(document).ready(function () {
         const $opcionClickeada = $(this);
         const $dropdownContainer = $opcionClickeada.closest('.dropdown');
         const $botonDropdown = $dropdownContainer.find('.dropdown-toggle');
-        let datos = tablaOt.row($(this).parents('tr')).data() ? 
-                    tablaOt.row($(this).parents('tr')).data() : 
-                    tablaReprogramaciones.row($(this).parents('tr')).data();
+        let datos = tablaOt.row($(this).parents('tr')).data() ?
+            tablaOt.row($(this).parents('tr')).data() :
+            tablaReprogramaciones.row($(this).parents('tr')).data();
         const nuevoEstatusId = $(this).data('estatus');
         const nuevoEstatusTexto = $(this).text().trim();
         const otId = $(this).closest('.dropdown').find('.ot-id').val();
@@ -968,7 +973,7 @@ $(document).ready(function () {
                     </div>
             `;
         }
-        
+
         contenidoMensaje += `
                     <div class="mb-3 col-4">
                         <label for="comentarioCambioOt" class="form-label">Comentario:</label>
@@ -985,7 +990,7 @@ $(document).ready(function () {
                 {
                     texto: "Sí, continuar",
                     clase: "btn-primary",
-                    funcion: function() {
+                    funcion: function () {
                         const comentario = $('#comentarioCambioOt').val().trim();
                         let fechaEntrega = null;
                         if (mostrarFechaEntrega) {
@@ -995,20 +1000,21 @@ $(document).ready(function () {
                                 return false;
                             }
                         }
-                        let log = new RegistroActividad(4,datos.id,"ACTUALIZAR");
+                        let log = new RegistroActividad(4, datos.id, "ACTUALIZAR");
                         log.agregar_actividad({
-                            nombre:"Actualizó",
-                            valor_actual:nuevoEstatusTexto,
-                            valor_anterior:datos.estatus,
-                            detalle:`el estatus de: <b>${datos.estatus}</b> a: <b>${nuevoEstatusTexto}</b>, de la OT: <b>${datos.orden_trabajo}</b>`})   
-                        
+                            nombre: "Actualizó",
+                            valor_actual: nuevoEstatusTexto,
+                            valor_anterior: datos.estatus,
+                            detalle: `el estatus de: <b>${datos.estatus}</b> a: <b>${nuevoEstatusTexto}</b>, de la OT: <b>${datos.orden_trabajo}</b>`
+                        })
+
                         BMAjax(
                             urlCambiarEstatusOT,
                             {
                                 ot_id: otId,
                                 nuevo_estatus_id: nuevoEstatusId,
                                 registro_actividad: JSON.stringify(log.actividad),
-                                comentario: comentario, 
+                                comentario: comentario,
                                 fecha_entrega: fechaEntrega,
                             },
                             "POST"
@@ -1023,7 +1029,7 @@ $(document).ready(function () {
                         });
                     }
                 },
-                { texto: "Cancelar", clase: "btn-secondary", funcion: () => {} }
+                { texto: "Cancelar", clase: "btn-secondary", funcion: () => { } }
             ]
         });
     });
@@ -1060,7 +1066,7 @@ $(document).ready(function () {
         }
     });
 
-    $(document).on('click', '.cambiar-estatus-paso-option', function(e) {
+    $(document).on('click', '.cambiar-estatus-paso-option', function (e) {
         e.preventDefault();
         const $opcionClickeada = $(this);
         const $dropdownContainer = $opcionClickeada.closest('.dropdown');
@@ -1069,7 +1075,7 @@ $(document).ready(function () {
         const pasoId = $(this).closest('.dropdown').find('.paso-id').val();
         const nuevoEstatus = $(this).data('estatus');
         const textoEstatus = $(this).text().trim();
-        const mostrarFechaEntrega = (nuevoEstatus == '3');  
+        const mostrarFechaEntrega = (nuevoEstatus == '3');
         const dropdownButton = $(this).closest('.dropdown').find('.dropdown-toggle');
 
         let datosPaso = window.tablaDetalleActiva ? window.tablaDetalleActiva.row($(this).parents('tr')).data() : null;
@@ -1078,7 +1084,7 @@ $(document).ready(function () {
                 <p>¿Estás seguro de cambiar el estatus a <strong>${textoEstatus}</strong>?</p>
                 <div class="row">
         `;
-        
+
         if (mostrarFechaEntrega) {
             contenidoMensaje += `
                     <div class="mb-3 col-3">
@@ -1087,7 +1093,7 @@ $(document).ready(function () {
                     </div>
             `;
         }
-        
+
         contenidoMensaje += `
                     <div class="mb-3 ${mostrarFechaEntrega ? 'col-3' : 'col-3'}">
                         <label for="comentarioCambio" class="form-label">Comentario:</label>
@@ -1104,7 +1110,7 @@ $(document).ready(function () {
                 {
                     texto: "Sí, continuar",
                     clase: "btn-primary",
-                    funcion: function() {
+                    funcion: function () {
                         const comentario = $('#comentarioCambio').val().trim();
                         let fechaEntrega = null;
                         if (mostrarFechaEntrega) {
@@ -1114,7 +1120,7 @@ $(document).ready(function () {
                                 return;
                             }
                         }
-                        
+
                         let log = new RegistroActividad(5, datosPaso.id, "ACTUALIZAR");
                         log.agregar_actividad({
                             nombre: "Actualizó",
@@ -1122,12 +1128,12 @@ $(document).ready(function () {
                             valor_anterior: datosPaso.estatus_paso_texto || 'PENDIENTE',
                             detalle: `el estatus de: <b>${datosPaso.estatus_paso_texto || 'PENDIENTE'}</b> a: <b>${textoEstatus}</b>, del paso <b>${datosPaso.orden || ''} - ${datosPaso.desc_paso || ''}</b> de la OT: <b>${datosPaso.oficio_ot || ''}</b>`
                         });
-                        
+
                         const datos = {
                             paso_id: pasoId,
                             nuevo_estatus: nuevoEstatus,
                             comentario: comentario,
-                            registro_actividad: JSON.stringify(log.actividad), 
+                            registro_actividad: JSON.stringify(log.actividad),
                             csrfmiddlewaretoken: $('input[name="csrfmiddlewaretoken"]').val()
                         };
 
@@ -1139,7 +1145,7 @@ $(document).ready(function () {
                             urlCambiarEstatusPaso,
                             datos,
                             "POST"
-                        ).done(function(response) {
+                        ).done(function (response) {
                             if (response.exito) {
                                 if (window.tablaDetalleActiva) {
                                     actualizarEstatusPasoEnTiempoReal($botonDropdown, textoEstatus, nuevoEstatus, fechaEntrega, comentario);
@@ -1148,15 +1154,15 @@ $(document).ready(function () {
                             } else {
                                 aviso("error", response.detalles || "Error al actualizar el estatus");
                             }
-                        }).fail(function() {
+                        }).fail(function () {
                             aviso("error", "Error al conectar con el servidor");
                         });
                     }
                 },
                 {
-                    texto: "Cancelar", 
+                    texto: "Cancelar",
                     clase: "btn-light",
-                    funcion: function() { return }
+                    funcion: function () { return }
                 }
             ]
         });
@@ -1168,16 +1174,17 @@ $(document).ready(function () {
         const tipo = $(this).data('tipo');
         let datosPaso = window.tablaDetalleActiva ? window.tablaDetalleActiva.row($(this).parents('tr')).data() : null;
 
-        let log = new RegistroActividad(5,datosPaso.id,"ACTUALIZAR");
+        let log = new RegistroActividad(5, datosPaso.id, "ACTUALIZAR");
         log.agregar_actividad({
-            nombre:"Actualizó",
-            valor_actual:fecha,
-            valor_anterior:(tipo=='1')?datosPaso.fecha_inicio:(tipo=='2')?datosPaso.fecha_termino:datosPaso.fecha_entrega,
-            detalle:`la fecha de:<b> ${(tipo=='1')?datosPaso.fecha_inicio:(tipo=='2')?datosPaso.fecha_termino:datosPaso.fecha_entrega}</b> a: <b>${fecha}
-                ${(tipo=='1')?'de inicio':
-                (tipo=='2')?'de término':'de entrega'} </b>
-                del paso <b>${datosPaso.orden}</b> de la OT: <b>${datosPaso.orden_trabajo}</b>`}) 
-        
+            nombre: "Actualizó",
+            valor_actual: fecha,
+            valor_anterior: (tipo == '1') ? datosPaso.fecha_inicio : (tipo == '2') ? datosPaso.fecha_termino : datosPaso.fecha_entrega,
+            detalle: `la fecha de:<b> ${(tipo == '1') ? datosPaso.fecha_inicio : (tipo == '2') ? datosPaso.fecha_termino : datosPaso.fecha_entrega}</b> a: <b>${fecha}
+                ${(tipo == '1') ? 'de inicio' :
+                    (tipo == '2') ? 'de término' : 'de entrega'} </b>
+                del paso <b>${datosPaso.orden}</b> de la OT: <b>${datosPaso.orden_trabajo}</b>`
+        })
+
         BMAjax(
             urlActualizarFecha,
             {
@@ -1201,12 +1208,122 @@ $(document).ready(function () {
         const input = $(this).closest('div').find('.archivo-input')[0];
         let datosPaso = window.tablaDetalleActiva ? window.tablaDetalleActiva.row($(this).parents('tr')).data() : null;
         abrirModalSubirArchivo(datosPaso);
-        
+
     });
 
-    $(document).on('click', '.btn-importar-excel', function() {
+    $(document).on('click', '.btn-importar-excel', function () {
         const otId = $(this).data('ot');
         abrirModalImportarAnexo(otId);
+    });
+
+    $(document).on('click', '.btn-importar-mpp', function () {
+        const otId = $(this).data('ot');
+        abrirModalImportarMPP(otId);
+    });
+
+    function abrirModalImportarMPP(otId) {
+        if ($('#modalImportarMPP').length === 0) {
+            const modalHTML = `
+                <div class="modal fade" id="modalImportarMPP" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title"></i>Importar Programa de Actividades</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="formImportarMPP">
+                                    <input type="hidden" name="ot_id" id="mpp_ot_id">
+                                    <div class="mb-3">
+                                        <label for="archivoMPP" class="form-label fw-bold">Seleccione el archivo de Microsoft Project (.mpp)</label>
+                                        <input class="form-control" type="file" id="archivoMPP" name="archivo" accept=".mpp">
+                                        <div class="text-muted mt-1 ms-1" style="font-size: 12px;">
+                                            <i class="fas fa-info-circle" style="color: #f05523;"></i> Solo se aceptan archivos con extensión <b>.mpp</b> (Microsoft Project).
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-primary" id="btnGuardarMPP">Importar</button>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            $('body').append(modalHTML);
+        }
+        $('#mpp_ot_id').val(otId);
+        $('#archivoMPP').val('');
+        const modal = new bootstrap.Modal(document.getElementById('modalImportarMPP'));
+        modal.show();
+    }
+
+    $(document).on('click', '#btnGuardarMPP', function (e) {
+        e.preventDefault();
+        const otId = $('#mpp_ot_id').val();
+        const fileInput = $('#archivoMPP')[0];
+        console.log(fileInput);
+        if (fileInput.files.length === 0) {
+            aviso("advertencia", "Debe seleccionar un archivo .mpp");
+            return;
+        }
+
+        const archivo = fileInput.files[0];
+        if (!archivo.name.toLowerCase().endsWith('.mpp')) {
+            aviso("advertencia", "El archivo debe tener extensión .mpp");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('ot_id', otId);
+        formData.append('archivo', archivo);
+        formData.append('csrfmiddlewaretoken', $('input[name="csrfmiddlewaretoken"]').val());
+
+        const btn = $(this);
+        const originalText = btn.html();
+        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Importando...');
+
+        fetch(urlImportarMPP, {
+            method: 'POST',
+            body: formData
+        })
+            .then(async response => {
+                const data = await response.json();
+                return data;
+            })
+            .then(res => {
+                if (res.exito) {
+                    aviso(res.tipo_aviso || 'exito', res.detalles || 'Programa de actividades importado correctamente');
+                    $('#modalImportarMPP').modal('hide');
+                    const resultadoEl = $(`#resultado-mpp_${otId}`);
+                    if (resultadoEl.length) {
+                        resultadoEl.html('<span class="text-success"><i class="fas fa-check-circle me-1"></i>' + (res.detalles || 'Archivo importado correctamente') + '</span>');
+                    }
+
+                    if (window.mppGrids[otId]) {
+                        window.mppGrids[otId].destroy();
+                        delete window.mppGrids[otId];
+                    }
+                    
+                    const tabActiva = $(`#programa-tab_${otId}`).hasClass('active');
+                    if (tabActiva) {
+                        cargarGridMPP(otId);
+                    } else {
+                        const resultadoEl = $(`#resultado-mpp_${otId}`);
+                        if (resultadoEl.length) {
+                            resultadoEl.html('<div class="text-success"><i class="fas fa-check-circle me-1"></i>Archivo importado correctamente. Ve a la pestaña para visualizarlo.</div>');
+                        }
+                    }
+                } else {
+                    aviso(res.tipo_aviso || 'advertencia', res.detalles || 'Error al importar el archivo');
+                }
+            })
+            .catch(() => {
+                aviso('error', 'Error de comunicación con el servidor');
+            })
+            .finally(() => {
+                btn.prop('disabled', false).html(originalText);
+            });
     });
 
     function abrirModalImportarAnexo(otId) {
@@ -1226,7 +1343,7 @@ $(document).ready(function () {
                                         <label for="archivoAnexo" class="form-label">Seleccione el archivo Excel (.xlsx)</label>
                                         <input class="form-control" type="file" id="archivoAnexo" name="archivo" accept=".xlsx, .xls, .xlsm">
                                         <div class="text-muted text-12px mt-1 ms-1" style="font-size: 12px;">
-                                            <i class="fas fa-info-circle"></i> Asegúrese que el archivo contenga las columnas: PARTIDA, CONCEPTO, UNIDAD, VOLUMEN PTE, P.U.M.N., P.U.USD
+                                            <i class="fas fa-info-circle" style="color: #f05523;"></i> Asegúrese que el archivo contenga las columnas: PARTIDA, CONCEPTO, UNIDAD, VOLUMEN PTE, P.U.M.N., P.U.USD
                                         </div>
                                     </div>
                                     <div class="alert alert-light border mb-3">
@@ -1238,7 +1355,7 @@ $(document).ready(function () {
                                     </div>
                                     <div class="text-muted text-12px mt-1 ms-1">
                                         <small>
-                                            <i class="fas fa-info-circle"></i> 
+                                            <i class="fas fa-info-circle" style="color: #f05523;"></i> 
                                             Actívalo si ya cargaste el Anexo C y solo quieres actualizar el anexo existente o la sabana calendarizada con volúmenes proyectados.
                                             <br>
                                             Desactívalo para cargar un Anexo C o Sabana de recursos nuevo.
@@ -1257,12 +1374,12 @@ $(document).ready(function () {
             $('body').append(modalHTML);
         }
         $('#import_ot_id').val(otId);
-        $('#archivoAnexo').val(''); 
+        $('#archivoAnexo').val('');
         const modal = new bootstrap.Modal(document.getElementById('modalImportarAnexo'));
         modal.show();
     }
 
-    $(document).on('click', '#btnGuardarImportacion', function(e) {
+    $(document).on('click', '#btnGuardarImportacion', function (e) {
         e.preventDefault();
         const formData = new FormData($('#formImportarAnexo')[0]);
         const otId = $('#import_ot_id').val();
@@ -1282,58 +1399,58 @@ $(document).ready(function () {
             method: 'POST',
             body: formData
         })
-        .then(async response => {
-            const contentType = response.headers.get('content-type') || '';
-            const disposition = response.headers.get('content-disposition') || '';
-            if (contentType.includes('application/json')) {
-                const data = await response.json();
-                return { tipo: 'json', data: data };
-            } 
-            else {
-                const blob = await response.blob();
-                return { tipo: 'file', blob: blob, disposition: disposition };
-            }
-        })
-        .then(resultado => {
-            if (resultado.tipo === 'json') {
-                const res = resultado.data;
-                if (res.exito) {
-                    aviso(res.tipo_aviso || 'exito', res.detalles || "Importación completada");
-                    $('#modalImportarAnexo').modal('hide');
-                    const tablaId = `#tabla-importaciones_${otId}`;
-                    if ($.fn.DataTable.isDataTable(tablaId)) {
-                        $(tablaId).DataTable().ajax.reload();
-                    }
-                } else {
-                    aviso(res.tipo_aviso || 'advertencia', res.detalles || "Error en la importación");
+            .then(async response => {
+                const contentType = response.headers.get('content-type') || '';
+                const disposition = response.headers.get('content-disposition') || '';
+                if (contentType.includes('application/json')) {
+                    const data = await response.json();
+                    return { tipo: 'json', data: data };
                 }
-            } 
-            else if (resultado.tipo === 'file') {
-                let filename = "Errores_Importacion.xlsx";
-                if (resultado.disposition && resultado.disposition.indexOf('attachment') !== -1) {
-                    const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
-                    const matches = filenameRegex.exec(resultado.disposition);
-                    if (matches != null && matches[1]) { 
-                        filename = matches[1].replace(/['"]/g, '');
+                else {
+                    const blob = await response.blob();
+                    return { tipo: 'file', blob: blob, disposition: disposition };
+                }
+            })
+            .then(resultado => {
+                if (resultado.tipo === 'json') {
+                    const res = resultado.data;
+                    if (res.exito) {
+                        aviso(res.tipo_aviso || 'exito', res.detalles || "Importación completada");
+                        $('#modalImportarAnexo').modal('hide');
+                        const tablaId = `#tabla-importaciones_${otId}`;
+                        if ($.fn.DataTable.isDataTable(tablaId)) {
+                            $(tablaId).DataTable().ajax.reload();
+                        }
+                    } else {
+                        aviso(res.tipo_aviso || 'advertencia', res.detalles || "Error en la importación");
                     }
                 }
-                const url = window.URL.createObjectURL(resultado.blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = filename;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                window.URL.revokeObjectURL(url); 
-                aviso("advertencia", "Se encontraron inconsistencias. Se descargó el reporte de errores.");
-            }
-        })
-        .catch(error => {
-            aviso("error", "Error de comunicación con el servidor");
-        })
-        .finally(() => {
-            btn.prop('disabled', false).html(originalText);
-        });
+                else if (resultado.tipo === 'file') {
+                    let filename = "Errores_Importacion.xlsx";
+                    if (resultado.disposition && resultado.disposition.indexOf('attachment') !== -1) {
+                        const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+                        const matches = filenameRegex.exec(resultado.disposition);
+                        if (matches != null && matches[1]) {
+                            filename = matches[1].replace(/['"]/g, '');
+                        }
+                    }
+                    const url = window.URL.createObjectURL(resultado.blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = filename;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    window.URL.revokeObjectURL(url);
+                    aviso("advertencia", "Se encontraron inconsistencias. Se descargó el reporte de errores.");
+                }
+            })
+            .catch(error => {
+                aviso("error", "Error de comunicación con el servidor");
+            })
+            .finally(() => {
+                btn.prop('disabled', false).html(originalText);
+            });
     });
 });
 
@@ -1345,23 +1462,24 @@ function guardarEnlaceArchivo() {
         $('#enlaceArchivoOt').focus();
         return;
     }
-    
+
     if (!enlace.startsWith('http://') && !enlace.startsWith('https://')) {
         aviso("advertencia", "La URL debe comenzar con http:// o https://");
         $('#enlaceArchivoOt').focus();
         $('#enlaceArchivoOt').select();
         return;
     }
-    let log = new RegistroActividad(5,window.pasoActual.id,"IMPORTAR");
+    let log = new RegistroActividad(5, window.pasoActual.id, "IMPORTAR");
     log.agregar_actividad({
-        nombre:"Importó",
-        valor_actual:enlace,
-        valor_anterior:window.pasoActual.archivo,
-        detalle:`un enlace de archivo al paso: <b>${window.pasoActual.orden}-${window.pasoActual.desc_paso}</b> de la OT: <b>${window.pasoActual.oficio_ot}</b>`})   
-    
+        nombre: "Importó",
+        valor_actual: enlace,
+        valor_anterior: window.pasoActual.archivo,
+        detalle: `un enlace de archivo al paso: <b>${window.pasoActual.orden}-${window.pasoActual.desc_paso}</b> de la OT: <b>${window.pasoActual.oficio_ot}</b>`
+    })
+
     if (window.pasoActual) {
         $btn.blur();
-    
+
         $.ajax({
             url: urlGuardarArchivo,
             method: "POST",
@@ -1371,7 +1489,7 @@ function guardarEnlaceArchivo() {
                 archivo: enlace,
                 registro_actividad: JSON.stringify(log.actividad)
             },
-            success: function(response) {
+            success: function (response) {
                 if (response.exito) {
                     aviso("exito", "Archivo guardado correctamente");
                     $('#modalSubirArchivo').modal('hide');
@@ -1383,7 +1501,7 @@ function guardarEnlaceArchivo() {
                     aviso("error", response.message || "Error al guardar el archivo");
                 }
             },
-            error: function() {
+            error: function () {
                 aviso("error", "Error al guardar el archivo");
             }
         });
@@ -1429,6 +1547,11 @@ function fnHTMLTablaDetallePTE(otId) {
                             <span class="text-secondary">Importacion anexo C inicial</span>
                         </button>
                     </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link text-secondary" id="programa-tab_${otId}" data-bs-toggle="tab" data-bs-target="#programa_${otId}" type="button" role="tab" aria-controls="programa" aria-selected="false">
+                            <span class="text-secondary">Importar Programa de Actividades</span>
+                        </button>
+                    </li>
                 </ul>
                 <div class="tab-content p-3 border border-top-0 bg-white" id="myTabContent_${otId}">
                     <div class="tab-pane fade show active" id="detalle_${otId}" role="tabpanel" aria-labelledby="detalle-tab_${otId}">
@@ -1449,6 +1572,14 @@ function fnHTMLTablaDetallePTE(otId) {
                         <table id="tabla-importaciones_${otId}" class="table table-sm table-bordered table-hover w-100">
                         </table>
                     </div>
+                    <div class="tab-pane fade" id="programa_${otId}" role="tabpanel" aria-labelledby="programa-tab_${otId}">
+                        <div class="actions-toolbar mb-2 d-flex justify-content-end align-items-center gap-3">
+                            <button class="btn btn-sm btn-primary btn-importar-mpp shadow-sm" data-ot="${otId}">
+                                <i class="fas fa-file-import me-2"></i>Importar archivo .mpp
+                            </button>
+                        </div>
+                        <div id="resultado-mpp_${otId}" class="text-secondary">No se ha cargado ningún programa de actividades.</div>
+                    </div>
                 </div>
             </div>
         `;
@@ -1464,6 +1595,11 @@ function fnHTMLTablaDetallePTE(otId) {
                     <li class="nav-item" role="presentation">
                         <button class="nav-link text-secondary" id="importaciones-tab_${otId}" data-bs-toggle="tab" data-bs-target="#importaciones_${otId}" type="button" role="tab" aria-controls="importaciones" aria-selected="false">
                             <span class="text-secondary">Importacion anexo C modificado</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link text-secondary" id="programa-tab_${otId}" data-bs-toggle="tab" data-bs-target="#programa_${otId}" type="button" role="tab" aria-controls="programa" aria-selected="false">
+                            <span class="text-secondary">Importar Programa de Actividades</span>
                         </button>
                     </li>
                 </ul>
@@ -1482,6 +1618,14 @@ function fnHTMLTablaDetallePTE(otId) {
                         <table id="tabla-importaciones_${otId}" class="table table-sm table-bordered table-hover w-100">
                         </table>
                     </div>
+                    <div class="tab-pane fade" id="programa_${otId}" role="tabpanel" aria-labelledby="programa-tab_${otId}">
+                        <div class="actions-toolbar mb-2 d-flex justify-content-end align-items-center gap-3">
+                            <button class="btn btn-sm btn-primary btn-importar-mpp shadow-sm" data-ot="${otId}">
+                                <i class="fas fa-file-import me-2"></i>Importar archivo .mpp
+                            </button>
+                        </div>
+                        <div id="resultado-mpp_${otId}" class="text-secondary">No se ha cargado ningún programa de actividades.</div>
+                    </div>
                 </div>
             </div>
         `;
@@ -1496,11 +1640,11 @@ function initTablaDetalleOT(otId) {
         searching: false,
         paging: true,
         info: true,
-        pageLength: 10,    
-        lengthChange: false, 
-        dom: '<"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>', 
+        pageLength: 10,
+        lengthChange: false,
+        dom: '<"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
         language: {
-            "lengthMenu": "",  
+            "lengthMenu": "",
             "info": "Mostrando _START_ a _END_ de _TOTAL_ registros",
             "infoEmpty": "No hay registros",
             "infoFiltered": "",
@@ -1519,21 +1663,21 @@ function initTablaDetalleOT(otId) {
             }
         },
         columns: [
-            { 
-                data: "orden", 
-                title: "Paso", 
+            {
+                data: "orden",
+                title: "Paso",
                 className: "text-center",
-                width: "5%" 
+                width: "5%"
             },
-            { 
-                data: "desc_paso", 
-                title: "Descripción", 
-                width: "35%" 
+            {
+                data: "desc_paso",
+                title: "Descripción",
+                width: "35%"
             },
             {
                 data: "fecha_inicio",
                 title: "Fecha inicio",
-                className:"text-center",
+                className: "text-center",
                 width: "5%",
                 render: function (data, type, row) {
                     let val = "";
@@ -1556,7 +1700,7 @@ function initTablaDetalleOT(otId) {
             {
                 data: "fecha_termino",
                 title: "Fecha término",
-                className:"text-center",    
+                className: "text-center",
                 width: "5%",
                 render: function (data, type, row) {
                     let val = "";
@@ -1579,7 +1723,7 @@ function initTablaDetalleOT(otId) {
             {
                 data: "fecha_entrega",
                 title: "Fecha entrega",
-                className:"text-center",    
+                className: "text-center",
                 width: "10%",
                 render: function (data, type, row) {
                     return data || ''
@@ -1593,29 +1737,29 @@ function initTablaDetalleOT(otId) {
             },
             {
                 "data": "estatus_paso",
-                "title": "Estatus", 
+                "title": "Estatus",
                 "orderable": false,
                 "className": "text-center",
                 "width": "10%",
-                "render": function(data, type, row) {
+                "render": function (data, type, row) {
                     const estatusColors = {
-                        '1': '#fad91f',   
-                        '2': '#55c0e9',   
-                        '3': '#95c93d',   
-                        '4': '#f05523',   
-                        '14': '#54565a'   
+                        '1': '#fad91f',
+                        '2': '#55c0e9',
+                        '3': '#95c93d',
+                        '4': '#f05523',
+                        '14': '#54565a'
                     };
-                    
+
                     const estatusTextos = {
                         '1': 'PENDIENTE',
-                        '2': 'PROCESO', 
+                        '2': 'PROCESO',
                         '3': 'COMPLETADO',
                         '4': 'CANCELADO',
                         '14': 'NO APLICA'
                     };
                     const textoActual = estatusTextos[data] || 'PENDIENTE';
                     const colorActual = estatusColors[data] || '#fad91f';
-                    
+
                     return `
                         <div class="dropdown">
                             <button class="btn btn-sm dropdown-toggle text-white w-100" 
@@ -1641,12 +1785,12 @@ function initTablaDetalleOT(otId) {
                 "class": "text-center",
                 "width": "120px",
                 "orderable": false,
-                "render": function(data, type, row) {
+                "render": function (data, type, row) {
                     if (row.archivo && row.archivo.trim() !== '') {
                         const urlCodificada = encodeURI(row.archivo);
-                        const archivoAcortado = row.archivo.length > 30 ? 
+                        const archivoAcortado = row.archivo.length > 30 ?
                             row.archivo.substring(0, 30) + '...' : row.archivo;
-                            
+
                         return `
                             <a class="table-icon ver-archivo" 
                                 title="Cambiar archivo" 
@@ -1688,7 +1832,7 @@ function initTablaReprogramaciones(otId) {
             url: urlDatatable,
             type: "GET",
             data: function (d) {
-                d.tipo = 5; 
+                d.tipo = 5;
                 d.ot_principal = otId;
             }
         },
@@ -1742,14 +1886,14 @@ function initTablaReprogramaciones(otId) {
                 "data": "progreso_final",
                 "title": "Progreso",
                 "width": "20%",
-                "render": function(data, type, row) {
-                    let color = '#95c93d'; 
-                    if (data < 25) color = '#f05523';      
-                    else if (data < 75) color = '#fad91f'; 
-                    
+                "render": function (data, type, row) {
+                    let color = '#95c93d';
+                    if (data < 25) color = '#f05523';
+                    else if (data < 75) color = '#fad91f';
+
                     const porcentaje = isNaN(data) ? 0 : Math.max(0, Math.min(100, data));
                     const tooltip = `Tiempo: ${row.progreso_tiempo}% | Pasos: ${row.progreso_pasos}%`;
-                    
+
                     return `
                         <div title="${tooltip}" data-bs-toggle="tooltip">
                             <div class="progress" style="height: 18px; cursor: pointer;">
@@ -1779,17 +1923,17 @@ function initTablaReprogramaciones(otId) {
                 "render": function (data, type, row) {
                     // Mapa de colores para Estatus de OT
                     const estatusColors = {
-                        'POR DEFINIR': '#54565a',            
-                        'ASIGNADA': '#fad91f',               
-                        'CANCELADA': '#f05523',              
-                        'DIFERIDA': '#f05523',               
-                        'EN EJECUCION': '#55c0e9',           
-                        'SUSPENDIDA': '#54565a',             
-                        'TERMINADA': '#95c93d',              
-                        'POR CANCELAR': '#f05523'            
+                        'POR DEFINIR': '#54565a',
+                        'ASIGNADA': '#fad91f',
+                        'CANCELADA': '#f05523',
+                        'DIFERIDA': '#f05523',
+                        'EN EJECUCION': '#55c0e9',
+                        'SUSPENDIDA': '#54565a',
+                        'TERMINADA': '#95c93d',
+                        'POR CANCELAR': '#f05523'
                     };
 
-                    const btnColor = estatusColors[data] || '#54565a'; 
+                    const btnColor = estatusColors[data] || '#54565a';
 
                     if (row.estatus_numero === 1) {
                         return `
@@ -1878,12 +2022,12 @@ function initTablaImportaciones(otId) {
                 ot_id: otId
             }
         },
-        drawCallback: function(settings) {
+        drawCallback: function (settings) {
             var api = this.api();
             var json = api.ajax.json();
             if (json && json.totales) {
                 $(`#lbl-total-importado-mn_${otId}`).text(formatoMoneda.format(json.totales.mn));
-                $(`#lbl-total-importado-usd_${otId}`).text(formatoMoneda.format(json.totales.usd)); 
+                $(`#lbl-total-importado-usd_${otId}`).text(formatoMoneda.format(json.totales.usd));
                 $(`#lbl-total-importado-hom_${otId}`).text(formatoMoneda.format(json.totales.homologado));
             } else {
                 $(`#lbl-total-importado-mn_${otId}`).text('$0.00');
@@ -1892,44 +2036,44 @@ function initTablaImportaciones(otId) {
             }
         },
         columns: [
-            { 
-                data: "codigo_concepto", 
+            {
+                data: "codigo_concepto",
                 title: "Partida",
                 width: "10%"
             },
-            { 
-                data: "descripcion", 
-                title: "Descripción" 
+            {
+                data: "descripcion",
+                title: "Descripción"
             },
-            { 
-                data: "unidad", 
+            {
+                data: "unidad",
                 title: "Unidad",
                 width: "8%",
                 className: "text-center"
             },
-            { 
-                data: "cantidad", 
+            {
+                data: "cantidad",
                 title: "Cantidad",
                 width: "10%",
                 className: "text-end",
                 render: $.fn.dataTable.render.number(',', '.', 4)
             },
-            { 
-                data: "precio_unitario_mn", 
+            {
+                data: "precio_unitario_mn",
                 title: "MXN",
                 width: "12%",
                 className: "text-end",
                 render: $.fn.dataTable.render.number(',', '.', 2, '$ ')
             },
-            { 
-                data: "precio_unitario_usd", 
+            {
+                data: "precio_unitario_usd",
                 title: "USD",
                 width: "12%",
                 className: "text-end",
                 render: $.fn.dataTable.render.number(',', '.', 2, '$ ')
             },
-            { 
-                data: "importe", 
+            {
+                data: "importe",
                 title: "Importe homologado",
                 width: "12%",
                 className: "text-center",
@@ -1961,21 +2105,21 @@ function toggleFrenteFields() {
 
     let promises = [];
 
-    if (frenteId == '2') {  
+    if (frenteId == '2') {
         $divEmbarcacion.removeAttr('hidden');
         $divPlataforma.removeAttr('hidden');
         $divIntercom.removeAttr('hidden');
 
         $divCheckContainer.removeAttr('hidden');
-        $checkPatio.prop('disabled', false); 
+        $checkPatio.prop('disabled', false);
         $('#id_patio_fase').prop('disabled', false);
-        
+
         promises.push(cargarSitios(6, '#id_embarcacion'));
         promises.push(cargarSitios(7, '#id_plataforma'));
         promises.push(cargarSitios(5, '#id_intercom'));
-        promises.push(cargarSitios(3, '#id_patio_fase')); 
+        promises.push(cargarSitios(3, '#id_patio_fase'));
 
-    } else if (frenteId == '1') {   
+    } else if (frenteId == '1') {
         $divPatio.removeAttr('hidden');
         $divPlataforma.removeAttr('hidden');
         $divIntercom.removeAttr('hidden');
@@ -1984,14 +2128,14 @@ function toggleFrenteFields() {
         promises.push(cargarSitios(7, '#id_plataforma'));
         promises.push(cargarSitios(5, '#id_intercom'));
 
-    } else if (frenteId == '4') {   
+    } else if (frenteId == '4') {
         $divPlataforma.removeAttr('hidden');
 
         $divCheckContainer.removeAttr('hidden');
-        $checkPatio.prop('disabled', false); 
+        $checkPatio.prop('disabled', false);
         $('#id_patio_fase').prop('disabled', false);
         promises.push(cargarSitios(7, '#id_plataforma'));
-        promises.push(cargarSitios(3, '#id_patio_fase')); 
+        promises.push(cargarSitios(3, '#id_patio_fase'));
     }
 
     return Promise.all(promises);
@@ -2053,20 +2197,20 @@ function actualizarEstatusOTEnTiempoReal(dropdownButton, nuevoTexto, nuevoEstatu
         'TERMINADA': 'bg-success',
         'POR CANCELAR': 'bg-danger'
     };
-    
+
     dropdownButton.removeClass(function (index, className) {
         return (className.match(/(^|\s)bg-\S+/g) || []).join(' ');
     })
-    .addClass(estatusClasses[nuevoTexto] || 'bg-secondary')
-    .text(nuevoTexto);
+        .addClass(estatusClasses[nuevoTexto] || 'bg-secondary')
+        .text(nuevoTexto);
     const tr = dropdownButton.closest('tr');
-    const tableApi = window.tablaOt; 
+    const tableApi = window.tablaOt;
     const row = tableApi.row(tr);
-    
-    if(row.length){
+
+    if (row.length) {
         let rowData = row.data();
         rowData.estatus_ot_texto = nuevoTexto;
-        if (nuevoEstatusId == '10' && fechaEntrega) { 
+        if (nuevoEstatusId == '10' && fechaEntrega) {
             rowData.fecha_termino_real = fechaEntrega;
             const parts = fechaEntrega.split('-');
         }
@@ -2077,20 +2221,20 @@ function actualizarEstatusOTEnTiempoReal(dropdownButton, nuevoTexto, nuevoEstatu
 function actualizarEstatusPasoEnTiempoReal(dropdownButton, nuevoTexto, nuevoEstatus, fechaInputVal, comentarioInputVal) {
     const estatusClasses = {
         'PENDIENTE': 'bg-warning',
-        'PROCESO': 'bg-primary', 
+        'PROCESO': 'bg-primary',
         'COMPLETADO': 'bg-success',
         'CANCELADO': 'bg-danger',
         'NO APLICA': 'bg-secondary'
     };
-    
+
     dropdownButton.removeClass('bg-warning bg-primary bg-success bg-danger bg-secondary')
-                    .addClass(estatusClasses[nuevoTexto] || 'bg-secondary')
-                    .text(nuevoTexto);
+        .addClass(estatusClasses[nuevoTexto] || 'bg-secondary')
+        .text(nuevoTexto);
 
     const tr = dropdownButton.closest('tr');
     if (window.tablaDetalleActiva) {
         const row = window.tablaDetalleActiva.row(tr);
-        if(row.length) {
+        if (row.length) {
             let d = row.data();
             d.estatus_paso = nuevoEstatus;
             if (nuevoEstatus == '3' && fechaInputVal) {
@@ -2101,17 +2245,17 @@ function actualizarEstatusPasoEnTiempoReal(dropdownButton, nuevoTexto, nuevoEsta
                     d.fecha_entrega = fechaInputVal;
                 }
             }
-            if(comentarioInputVal){
-                 d.comentario = comentarioInputVal;
+            if (comentarioInputVal) {
+                d.comentario = comentarioInputVal;
             }
             row.data(d).invalidate().draw(false);
         }
     } else {
         const table = tr.closest('table');
-        const headers = table.find('thead > tr > th'); 
-        const tds = tr.find('td'); 
+        const headers = table.find('thead > tr > th');
+        const tds = tr.find('td');
         let fechaEntregaCell = null;
-        fechaEntregaCell = tds.eq(4); 
+        fechaEntregaCell = tds.eq(4);
         let inputsFecha = tr.find('.fecha-paso-input');
         if (nuevoEstatus == '3' && fechaEntregaCell && fechaInputVal) {
             const parts = fechaInputVal.split('-');
@@ -2119,7 +2263,7 @@ function actualizarEstatusPasoEnTiempoReal(dropdownButton, nuevoTexto, nuevoEsta
             fechaEntregaCell.text(fechaFormateada);
         }
         if (inputsFecha.length) {
-            if (['3', '14', 3, 14].includes(nuevoEstatus)) { 
+            if (['3', '14', 3, 14].includes(nuevoEstatus)) {
                 inputsFecha.prop('disabled', true);
             } else {
                 inputsFecha.prop('disabled', false);
@@ -2133,9 +2277,9 @@ function actualizarProgresoGeneralOT(otId) {
         urlObtenerProgresoGeneralOT,
         { ot_id: otId },
         "GET"
-    ).done(function(response) {
+    ).done(function (response) {
         if (response.exito) {
-            tablaOt.rows().every(function() {
+            tablaOt.rows().every(function () {
                 const rowData = this.data();
                 if (rowData.id == otId) {
                     rowData.progreso_final = response.progreso;
@@ -2153,7 +2297,7 @@ function actualizarProgresoGeneralOT(otId) {
             });
 
             if (typeof tablaReprogramaciones !== 'undefined' && tablaReprogramaciones) {
-                tablaReprogramaciones.rows().every(function() {
+                tablaReprogramaciones.rows().every(function () {
                     const rowData = this.data();
                     if (rowData.id == otId) {
                         rowData.progreso_final = response.progreso;
@@ -2171,10 +2315,72 @@ function actualizarProgresoGeneralOT(otId) {
                 });
             }
         }
-    }).fail(function() {
+    }).fail(function () {
         console.error("Error al actualizar el progreso de la OT");
         return false;
     });
 }
 
+window.mppGrids = window.mppGrids || {};
 
+function cargarGridMPP(otId) {
+    const contenedorId = `resultado-mpp_${otId}`;
+    const contenedor = document.getElementById(contenedorId);
+    
+    if (!contenedor) return;
+
+contenedor.innerHTML = '<div class="text-center p-4"><i class="fas fa-spinner fa-spin fa-2x" style="color: #f05523;"></i><p class="mt-2 text-secondary fw-bold">Cargando cronograma...</p></div>';
+    $.ajax({
+        url: urlObtenerArbolMPP,
+        type: "GET",
+        data: { ot_id: otId },
+        success: function (response) {
+            if (response.estatus === "ok" && response.data.length > 0) {
+                contenedor.innerHTML = '';
+                
+                tui.Grid.applyTheme('striped');
+
+                const grid = new tui.Grid({
+                    el: contenedor,
+                    data: response.data,
+                    bodyHeight: 450,
+                    rowHeight: 'auto',
+                    treeColumnOptions: {
+                        name: 'nombre',
+                        useCascadingCheckbox: false,
+                        useIcon: false
+                    },
+                    columns: [
+                        { header: 'Act.', name: 'wbs', width: 80, align: 'center' },
+                        { header: 'Nombre de la Tarea', name: 'nombre', minWidth: 300, whiteSpace: 'normal' },
+                        { header: 'Días', name: 'duracion_dias', width: 60, align: 'center', formatter: ({value}) => `${value}d` },
+                        { header: 'Inicio', name: 'fecha_inicio', width: 90, align: 'center' },
+                        { header: 'Fin', name: 'fecha_fin', width: 90, align: 'center' },
+                        { 
+                            header: 'Pond.', name: 'porcentaje_mpp', width: 80, align: 'center',
+                            formatter: ({value}) => `<span style="color: ${value === 100 ? '#95c93d' : (value === 0 ? '#54565a' : '#f05523')}; font-weight: bold;">${value}%</span>`
+                        },
+                    ]
+                });
+
+                window.mppGrids[otId] = grid;
+            } else {
+                contenedor.innerHTML = '<div class="alert alert-light border text-center text-secondary p-4"><i class="fas fa-calendar-times fa-2x mb-2"></i><br>No se ha cargado ningún programa de actividades vigente.</div>';
+            }
+        },
+        error: function() {
+            contenedor.innerHTML = '<div class="alert alert-danger p-3"><i class="fas fa-exclamation-triangle me-2"></i>Error al consultar el cronograma.</div>';
+        }
+    });
+}
+
+$(document).on('shown.bs.tab', 'button[id^="programa-tab_"]', function (event) {
+    const targetId = $(event.target).attr('id'); // ej: programa-tab_15
+    const otId = targetId.split('_')[1];
+
+    if (window.mppGrids[otId]) {
+        window.mppGrids[otId].refreshLayout();
+    } else {
+        cargarGridMPP(otId);
+    }
+});

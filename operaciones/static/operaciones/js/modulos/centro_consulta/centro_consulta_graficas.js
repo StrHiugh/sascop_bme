@@ -309,7 +309,7 @@ const fnOptDonut = (datos, llaveNombre, esGraficaSitios = false) => {
    };
 
 
-   const fnGenerarTooltipAvanzado = (parametrosArreglo, listaOriginal) => {
+const fnGenerarTooltipAvanzado = (parametrosArreglo, listaOriginal) => {
       const indiceFila = parametrosArreglo[0].dataIndex;
       const registro = listaOriginal[indiceFila];
       
@@ -327,16 +327,16 @@ const fnOptDonut = (datos, llaveNombre, esGraficaSitios = false) => {
       htmlTooltip += `<strong style="color: ${colores.morado}; font-size: 13px;">${nombreEtiqueta}</strong><br/>`;
       htmlTooltip += `<span style="color: ${colores.naranja};">Cargados: <b>${valorCargados}</b></span><br/>`;
       htmlTooltip += `<span style="color: ${colores.gris};">Pendientes: <b>${valorPendientes}</b></span><br/>`;
-      
+
       if (existenNoAplica) {
          htmlTooltip += `<span style="color: #6c757d;">No Aplica (Omitidos): <b>${valorNoAplica}</b></span><br/>`;
       }
-      
+
       htmlTooltip += `<hr style="margin: 5px 0; border-color: ${colores.borde};">`;
       htmlTooltip += `<span style="color: ${colores.gris};">Total General: <b>${totalAbsoluto}</b></span><br/>`;
       htmlTooltip += `<span style="color: ${colores.naranja};">Avance Real: <b>${porcentajeAvance}%</b></span>`;
       htmlTooltip += `</div>`;
-      
+
       return htmlTooltip;
    };
 

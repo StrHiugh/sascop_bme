@@ -49,8 +49,7 @@ urlpatterns = [
     path('ot/obtener_progreso_general_ot/', ote.obtener_progreso_general_ot, name='obtener_progreso_general_ot'),
     path('ot/datatable-importaciones/', ote.datatable_importaciones, name='datatable_importaciones'),
     path('ot/importar_anexo_ot/', ote.importar_anexo_ot, name='importar_anexo_ot'),
-    path('ot/dashboard_stacked_view/', ote.dashboard_stacked_view, name='dashboard_stacked_view'),
-    
+    path('ot/importar-mpp/', ote.importar_mpp_ot, name='importar_mpp_ot'),
 
     #URLs para registro de actividad
     path('registro_actividad/', registro_actividad.registro_actividad, name='registro_actividad'),
@@ -72,6 +71,7 @@ urlpatterns = [
     path('produccion/obtener_guardias_mes/', produccion.obtener_guardias_mes, name='obtener_guardias_mes'),
     path('produccion/obtener_grid_gpus/', produccion.obtener_grid_gpus, name='obtener_grid_gpus'),
     path('produccion/guardar_estatus_gpu/', produccion.guardar_estatus_gpu, name='guardar_estatus_gpu'),
+    path('produccion/obtener_arbol_mpp/', produccion.obtener_arbol_mpp, name='obtener_arbol_mpp'),
 
     #URLs para PRODUCTOS 
     path('catalogos/producto/', catalogos.lista_producto, name='lista_producto'),

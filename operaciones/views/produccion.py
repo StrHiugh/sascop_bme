@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
 from ..models import OTE, ImportacionAnexo, PartidaAnexoImportada, Produccion, ReporteMensual, Sitio, ReporteDiario, Estatus, ConceptoMaestro, PartidaProyectada, CicloGuardia, Superintendente, RegistroGPU, CronogramaVersion, TareaCronograma, AvanceCronograma
 from django.http import JsonResponse
+from ..registro_actividad import registrar_actividad
 from itertools import chain
 from django.db.models import Q, Case, F, When, IntegerField, Value, CharField, Sum, OuterRef, Subquery, Max
 from django.db.models.functions import Coalesce
@@ -90,8 +91,16 @@ def ots_por_sitio_grid(request):
         max_fin=Max(Coalesce('fecha_termino_real', 'fecha_termino_programado'))
     ).values('max_fin')
 
+    ultima_repro_fin_patio = OTE.objects.filter(
+        ot_principal=OuterRef('id'),
+        id_tipo_id=5,
+        estatus=1
+    ).values('ot_principal').annotate(
+        max_fin_patio=Max('fecha_fin_patio')
+    ).values('max_fin_patio')
+
     queryset = OTE.objects.filter(
-        query,     
+        query,    
         id_tipo_id=4,            
         estatus=1,
         importaciones_anexo__es_activo=True
@@ -100,15 +109,20 @@ def ots_por_sitio_grid(request):
     queryset = queryset.annotate(
         inicio_vigencia=Coalesce('fecha_inicio_real', 'fecha_inicio_programado'),
         fin_propio=Coalesce('fecha_termino_real', 'fecha_termino_programado'),
-        fin_repro=Subquery(ultima_repro_fin)
+        fin_repro=Subquery(ultima_repro_fin),
+        fin_repro_patio=Subquery(ultima_repro_fin_patio)
     ).annotate(
         fin_vigencia=Case(
             When(fin_repro__gt=F('fin_propio'), then=F('fin_repro')),
             default=F('fin_propio')
+        ),
+        fin_vigencia_patio=Case(
+            When(fin_repro_patio__gt=F('fecha_fin_patio'), then=F('fin_repro_patio')),
+            default=F('fecha_fin_patio')
         )
     ).filter(
-        inicio_vigencia__lte=fecha_fin_mes,
-        fin_vigencia__gte=fecha_inicio_mes
+        Q(inicio_vigencia__lte=fecha_fin_mes, fin_vigencia__gte=fecha_inicio_mes) |
+        Q(fecha_inicio_patio__lte=fecha_fin_mes, fin_vigencia_patio__gte=fecha_inicio_mes)
     )
 
     ids_ots = list(queryset.values_list('id', flat=True))
@@ -120,7 +134,7 @@ def ots_por_sitio_grid(request):
         id_sitio=id_sitio_int
     ).values(
         'id_reporte_mensual__id_ot_id', 
-        'fecha__day',                   
+        'fecha__day',                  
         'id_estatus__descripcion'            
     )
 
@@ -146,7 +160,7 @@ def ots_por_sitio_grid(request):
         
         if ot.requiere_patio and ot.id_patio == id_sitio_int:
             f_ini = ot.fecha_inicio_patio
-            f_fin = ot.fecha_fin_patio
+            f_fin = ot.fin_vigencia_patio
             
             if f_ini: vigencia_inicio = f_ini
             if f_fin: vigencia_fin = f_fin
@@ -162,12 +176,12 @@ def ots_por_sitio_grid(request):
             if not se_muestra:
                 continue
 
-            for d in range(1, ultimo_dia + 1):
-                fecha_dia = date(anio, mes, d)
-                if f_ini and fecha_dia < f_ini:
-                    dias_bloqueados.append(d)
-                elif f_fin and fecha_dia > f_fin:
-                    dias_bloqueados.append(d)
+        for d in range(1, ultimo_dia + 1):
+            fecha_dia = date(anio, mes, d)
+            if vigencia_inicio and fecha_dia < vigencia_inicio:
+                dias_bloqueados.append(d)
+            elif vigencia_fin and fecha_dia > vigencia_fin:
+                dias_bloqueados.append(d)
 
         fila = {
             'id_ot': ot.id,
@@ -186,7 +200,7 @@ def ots_por_sitio_grid(request):
         data_reportes.append(fila)
 
     return JsonResponse({'reportes_diarios': data_reportes})
-
+    
 def guardar_reportes_diarios_masiva(request):
     """
     Guarda los reportes diarios
@@ -304,6 +318,7 @@ def obtener_partidas_produccion(request):
 
     archivo_url = ''
     dias_bloqueados = []
+    
     try:
         reporte = ReporteMensual.objects.filter(id_ot_id=id_ot, mes=mes, anio=anio).first()
         if reporte:
@@ -325,28 +340,38 @@ def obtener_partidas_produccion(request):
 
     last_day = calendar.monthrange(anio, mes)[1]
     
+    id_principal = ot_actual.ot_principal if ot_actual.ot_principal else ot_actual.id
+    
+    agregados = OTE.objects.filter(
+        Q(id=id_principal) | Q(ot_principal=id_principal),
+        estatus=1
+    ).aggregate(
+        max_fin_propio=Max(Coalesce('fecha_termino_real', 'fecha_termino_programado')),
+        max_fin_patio=Max('fecha_fin_patio')
+    )
+
     if ot_actual.requiere_patio and id_sitio_int and ot_actual.id_patio == id_sitio_int:
         f_ini = ot_actual.fecha_inicio_patio
-        f_fin = ot_actual.fecha_fin_patio
+        f_fin = agregados['max_fin_patio'] if agregados['max_fin_patio'] else ot_actual.fecha_fin_patio
+    else:
+        f_ini = ot_actual.fecha_inicio_real or ot_actual.fecha_inicio_programado
+        f_fin = agregados['max_fin_propio'] or (ot_actual.fecha_termino_real or ot_actual.fecha_termino_programado)
+
+    for d in range(1, last_day + 1):
+        fecha_dia = date(anio, mes, d)
+        esta_fuera_rango = False
         
-        for d in range(1, last_day + 1):
-            fecha_dia = date(anio, mes, d)
-            esta_fuera_rango = False
-            
-            if f_ini and fecha_dia < f_ini:
-                esta_fuera_rango = True
-            
-            if f_fin and fecha_dia > f_fin:
-                esta_fuera_rango = True
-            
-            if esta_fuera_rango and d not in dias_bloqueados:
-                dias_bloqueados.append(d)
-    
+        if f_ini and fecha_dia < f_ini:
+            esta_fuera_rango = True
+        
+        if f_fin and fecha_dia > f_fin:
+            esta_fuera_rango = True
+        
+        if esta_fuera_rango and d not in dias_bloqueados:
+            dias_bloqueados.append(d)
 
     dias_bloqueados.sort()
 
-    id_principal = ot_actual.ot_principal if ot_actual.ot_principal else ot_actual.id
-    
     familia_ots_ids = list(OTE.objects.filter(
         Q(id=id_principal) | Q(ot_principal=id_principal),
         estatus=1
@@ -556,8 +581,8 @@ def obtener_partidas_produccion(request):
 
         data_final.append(fila_grid)
     
-    por_ejecutar_mn = total_aut_mn - total_acum_mn
-    por_ejecutar_usd = total_aut_usd - total_acum_usd
+    por_ejecutar_mn = total_aut_mn - total_acum_mn - total_ejec_mn
+    por_ejecutar_usd = total_aut_usd - total_acum_usd - total_ejec_usd
 
     totales_financieros = {
         'aut_mn': total_aut_mn,
@@ -579,6 +604,7 @@ def obtener_partidas_produccion(request):
 
 @login_required
 @require_http_methods(["POST"])
+@registrar_actividad
 def guardar_produccion_masiva(request):
     """
     Guarda producción masiva corrigiendo el cálculo del acumulado en días bloqueados.
@@ -847,7 +873,6 @@ def vincular_partida_ot(request):
 
     id_ot = request.POST.get('id_ot')
     id_concepto = request.POST.get('id_producto') 
-    volumen = request.POST.get('volumen', 0)
 
     try:
         importacion = ImportacionAnexo.objects.filter(ot_id=id_ot, es_activo=True).first()
@@ -883,7 +908,7 @@ def vincular_partida_ot(request):
             id_partida=codigo_partida,
             descripcion_concepto=concepto.descripcion,
             unidad_medida=concepto.unidad_medida,
-            volumen_proyectado=volumen,
+            volumen_proyectado=0,
             precio_unitario_mn=concepto.precio_unitario_mn,
             precio_unitario_usd=concepto.precio_unitario_usd,
             orden_fila=ultimo_orden,
@@ -1137,3 +1162,52 @@ def guardar_estatus_gpu(request):
     except Exception as e:
         print(f"Error en guardar_estatus_gpu: {str(e)}")
         return JsonResponse({'exito': False, 'mensaje': f'Error interno: {str(e)}'})
+
+@login_required
+@require_http_methods(["GET"])
+def obtener_arbol_mpp(request):
+    """
+    Obtiene las tareas del cronograma vigente de una OT y las formatea
+    en una estructura jerárquica (_children) para TOAST UI Tree Grid.
+    """
+    try:
+        ot_id = request.GET.get('ot_id')
+        version_activa = CronogramaVersion.objects.get(id_ot_id=ot_id, es_activo=True)
+        
+        tareas = TareaCronograma.objects.filter(version=version_activa).order_by('id_project')
+
+        tareas_dict = {}
+        for t in tareas:
+            tareas_dict[t.uid_project] = {
+                "wbs": t.wbs,
+                "nombre": t.nombre,
+                "fecha_inicio": t.fecha_inicio.strftime("%d/%m/%Y") if t.fecha_inicio else "",
+                "fecha_fin": t.fecha_fin.strftime("%d/%m/%Y") if t.fecha_fin else "",
+                "duracion_dias": float(t.duracion_dias),
+                "porcentaje_mpp": float(t.porcentaje_mpp),
+                "recursos": t.recursos,
+                "uid_project": t.uid_project,
+                "padre_uid": t.padre_uid,
+                "_attributes": {"expanded": True} 
+            }
+
+        tree_data = []
+        for uid, tarea in tareas_dict.items():
+            padre_uid = tarea["padre_uid"]
+            
+            if padre_uid is not None and padre_uid in tareas_dict:
+                padre = tareas_dict[padre_uid]
+                if "_children" not in padre:
+                    padre["_children"] = []
+                padre["_children"].append(tarea)
+            else:
+                tree_data.append(tarea)
+
+        return JsonResponse({"estatus": "ok", "data": tree_data})
+
+    except CronogramaVersion.DoesNotExist:
+        return JsonResponse({"estatus": "error", "mensaje": "No hay cronograma activo"})
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({"estatus": "error", "mensaje": str(e)}, status=500)

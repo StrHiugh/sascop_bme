@@ -422,8 +422,6 @@ $(document).ready(function() {
     });
 
     $('#btn-confirmar-add-partida').on('click', function() {
-        const volumen = parseFloat($('#input-volumen-autorizar').val());
-
         if (!productoSeleccionadoCatalogo) {
             aviso("error", "Debe seleccionar un producto del catálogo");
             return;
@@ -436,7 +434,6 @@ $(document).ready(function() {
             data: {
                 id_ot: otSeleccionada.id_ot,
                 id_producto: productoSeleccionadoCatalogo.id,
-                volumen: volumen
             },
             headers: { 'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val() },
             success: function(res) {
@@ -534,14 +531,22 @@ $(document).ready(function() {
                 valores: valoresDias
             };
         });
-
+        const numero_partidas = partidasProcesadas.length;
+        let log = new RegistroActividad(10,otSeleccionada.id_ot,"REGISTRAR")
+        log.agregar_actividad({
+            nombre: "Agregó",
+            valor_actual: "",
+            valor_anterior: "",
+            detalle: `produccion a la ot: <b>${otSeleccionada.ot}</b> en el frente: <b>${$('#select-sitio option:selected').text()}</b> en el mes: <b>${$('#filtro-mes option:selected').text()}</b> y año: <b>${$('#filtro-anio').val()}</b>, tipo de tiempo: <b>${tipoTiempoActivo}</b>`
+        })
         const datos = {
             id_ot: otSeleccionada.id_ot,
             mes: $('#filtro-mes').val(),
             anio: $('#filtro-anio').val(),
             tipo_tiempo: tipoTiempoActivo,
             partidas: partidasProcesadas,
-            id_sitio: $('#select-sitio').val()
+            id_sitio: $('#select-sitio').val(),
+            registro_actividad: JSON.stringify(log.actividad),
         };
 
         iniciarLoader();
@@ -810,6 +815,23 @@ $(document).ready(function() {
                 rowHeight: 50,
                 selectionUnit: 'cell', 
                 columnOptions: { resizable: true, frozenCount: 2 },
+                contextMenu: ({ rowKey, columnName }) => (
+                    [
+                        [
+                            {
+                                name: 'export',
+                                label: 'Exportar Tabla',
+                                subMenu: [
+                                    {
+                                        name: 'excelExport',
+                                        label: 'Exportar como Excel',
+                                        action: () => gridReportesDiarios.export('xlsx', { includeHeader: true, useFormattedValue: true, fileName: 'Reportes_Diarios' })
+                                    }
+                                ]
+                            }
+                        ]
+                    ]
+                ),
                 columns: [
                     { header: 'OT', name: 'ot', width: 100, filter: 'select', align: 'left', validation: { required: true } },
                     { header: 'Descripción', name: 'desc',filter: 'select', width: 250, align: 'left' },
@@ -870,6 +892,28 @@ $(document).ready(function() {
                 bodyHeight: alturaCalculada,
                 rowHeight: 50,
                 columnOptions: { resizable: true, frozenCount: 5 }, 
+                contextMenu: ({ rowKey, columnName }) => (
+                    [
+                        [
+                            {
+                                name: 'export',
+                                label: 'Exportar Tabla',
+                                subMenu: [
+                                    {
+                                        name: 'csvExport',
+                                        label: 'Exportar como CSV',
+                                        action: () => gridProduccion.export('csv', { includeHeader: true, useFormattedValue: true, fileName: `Sábana-Produccion-${otSeleccionada.ot}` })
+                                    },
+                                    {
+                                        name: 'excelExport',
+                                        label: 'Exportar como Excel',
+                                        action: () => gridProduccion.export('xlsx', { includeHeader: true, useFormattedValue: true, fileName: `Sábana-Produccion-${otSeleccionada.ot}` })
+                                    }
+                                ]
+                            }
+                        ]
+                    ]
+                ),
                 columns: [
                     { header: 'Partida', name: 'codigo',filter: 'select', width: 90, align: 'center' },
                     { header: 'Concepto', name: 'concepto',filter: 'select', width: 150, align: 'left' },
@@ -879,6 +923,7 @@ $(document).ready(function() {
                         header: 'Vol. Proy', 
                         name: 'vol_total_proyectado', 
                         width: 110, 
+                        filter: 'select',
                         align: 'center', 
                         formatter: formatearNumero 
                     },
@@ -953,6 +998,23 @@ $(document).ready(function() {
                 bodyHeight: 640,
                 rowHeight: 60, 
                 columnOptions: { resizable: true, frozenCount: 4 },
+                contextMenu: ({ rowKey, columnName }) => (
+                    [
+                        [
+                            {
+                                name: 'export',
+                                label: 'Exportar Tabla',
+                                subMenu: [
+                                    {
+                                        name: 'excelExport',
+                                        label: 'Exportar como Excel',
+                                        action: () => gridGpus.export('xlsx', { includeHeader: true, useFormattedValue: true, fileName: 'Tablero_GPUs' })
+                                    }
+                                ]
+                            }
+                        ]
+                    ]
+                ),
                 columns: [
                     { header: 'Partida', name: 'codigo',filter: 'select', width: 90, align: 'center' },
                     { header: 'Concepto', name: 'descripcion',filter: 'select', width: 150, align: 'left' },
@@ -1443,7 +1505,7 @@ $(document).ready(function() {
             el: el,
             scrollX: true,
             scrollY: true,
-            bodyHeight: 360,
+            bodyHeight: 320,
             header: {
                 height: 60,
                 complexColumns: mergeHeaders
@@ -1460,9 +1522,7 @@ $(document).ready(function() {
             data: []
         });
 
-        // Evento de cambio para recalcular totales o actualizar gráficas
         gridAvances.on('afterChange', (ev) => {
-            // Aquí iría lógica para recalcular curva S localmente si se desea
             console.log('Cambio en grid avances:', ev);
         });
     }

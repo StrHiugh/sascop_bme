@@ -73,21 +73,9 @@
         display: block !important;
     }
 
-    .tab-content > .tab-pane {
-        display: none;
-    }
-    
-    .tab-pane.active {
-        display: block !important;
-        width: 100% !important;
-        min-width: 0; 
-    }
-    
-    .tab-content > .active {
-        display: block !important;
-        width: 100% !important;
-        min-width: 0 !important;
-    }
+    .tab-content > .tab-pane { display: none; }
+    .tab-pane.active { display: block !important; width: 100% !important; min-width: 0; }
+    .tab-content > .active { display: block !important; width: 100% !important; min-width: 0 !important; }
 
     .grid-wrapper {
         width: 100% !important;
@@ -96,160 +84,31 @@
         position: relative;
         display: block;
         height: 700px;
-    }   
+    } 
 
-    .tui-grid-cell-content { width: 100%; height: 100%;}
-    
+    .chart-wrapper { height: 350px; } 
     .cell-ok { background-color: #d4edda !important; color: #155724 !important; font-weight: bold; }
     .cell-ffp { background-color: #fff3cd !important; color: #856404 !important; font-weight: bold; }
     .cell-s { background-color: #f8d7da !important; color: #721c24 !important; font-weight: bold; }
-
+    
     .gpu-badge { padding: 4px 4px; border-radius: 4px; font-size: 0.85em; font-weight: bold; width: 100%; text-align: center; }
     .gpu-pendiente { background-color: #3498db; color: white; }
     .gpu-bloqueado { background-color: #e74c3c; color: white; border: 2px solid #c0392b; }
-    
-    .kpi-box { background: #fff; padding: 15px; border-radius: 8px; border-left: 5px solid #ccc; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-top: 20px; }
-    .kpi-box.normal { border-left-color: #2ecc71; }
-    .kpi-box.alert { border-left-color: #e74c3c; }
 
-    .nav-tabs .nav-link {
-        color: #54565a !important;
-        font-weight: 500;
-        border: none;
-        padding: 0.75rem 1.5rem;
-        background: transparent;
-    }
-    .nav-tabs .nav-link.active {
-        color: #000 !important;
-        font-weight: 600;
-        border-bottom: 3px solid #f05523;
-    }
-
-    .tui-grid-header-area { background-color: #f5f5f5 !important; }
     .mode-cma .tui-grid-header-area { background-color: #fff3cd !important; } 
-    .tui-grid-cell-header { background-color: #f5f5f5 !important; }
     .mode-cma .tui-grid-cell-header { background-color: #fff3cd !important; }
 
-    .celda-bloqueada {
-        background-color: #f4f4f4 !important;
-        color: #f4f4f4 !important;
-        cursor: not-allowed !important;
-        background-image: repeating-linear-gradient(
-            45deg,
-            transparent,
-            transparent 5px,
-            rgba(0,0,0,0.03) 5px,
-            rgba(0,0,0,0.03) 10px
-        );
-    }
-
-    .tui-grid-cell.celda-firmada {
-        background-color: #e2e6ea !important; 
-        color: #6c757d;
-        cursor: not-allowed;
-        background-image: repeating-linear-gradient(
-            45deg,
-            transparent,
-            transparent 5px,
-            rgba(0,0,0,0.03) 5px,
-            rgba(0,0,0,0.03) 10px
-        );
-    }
+    .celda-bloqueada { background-color: #f4f4f4 !important; color: #f4f4f4 !important; cursor: not-allowed !important; background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(0,0,0,0.03) 5px, rgba(0,0,0,0.03) 10px); }
+    .tui-grid-cell.celda-firmada { background-color: #e2e6ea !important; color: #6c757d; cursor: not-allowed; background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(0,0,0,0.03) 5px, rgba(0,0,0,0.03) 10px); }
     
-    .celda-produccion-container {
-        display: flex !important;
-        flex-direction: column !important;
-        justify-content: center !important;
-        align-items: flex-end !important;
-        width: 100%;
-        height: 100%;
-        padding-right: 8px;
-        line-height: 1.1 !important;
-    }
+    .celda-produccion-container { display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: flex-end !important; width: 100%; height: 100%; padding-right: 8px; line-height: 1.1 !important; }
+    .prog-text { font-size: 10px !important; color: #888 !important; margin-top: 1px !important; display: block; white-space: nowrap; }
+    .val-real { font-size: 13px !important; font-weight: 600 !important; color: #333 !important; display: block; }
+    
+    .celda-excedente-moderna { background: linear-gradient(to bottom, #fff0f0 0%, #ffe0e0 100%) !important; }
+    .celda-excedente-moderna .val-real { color: #8a0000 !important; font-weight: 600 !important; font-size: 13px !important; text-shadow: 0px 1px 0px rgba(255,255,255,0.5); }
+    .celda-excedente-moderna .prog-text { color: #cc0000 !important; font-weight: 600 !important; font-size: 10px !important; }
 
-    .prog-text {
-        font-size: 10px !important;
-        color: #888 !important;
-        margin-top: 1px !important;
-        display: block;
-        white-space: nowrap;
-    }
-
-    .val-real {
-        font-size: 13px !important;
-        font-weight: 600 !important;
-        color: #333 !important;
-        display: block;
-    }
-
-    .tui-grid-cell-has-input .tui-grid-cell-content {
-        padding: 0 !important;
-    }
-
-    .tui-grid-row-even > td {
-        background-color: #f8f8f8;
-    }
-
-    .celda-excedente-moderna {
-        background: linear-gradient(to bottom, #fff0f0 0%, #ffe0e0 100%) !important;
-    }
-
-    .celda-excedente-moderna .val-real {
-        color: #8a0000 !important;
-        font-weight: 600 !important;
-        font-size: 13px !important;
-        text-shadow: 0px 1px 0px rgba(255,255,255,0.5); 
-    }
-
-    .celda-excedente-moderna .prog-text {
-        color: #cc0000 !important;
-        font-weight: 600 !important;
-        font-size: 10px !important;
-    }
-
-    .tui-grid-layer-focus-border {
-        background-color: #f05523 !important;
-    }
-
-    .tui-grid-cell-editing,
-    .tui-grid-cell-selected {
-        border-color: #f05523 !important;
-    }
-
-    .tui-grid-container input,
-    .tui-grid-container select,
-    .tui-grid-container textarea,
-    .tui-grid-editor-container input,
-    .tui-grid-content input:focus {
-        border-color: #f05523 !important;
-        outline: none !important;
-        box-shadow: inset 0 0 0 1px #f05523 !important;
-    }
-
-    .toggle-container { display: flex; justify-content: flex-start; margin-bottom: 15px; }
-    .segmented-control { display: flex; background: #e2e8f0; border-radius: 6px; padding: 4px; }
-    .segmented-control button { 
-        border: none; background: transparent; padding: 6px 15px; 
-        border-radius: 4px; cursor: pointer; font-weight: 600; 
-        color: #64748b; transition: 0.2s; font-size: 0.85rem;
-    }
-    .segmented-control button.active { 
-        background: #fff; color: #1e293b; 
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
-    }
-    .segmented-control button.active[data-view="ejecutivo"] { color: #20145f; } /* Color Cliente */
-    .segmented-control button.active[data-view="subtec"] { color: #f05523; } /* Color Subtec */
-
-    .chart-wrapper {
-        background: #fff;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        padding: 15px;
-        height: 350px;
-        position: relative;
-    }
-
-    /* Gantt Visual Simple con CSS */
     .gantt-scroll { overflow-y: auto; height: 300px; padding-right: 5px; }
     .gantt-row { display: flex; align-items: center; margin-bottom: 8px; font-size: 0.75rem; }
     .gantt-label { width: 140px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -257,11 +116,6 @@
     .gantt-bar-plan { position: absolute; height: 100%; background: #cbd5e1; border-radius: 6px; opacity: 0.7; }
     .gantt-bar-real { position: absolute; height: 60%; top: 20%; background: #f05523; border-radius: 4px; z-index: 2; }
     .gantt-bar-real.client-mode { background: #20145f; }
-    
-    /* Indicador de Desviacion */
-    .kpi-delta-bad { color: #dc3545; font-weight: bold; font-size: 0.8rem; }
-    .kpi-delta-ok { color: #198754; font-weight: bold; font-size: 0.8rem; }
-
 </style>
 
 <div class="bm-content">
@@ -505,13 +359,9 @@
             </div>
             <div class="modal-body">
                 <div class="row">
-                    <div class="col-md-9 mb-3">
+                    <div class="col-md-12 mb-3">
                         <label class="form-label fw-bold">Buscar partida:</label>
                         <select id="select-producto-catalogo" class="form-control" style="width: 100%;"></select>
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        <label class="form-label fw-bold">Volumen autorizado:</label>
-                        <input type="number" id="input-volumen-autorizar" class="form-control" value="0" step="0.000001">
                     </div>
                 </div>
                 <div id="detalle-producto-seleccionado" class="p-3 border rounded bg-light d-none">
