@@ -581,8 +581,8 @@ def obtener_partidas_produccion(request):
 
         data_final.append(fila_grid)
     
-    por_ejecutar_mn = total_aut_mn - total_acum_mn
-    por_ejecutar_usd = total_aut_usd - total_acum_usd
+    por_ejecutar_mn = total_aut_mn - total_acum_mn - total_ejec_mn
+    por_ejecutar_usd = total_aut_usd - total_acum_usd - total_ejec_usd
 
     totales_financieros = {
         'aut_mn': total_aut_mn,

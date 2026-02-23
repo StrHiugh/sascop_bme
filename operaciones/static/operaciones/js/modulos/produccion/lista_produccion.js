@@ -902,12 +902,12 @@ $(document).ready(function() {
                                     {
                                         name: 'csvExport',
                                         label: 'Exportar como CSV',
-                                        action: () => gridProduccion.export('csv', { includeHeader: true, useFormattedValue: true, fileName: 'Sábana_Produccion' })
+                                        action: () => gridProduccion.export('csv', { includeHeader: true, useFormattedValue: true, fileName: `Sábana-Produccion-${otSeleccionada.ot}` })
                                     },
                                     {
                                         name: 'excelExport',
                                         label: 'Exportar como Excel',
-                                        action: () => gridProduccion.export('xlsx', { includeHeader: true, useFormattedValue: true, fileName: 'Sábana_Produccion' })
+                                        action: () => gridProduccion.export('xlsx', { includeHeader: true, useFormattedValue: true, fileName: `Sábana-Produccion-${otSeleccionada.ot}` })
                                     }
                                 ]
                             }
@@ -923,6 +923,7 @@ $(document).ready(function() {
                         header: 'Vol. Proy', 
                         name: 'vol_total_proyectado', 
                         width: 110, 
+                        filter: 'select',
                         align: 'center', 
                         formatter: formatearNumero 
                     },
