@@ -13,9 +13,11 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from datetime import datetime
 import traceback
 import io
+from django.contrib.auth.decorators import permission_required
 
 
 @login_required
+@permission_required("operaciones.view_centro_consulta", raise_exception=True)
 def fn_centro_consulta(request):
    """
    Vista principal para el dashboard de Business Intelligence (BI).
