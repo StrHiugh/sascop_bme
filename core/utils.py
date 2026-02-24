@@ -16,19 +16,16 @@ from django.db.models import Count, Case, When, Value, CharField
 from django.db.models.functions import Concat
 from django.db import connection
 
-# Imports para PDF
-from reportlab.lib.pagesizes import letter
+from reportlab.lib.pagesizes import letter,landscape
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image as ImageRL, PageBreak, KeepTogether
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER, TA_RIGHT
 from reportlab.lib import colors
 from scipy.interpolate import make_interp_spline
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image as ImageRL, PageBreak, KeepTogether, Table, TableStyle, CondPageBreak
-
-# Configuración del Backend de Matplotlib
+import base64
 plt.switch_backend("Agg")
 
-# Colores Institucionales
 COLOR_FUERZA = "#f05523"
 COLOR_SERIEDAD = "#20145f"
 COLOR_CONFIANZA = "#51c2eb"
@@ -37,7 +34,6 @@ COLOR_SOLIDEZ = "#54565a"
 
 PALETA_SASCOP = [COLOR_FUERZA, COLOR_SOLIDEZ, COLOR_DINAMISMO, COLOR_CONFIANZA, COLOR_SERIEDAD]
 
-# Configuración global de estilos
 plt.rcParams["font.family"] = "sans-serif"
 plt.rcParams["font.sans-serif"] = ["Segoe UI", "Roboto", "Helvetica Neue", "Arial", "sans-serif"]
 plt.rcParams["axes.titleweight"] = "bold"
@@ -46,15 +42,10 @@ plt.rcParams["axes.labelcolor"] = "#555555"
 plt.rcParams["axes.edgecolor"] = "#dcdcdc"
 plt.rcParams["grid.color"] = "#eaeaea"
 
-# Colores globales
+
 COLOR_CARGADOS = "#00a65a"
 COLOR_NULOS = "#dd4b39"
 COLOR_TEXTO_BLANCO = "#ffffff"
-
-
-# ==========================================
-#   HELPERS Y CONSULTAS SQL
-# ==========================================
 
 def fn_obtener_color_texto(hex_color):
    """Calcula si el texto debe ser blanco o negro según el fondo."""
@@ -177,10 +168,6 @@ def fn_obtener_resumen_ot_pasos_cargados():
    """
    return ejecutar_query_sql(sql)
 
-
-# ==========================================
-#  GENERACIÓN DE GRÁFICAS
-# ==========================================
 
 def fn_generar_grafica_buffer(datos_queryset):
    datos_organizados = {}
@@ -647,3 +634,182 @@ def fn_generar_pdf_reporte(imagen_actividad_buffer, texto_periodo, datos_queryse
 
    doc.build(elementos, onFirstPage=fn_dibujar_elementos_fijos, onLaterPages=fn_dibujar_elementos_fijos)
    return buffer_pdf.getvalue()
+
+
+def fn_ejecutar_query_sql_lotes(sql, parametros=None, tamano_lote=2000):
+   """
+   Ejecuta una consulta SQL y devuelve un iterador (generador) por lotes.
+   Diseñada exclusivamente para exportaciones masivas sin saturar la RAM.
+   Extrae de 2000 en 2000 registros de la base de datos.
+   """
+   with connection.cursor() as cursor:
+      cursor.execute(sql, parametros)
+      columnas = [columna[0] for columna in cursor.description]
+
+      while True:
+         resultados_lote = cursor.fetchmany(tamano_lote)
+
+         if not resultados_lote:
+            break
+
+         for fila in resultados_lote:
+            yield dict(zip(columnas, fila))
+
+
+
+#  CORREO Y PDF CENTRO CONSULTA
+def fn_dibujar_elementos_fijos_horizontal(canvas, doc):
+   canvas.saveState()
+   ancho, alto = landscape(letter)
+
+   canvas.setStrokeColor(colors.HexColor(COLOR_SERIEDAD))
+   canvas.setLineWidth(1)
+   canvas.line(50, 80, ancho - 50, 80)
+
+   canvas.setFillColor(colors.HexColor(COLOR_SERIEDAD))
+   canvas.setFont("Helvetica", 8)
+   direccion = "Calle 1 Sur, Lote 1-B, Puerto de Isla del Carmen, Patio GARZPROM 2, Cd. Del Carmen, Campeche. Tel. +52 (938) 286 1241"
+   canvas.drawCentredString(ancho / 2, 68, direccion)
+
+   canvas.setFont("Helvetica-Bold", 9)
+   canvas.drawCentredString(ancho / 2, 55, "www.bluemarine.com.mx")
+
+   canvas.setFont("Helvetica-Oblique", 7)
+   canvas.setFillColor(colors.gray)
+   canvas.drawRightString(ancho - 50, 35, f"Generado automáticamente por SASCOP | Página {doc.page}")
+
+   canvas.restoreState()
+
+
+def fn_generar_pdf_graficas(graficas_base64):
+   buffer_pdf = io.BytesIO()
+   documento = SimpleDocTemplate(
+      buffer_pdf,
+      pagesize=landscape(letter),
+      topMargin=20,
+      bottomMargin=90,
+      leftMargin=40,
+      rightMargin=40
+   )
+
+   estilos = getSampleStyleSheet()
+
+   estilo_encabezado = ParagraphStyle(
+      "EncabezadoPrincipal",
+      parent=estilos["Heading1"],
+      fontSize=18,
+      textColor=colors.HexColor(COLOR_FUERZA),
+      spaceAfter=10,
+      alignment=1
+   )
+
+   estilo_titulo = ParagraphStyle(
+      "TituloGrafica",
+      parent=estilos["Heading2"],
+      fontSize=14,
+      textColor=colors.HexColor(COLOR_SERIEDAD),
+      spaceBefore=10,
+      spaceAfter=15,
+      alignment=1
+   )
+
+   elementos_pdf = []
+   
+   ruta_logo = os.path.join(settings.BASE_DIR, "operaciones", "static", "operaciones", "images", "logo_black_white_subtec.jpg")
+   es_valida_ruta = True if os.path.exists(ruta_logo) else False
+   
+   if es_valida_ruta:
+      img_logo = ImageRL(ruta_logo, width=120, height=50, kind="proportional")
+      img_logo.hAlign = "CENTER"
+      elementos_pdf.append(img_logo)
+      elementos_pdf.append(Spacer(1, 10))
+
+   elementos_pdf.append(Paragraph("Reporte Visual Ejecutivo: Centro de Consulta", estilo_encabezado))
+
+   for indice, grafica in enumerate(graficas_base64):
+      nombre_grafica = grafica.get("nombre", "Grafica").upper()
+      cadena_base64 = grafica.get("imagen", "").split(";base64,")[1]
+      
+      bytes_imagen = base64.b64decode(cadena_base64)
+      buffer_img = io.BytesIO(bytes_imagen)
+
+      es_grafica_secundaria = True if indice > 0 else False
+
+      if es_grafica_secundaria:
+         elementos_pdf.append(PageBreak())
+         elementos_pdf.append(Spacer(1, 30))
+      else:
+         elementos_pdf.append(Spacer(1, 10))
+
+      elementos_pdf.append(Paragraph(f"ANÁLISIS DE {nombre_grafica}", estilo_titulo))
+
+      img_rl = ImageRL(buffer_img, width=640, height=320, kind="proportional")
+      img_rl.hAlign = "CENTER"
+      
+      elementos_pdf.append(img_rl)
+
+   documento.build(
+      elementos_pdf, 
+      onFirstPage=fn_dibujar_elementos_fijos_horizontal, 
+      onLaterPages=fn_dibujar_elementos_fijos_horizontal
+   )
+   
+   return buffer_pdf.getvalue()
+
+def fn_enviar_correo_reporte_bi(lista_destinatarios, graficas_base64, archivo_excel=None, mensaje_limite=""):
+   try:
+      contexto_template = {
+         "advertencia": mensaje_limite
+      }
+      
+      html_correo = render_to_string("core/correos/dashboards_centro_consultas.html", contexto_template)
+      texto_plano = strip_tags(html_correo)
+      
+      correo_obj = EmailMultiAlternatives(
+         subject="SASCOP | Reporte Ejecutivo de Centro de Consulta",
+         body=texto_plano,
+         from_email=settings.DEFAULT_FROM_EMAIL,
+         to=lista_destinatarios
+      )
+      correo_obj.attach_alternative(html_correo, "text/html")
+      
+      ruta_logo_bme = os.path.join(
+         settings.BASE_DIR,
+         "operaciones",
+         "static",
+         "operaciones",
+         "images",
+         "logo_black_white_subtec.jpg"
+      )
+
+      if os.path.exists(ruta_logo_bme):
+         with open(ruta_logo_bme, "rb") as f:
+            img_logo = MIMEImage(f.read())
+            img_logo.add_header("Content-ID", "<logo_bme>")
+            img_logo.add_header(
+               "Content-Disposition",
+               "inline",
+               filename="logo_black_white_subtec.jpg"
+            )
+            correo_obj.attach(img_logo)
+      
+      es_valida_lista_graficas = True if len(graficas_base64) > 0 else False
+      
+      if es_valida_lista_graficas:
+         bytes_pdf = fn_generar_pdf_graficas(graficas_base64)
+         correo_obj.attach("Reporte_Graficas_BI.pdf", bytes_pdf, "application/pdf")
+         
+      es_valido_adjunto = True if archivo_excel else False
+      
+      if es_valido_adjunto:
+         nombre_arch, contenido_arch, tipo_mime = archivo_excel
+         correo_obj.attach(nombre_arch, contenido_arch, tipo_mime)
+         
+      correo_obj.send(fail_silently=False)
+      return True
+      
+   except Exception as error_envio:
+      import traceback
+      print("Error al enviar correo BI:")
+      traceback.print_exc()
+      return False

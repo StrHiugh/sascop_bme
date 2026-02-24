@@ -1,4 +1,56 @@
-/* static/operaciones/js/modulos/centro_consulta/centro_consulta.js */
+const fnObtenerFiltrosEstaticos = () => {
+   const fechaActual = new Date();
+   const primerDiaMes = new Date(fechaActual.getFullYear(), fechaActual.getMonth(), 1);
+
+   const fnFormatear = (fecha) => {
+      const anio = fecha.getFullYear();
+      const mes = String(fecha.getMonth() + 1).padStart(2, "0");
+      const dia = String(fecha.getDate()).padStart(2, "0");
+      return `${anio}-${mes}-${dia}`;
+   };
+
+   return {
+      "origenes": [],
+      "check_entregados": false,
+      "check_no_entregados": false,
+      "fecha_inicio": fnFormatear(primerDiaMes),
+      "fecha_fin": fnFormatear(fechaActual),
+      "lideres_id": [],
+      "clientes_id": [],
+      "frentes_id": [],
+      "sitios_id": [],
+      "nombres_doc": [],
+      "estatus_proceso_id": [],
+      "buscar_por_frente": "0",
+      "texto_busqueda": ""
+   };
+};
+
+const fnEstadoInicialPanel = () => {
+   const filtrosPorDefecto = fnObtenerFiltrosEstaticos();
+
+   $("#fecha_inicio").val("");
+   $("#fecha_fin").val("");
+
+   $("input[name=\"origen\"]").prop("checked", false);
+   $("#orig_pte").prop("checked", true);
+   $("#orig_ot").prop("checked", true);
+   $("#chk_entregados").prop("checked", true);
+   $("#chk_pendientes").prop("checked", true);
+   $("#chk_buscar_por_frente").prop("checked", true);
+
+   $(".select2, .form-select").val(null).trigger("change");
+   $("#filtro-buscar").val("");
+   $("#filtro-sitio").empty().trigger("change");
+
+   const validador = $("#form-filtros-bi").data("validator");
+   if (validador) {
+      validador.resetForm();
+      $(".group-checkboxes").removeClass("border border-danger rounded p-1");
+      $(".origen-error").remove();
+   }
+   fnGestionarVisibilidadUbicacion();
+};
 
 const fnBadgeTipo = (tipo) => {
    const claseMapa = {
@@ -74,52 +126,17 @@ const fnCeldaAccion = (fila) => {
             </span>`;
 };
 
-const fnEstadoInicialPanel = () => {
-   $("#fecha_inicio").val("");
-   $("#fecha_fin").val("");
-   $("input[name=\"origen\"]").prop("checked", false);
-   $("#chk_entregados").prop("checked", false);
-   $("#chk_pendientes").prop("checked", false);
-   $("#chk_buscar_por_frente").prop("checked", false);
-   $(".select2, .form-select").val(null).trigger("change");
-   $("#filtro-buscar").val("");
-   $("#filtro-sitio").empty().append("<option value=\"\">Seleccione un frente...</option>").trigger("change");
-
-   const validator = $("#form-filtros-bi").data("validator");
-   if (validator) {
-      validator.resetForm();
-      $(".group-checkboxes").removeClass("border border-danger rounded p-1");
-      $(".origen-error").remove();
-   }
-   fnGestionarVisibilidadUbicacion();
-};
-
-const fnObtenerFiltrosEstaticos = () => {
-   const fechaActual = new Date();
-   const primerDiaMes = new Date(fechaActual.getFullYear(), fechaActual.getMonth(), 1);
-   const fnFormatear = (fecha) => fecha.toISOString().split("T")[0];
-
-   return {
-      "origenes": [],
-      "check_entregados": false,
-      "check_no_entregados": false,
-      "fecha_inicio": fnFormatear(primerDiaMes),
-      "fecha_fin": fnFormatear(fechaActual),
-      "lider_id": null,
-      "cliente_id": null,
-      "frente_id": null,
-      "id_sitio": null,
-      "buscar_por_frente": "0",
-      "texto_busqueda": "",
-      "nombre_documento": null,
-      "estatus_proceso": null
-   };
-};
-
 const fnObtenerFiltrosActuales = () => {
    const itemsOrigenes = $("input[name=\"origen\"]:checked");
    const listaOrigenes = itemsOrigenes.length > 0 ? itemsOrigenes.map(function () { return $(this).val(); }).get() : [];
    const esBusquedaPorFrente = $("#chk_buscar_por_frente").is(":checked") ? "1" : "0";
+
+   const lideresSeleccionados = $("#filtro-lider").val();
+   const clientesSeleccionados = $("#filtro-cliente").val();
+   const frentesSeleccionados = $("#filtro-frente").val();
+   const sitiosSeleccionados = $("#filtro-sitio").val();
+   const documentosSeleccionados = $("#filtro-tipo-doc").val();
+   const estatusSeleccionados = $("#filtro-estatus").val();
 
    return {
       "origenes": listaOrigenes,
@@ -127,21 +144,58 @@ const fnObtenerFiltrosActuales = () => {
       "check_no_entregados": $("#chk_pendientes").is(":checked"),
       "fecha_inicio": $("#fecha_inicio").val(),
       "fecha_fin": $("#fecha_fin").val(),
-      "lider_id": $("#filtro-lider").val(),
-      "cliente_id": $("#filtro-cliente").val(),
-      "frente_id": $("#filtro-frente").val(),
-      "id_sitio": $("#filtro-sitio").val(),
+      "lideres_id": lideresSeleccionados ? lideresSeleccionados : [],
+      "clientes_id": clientesSeleccionados ? clientesSeleccionados : [],
+      "frentes_id": frentesSeleccionados ? frentesSeleccionados : [],
+      "sitios_id": sitiosSeleccionados ? sitiosSeleccionados : [],
+      "nombres_doc": documentosSeleccionados ? documentosSeleccionados : [],
+      "estatus_proceso_id": estatusSeleccionados ? estatusSeleccionados : [],
       "buscar_por_frente": esBusquedaPorFrente,
-      "texto_busqueda": $("#filtro-buscar").val(),
-      "nombre_documento": $("#filtro-tipo-doc").val(),
-      "estatus_proceso": $("#filtro-estatus").val()
+      "texto_busqueda": $("#filtro-buscar").val()
    };
 };
 
 let filtrosActivos = {};
 
+
+const fnActualizarPeriodo = (filtros = null) => {
+   const containerPeriodo = $("#cc-periodo-container");
+   const periodoTexto = $("#cc-periodo-texto");
+   const tablaPeriodoTexto = $("#tabla-periodo-texto");
+
+   const fInicio = (filtros && filtros.fecha_inicio !== undefined) ? filtros.fecha_inicio : $("#fecha_inicio").val();
+   const fFin = (filtros && filtros.fecha_fin !== undefined) ? filtros.fecha_fin : $("#fecha_fin").val();
+
+   if (!fInicio || !fFin || fInicio === "" || fFin === "") {
+      const textoHistorico = "Periodo Histórico";
+      periodoTexto.text(textoHistorico);
+      tablaPeriodoTexto.text(textoHistorico);
+      containerPeriodo.show();
+      return;
+   }
+
+   const formatearLegible = (fechaStr) => {
+      const partes = fechaStr.split("-");
+      const meses = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
+      return `${partes[2]}/${meses[parseInt(partes[1]) - 1]}/${partes[0]}`;
+   };
+
+   const textoFinal = `${formatearLegible(fInicio)} - ${formatearLegible(fFin)}`;
+   periodoTexto.text(textoFinal);
+   tablaPeriodoTexto.text(textoFinal);
+   containerPeriodo.show();
+};
+
 const fnActualizarTodo = (botonEjecutar = null) => {
    const textoOriginal = botonEjecutar ? botonEjecutar.html() : "";
+   filtrosActivos = fnObtenerFiltrosActuales();
+
+   if (filtrosActivos.fecha_inicio === "" || filtrosActivos.fecha_fin === "") {
+      filtrosActivos.fecha_inicio = null;
+      filtrosActivos.fecha_fin = null;
+   }
+
+   fnActualizarPeriodo(filtrosActivos);
 
    if (botonEjecutar) {
       botonEjecutar.prop("disabled", true).html("<i class=\"fas fa-spinner fa-spin me-2\"></i>Consultando...");
@@ -190,7 +244,7 @@ const fnGestionarCargaSitios = (idFrenteSeleccionado, esJerarquia) => {
    const mapeoIdentificadores = { "1": "3", "2": "6", "4": "7" };
 
    if (esJerarquia && !idFrenteSeleccionado) {
-      elementoSitio.empty().append("<option value=\"\">Seleccione un frente...</option>").trigger("change");
+      elementoSitio.empty().trigger("change");
       fnAsegurarSelect2(elementoSitio);
       return;
    }
@@ -291,6 +345,7 @@ $(document).ready(function () {
    const elementoDOMPanel = document.getElementById("panelFiltros");
    fnEstadoInicialPanel();
    filtrosActivos = fnObtenerFiltrosEstaticos();
+   fnActualizarPeriodo(filtrosActivos);
    tablaResultados = $("#tabla-resultados").DataTable({
       serverSide: true,
       processing: true,
@@ -358,7 +413,10 @@ $(document).ready(function () {
       contentType: "application/json",
       headers: { "X-CSRFToken": csrfToken }
    });
-   peticionInicialDashboard.then(res => ccDashboard.actualizar(res.data));
+   peticionInicialDashboard.then(res => {
+      ccDashboard.actualizar(res.data);
+      fnActualizarPeriodo(filtrosActivos);
+   });
 
    if (typeof $.validator !== "undefined") {
       $.validator.addMethod("minimoUnoChecked", function () {
@@ -432,13 +490,13 @@ $(document).ready(function () {
    $("#filtro-frente").on("change", function () {
       const valorFrente = $(this).val();
       const usaJerarquia = $("#chk_buscar_por_frente").is(":checked");
-      $("#filtro-sitio").empty().append("<option value=\"\">Actualizando...</option>").trigger("change");
+      $("#filtro-sitio").empty().trigger("change");
 
       if (usaJerarquia) {
          if (valorFrente) {
             fnGestionarCargaSitios(valorFrente, true);
          } else {
-            $("#filtro-sitio").empty().append("<option value=\"\">Seleccione un frente...</option>").trigger("change");
+            $("#filtro-sitio").empty().trigger("change");
             fnAsegurarSelect2($("#filtro-sitio"));
          }
       } else {
@@ -450,7 +508,7 @@ $(document).ready(function () {
       const usaJerarquia = $(this).is(":checked");
       const selectorFrente = $("#filtro-frente");
       const contenedorJerarquia = selectorFrente.closest(".mb-3");
-      $("#filtro-sitio").empty().append("<option value=\"\">Actualizando...</option>").trigger("change");
+      $("#filtro-sitio").empty().trigger("change");
 
       if (!usaJerarquia) {
          contenedorJerarquia.slideUp();
@@ -458,7 +516,7 @@ $(document).ready(function () {
          fnGestionarCargaSitios(null, false);
       } else {
          contenedorJerarquia.slideDown();
-         $("#filtro-sitio").empty().append("<option value=\"\">Seleccione un frente...</option>").trigger("change");
+         $("#filtro-sitio").empty().trigger("change");
          fnAsegurarSelect2($("#filtro-sitio"));
       }
    });
@@ -527,5 +585,206 @@ $(document).ready(function () {
       setTimeout(() => {
          if (tablaResultados) tablaResultados.columns.adjust().responsive.recalc();
       }, 350);
+   });
+
+   $("#btn-exportar-excel").on("click", function (eventoClick) {
+      eventoClick.preventDefault();
+
+      const botonExportar = $(this);
+      const textoOriginal = botonExportar.html();
+
+      const itemsOrigenes = $("input[name=\"origen\"]:checked");
+
+      const filtrosParaExportar = (itemsOrigenes.length === 0)
+         ? fnObtenerFiltrosEstaticos()
+         : fnObtenerFiltrosActuales();
+
+      botonExportar.prop("disabled", true).html("<i class=\"fas fa-spinner fa-spin me-2\"></i>Generando Reporte...");
+
+      const payloadExportacion = {
+         "filtros": filtrosParaExportar
+      };
+
+      fetch("/operaciones/centro_consulta/descargar-excel/", {
+         method: "POST",
+         headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": csrfToken
+         },
+         body: JSON.stringify(payloadExportacion)
+      })
+      .then(respuestaServidor => {
+         const esValida = respuestaServidor.ok ? true : false;
+         if (!esValida) throw new Error("El servidor no pudo generar el archivo.");
+         return respuestaServidor.blob();
+      })
+      .then(archivoBinario => {
+         const urlDescarga = window.URL.createObjectURL(archivoBinario);
+         const enlaceDescarga = document.createElement("a");
+         enlaceDescarga.href = urlDescarga;
+
+         const fechaGeneracion = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+         enlaceDescarga.download = `Reporte_SASCOP_BI_${fechaGeneracion}.xlsx`;
+
+         document.body.appendChild(enlaceDescarga);
+         enlaceDescarga.click();
+
+         enlaceDescarga.remove();
+         window.URL.revokeObjectURL(urlDescarga);
+      })
+      .catch(errorPeticion => {
+         console.error("Error al exportar Excel:", errorPeticion);
+         alert("Hubo un problema al intentar generar el archivo Excel.");
+      })
+      .finally(() => {
+         botonExportar.prop("disabled", false).html(textoOriginal);
+      });
+   });
+
+
+   const modalCorreoInstancia = new bootstrap.Modal($("#modal-enviar-correo")[0]);
+   const modalExitoInstancia = new bootstrap.Modal($("#modal-exito-correo")[0]);
+
+   if (typeof $.validator !== "undefined") {
+      $.validator.addMethod("correosMultiples", function (valorAValidar, elementoDOM) {
+         if (this.optional(elementoDOM)) {
+            return true;
+         }
+         const expresionRegular = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+         const arregloCorreos = valorAValidar.split(",");
+
+         for (let i = 0; i < arregloCorreos.length; i++) {
+            const correoLimpio = arregloCorreos[i].trim();
+            if (correoLimpio !== "" && !expresionRegular.test(correoLimpio)) {
+               return false;
+            }
+         }
+         return true;
+      }, "Por favor, ingresa correos válidos separados por comas.");
+   }
+
+   const validadorModalCorreo = $("#form-enviar-correo").validate({
+      errorClass: "is-invalid",
+      validClass: "is-valid",
+      rules: {
+         correos_destino: {
+            required: true,
+            correosMultiples: true
+         }
+      },
+      messages: {
+         correos_destino: {
+            required: "Por favor, ingresa al menos un correo electrónico."
+         }
+      },
+      errorPlacement: function (error, element) {
+         error.addClass("invalid-feedback fw-bold mt-1");
+         error.insertAfter(element);
+      }
+   });
+
+   $("#modal-enviar-correo").on("hidden.bs.modal", function () {
+      $("#form-enviar-correo")[0].reset();
+      if (validadorModalCorreo) {
+         validadorModalCorreo.resetForm();
+      }
+      $("#input-correos").removeClass("is-invalid is-valid");
+   });
+
+   $("#btn-enviar-correo").on("click", function (eventoClick) {
+      eventoClick.preventDefault();
+      modalCorreoInstancia.show();
+   });
+
+   const fnGenerarImagenesBase64 = (listaSeleccion) => {
+      const contenedorOculto = $("<div></div>").css({
+         "width": "800px",
+         "height": "400px",
+         "display": "none"
+      });
+      $("body").append(contenedorOculto);
+
+      const graficaTemporal = echarts.init(contenedorOculto[0]);
+      const arregloImagenes = [];
+
+      listaSeleccion.forEach(llaveGrafica => {
+         const configuracion = ccDashboard.obtenerConfiguracion(llaveGrafica);
+         configuracion.animation = false;
+         graficaTemporal.setOption(configuracion);
+
+         const base64Imagen = graficaTemporal.getDataURL({
+            type: "png",
+            backgroundColor: "#ffffff",
+            pixelRatio: 2
+         });
+
+         arregloImagenes.push({
+            "nombre": llaveGrafica,
+            "imagen": base64Imagen
+         });
+         graficaTemporal.clear();
+      });
+
+      graficaTemporal.dispose();
+      contenedorOculto.remove(); 
+      return arregloImagenes;
+   };
+
+
+   $("#btn-procesar-envio").on("click", function () {
+      const formularioCorreo = $("#form-enviar-correo");
+      const esValido = formularioCorreo.valid();
+      if (!esValido) {
+         return;
+      }
+
+      const cadenaCorreosCruda = $("#input-correos").val().trim();
+      const arregloLimpio = cadenaCorreosCruda.split(",").map(correo => correo.trim()).filter(correo => correo !== "");
+      const cadenaCorreosFinal = arregloLimpio.join(", ");
+
+      const checksActivos = $(".chk-grafica-exportar:checked");
+      const graficasSeleccionadas = checksActivos.length > 0 
+         ? checksActivos.map(function() { return $(this).val(); }).get() 
+         : [];
+
+      const botonProcesar = $(this);
+      const textoOriginal = botonProcesar.html();
+      botonProcesar.prop("disabled", true).html("<i class=\"fas fa-spinner fa-spin me-2\"></i>Enviando...");
+
+      const imagenesExtraidas = fnGenerarImagenesBase64(graficasSeleccionadas);
+
+      const payloadCorreo = {
+         "correos": cadenaCorreosFinal,
+         "filtros": fnObtenerFiltrosActuales(),
+         "graficas": imagenesExtraidas
+      };
+
+      fetch(urlEnviarCorreoBi, {
+         method: "POST",
+         headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": csrfToken
+         },
+         body: JSON.stringify(payloadCorreo)
+      })
+      .then(respuestaServidor => {
+         const peticionExitosa = respuestaServidor.ok ? true : false;
+         if (!peticionExitosa) throw new Error("Error al enviar el correo desde el servidor.");
+         return respuestaServidor.json();
+      })
+      .then(datosRespuesta => {
+         modalCorreoInstancia.hide();
+         $("#destinatarios-exito").text(cadenaCorreosFinal);
+         modalExitoInstancia.show();
+      })
+      .catch(errorPeticion => {
+         console.error("Error en envio de correo:", errorPeticion);
+         $("#texto-error-global").text("Ocurrió un problema de red o de servidor al intentar enviar el correo. Por favor, intenta de nuevo.");
+         const modalError = bootstrap.Modal.getOrCreateInstance($("#modal-error-global")[0]);
+         modalError.show();
+      })
+      .finally(() => {
+         botonProcesar.prop("disabled", false).html(textoOriginal);
+      });
    });
 });

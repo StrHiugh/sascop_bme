@@ -1,10 +1,4 @@
-/* =============================================================================
-   centro_consulta_graficas.js
-============================================================================= */
-
 const ccDashboard = (() => {
-
-   // ── Paleta Institucional ──────────────────────────────────────────────────
    const colores = {
       naranja: "#f05523",
       naranjaSuave: "#fde0d4",
@@ -55,20 +49,12 @@ const ccDashboard = (() => {
       const listaValida = datos ? datos : [];
       return {
          backgroundColor: "transparent",
-         tooltip: {
-            ...tooltipBase,
-            trigger: "axis",
-            axisPointer: { type: "shadow" },
-            formatter: (parametros) => {
-               const fila = listaValida[parametros[0].dataIndex];
-               const total = fila.cargados + fila.pendientes;
-               const porcentaje = total > 0 ? ((fila.cargados / total) * 100).toFixed(0) : 0;
-               return `<b style="color:${colores.morado}">${fila[llaveNombre]}</b><br>
-                  <Cargados: <b style="color:${colores.naranja}">${fila.cargados}</b><br>
-                  Pendientes: <b style="color:${colores.gris}">${fila.pendientes}</b><br>
-                  Total: <>b>${total}</b> · Avance: <b style="color:${colores.naranja}">${porcentaje}%</b>`;
-            }
-         },
+      tooltip: {
+      trigger: "axis",
+      formatter: function (parametrosArreglo) {
+         return fnGenerarTooltipAvanzado(parametrosArreglo, listaValida);
+      }
+   },
          legend: { ...leyendaBase, data: ["Cargados", "Pendientes"] },
          grid: gridBase,
          xAxis: {
@@ -98,12 +84,17 @@ const ccDashboard = (() => {
          ]
       };
    };
-
-   const fnOptHorizontales = (datos, llaveNombre) => {
+const fnOptHorizontales = (datos, llaveNombre) => {
       const listaValida = datos ? datos : [];
       return {
          backgroundColor: "transparent",
-         tooltip: { ...tooltipBase, trigger: "axis", axisPointer: { type: "shadow" } },
+         tooltip: {
+            trigger: "axis",
+            axisPointer: { type: "shadow" },
+            formatter: function (parametrosArreglo) {
+               return fnGenerarTooltipAvanzado(parametrosArreglo, listaValida);
+            }
+         },
          legend: { ...leyendaBase, data: ["Cargados", "Pendientes"] },
          grid: { top: 12, left: 12, right: 30, bottom: 44, containLabel: true },
          xAxis: ejeYBase,
@@ -133,50 +124,129 @@ const ccDashboard = (() => {
          ]
       };
    };
-   const fnOptDonut = (datos, llaveNombre) => {
-      const listaValida = datos ? datos : [];
-      const paletaDinamica = [
-         colores.naranja,
-         colores.azul,
-         colores.amarillo,
-         colores.morado,
-         colores.gris,
-         "#4bc0c0",
-         "#ff9f40",
-         "#9966ff",
-         "#e83e8c",
-         "#28a745"
-      ];
+
+const fnOptDonut = (datos, llaveNombre, esGraficaSitios = false) => {
+   const listaValida = datos ? datos : [];
+   const paletaDinamica = [
+      colores.naranja, colores.azul, colores.amarillo, colores.morado,
+      colores.gris, "#4bc0c0", "#ff9f40", "#9966ff", "#e83e8c", "#28a745"
+   ];
+
+   const configBase = {
+      backgroundColor: "transparent",
+      tooltip: { ...tooltipBase, trigger: "item" },
+      legend: {
+         ...leyendaBase,
+         bottom: 0,
+         type: "scroll",
+         pageIconColor: colores.naranja,
+         pageTextStyle: { color: colores.gris }
+      },
+      series: [
+         {
+            name: "",
+            type: "pie",
+            center: ["50%", "50%"],
+            radius: ["40%", "60%"],
+            avoidLabelOverlap: false,
+            itemStyle: {
+               borderRadius: 4,
+               borderColor: colores.blanco,
+               borderWidth: 2
+            },
+            label: {
+               show: false,
+               position: "center"
+            },
+            emphasis: {
+               label: {
+                  show: true,
+                  fontSize: 12,
+                  fontWeight: "bold",
+                  color: colores.morado,
+                  formatter: "{b}\n{c} ({d}%)"
+               }
+            },
+            labelLine: {
+               show: false
+            },
+            data: listaValida.map((item, indiceItem) => ({
+               value: item.total,
+               name: item[llaveNombre],
+               itemStyle: {
+                  color: item[llaveNombre] === "PTE" ? colores.naranja :
+                     item[llaveNombre] === "OT" ? colores.azul :
+               paletaDinamica[indiceItem % paletaDinamica.length]
+               }
+            }))
+         }
+      ]
+   };
+
+   if (esGraficaSitios) {
+      const cantidadElementos = listaValida.length;
+      const totalSitios = cantidadElementos;
 
       return {
-         backgroundColor: "transparent",
-         tooltip: { ...tooltipBase, trigger: "item" },
+         ...configBase,
+         title: {
+            text: `{big|${totalSitios.toLocaleString('es-MX')}}\n{small|sitios}`,
+            top: 15,
+            right: 20,
+            textStyle: {
+               rich: {
+                  big: {
+                     fontSize: 32,
+                     fontWeight: 'bold',
+                     color: colores.morado,
+                     lineHeight: 40
+                  },
+                  small: {
+                     fontSize: 12,
+                     color: colores.gris,
+                     fontWeight: 'normal'
+                  }
+               }
+            },
+            textAlign: 'right'
+         },
+
          legend: {
-            ...leyendaBase,
-            bottom: 0,
-            type: "scroll",
-            pageIconColor: colores.naranja,
-            pageTextStyle: { color: colores.gris }
+            ...configBase.legend,
+            bottom: 15,
+            left: 10,
+            right: 10,
+            height: cantidadElementos > 15 ? 200 :
+               cantidadElementos > 10 ? 160 : 120,
+            itemWidth: cantidadElementos > 15 ? 20 : 25,
+            itemHeight: cantidadElementos > 15 ? 10 : 14,
+            pageButtonItemSize: 10,
+            pageButtonGap: 3,
+            pageIconSize: 10,
+            orient: 'horizontal',
+            align: 'left'
          },
          series: [
             {
-               name: "Distribución",
-               type: "pie",
-               radius: ["40%", "70%"],
-               itemStyle: { borderRadius: 10, borderColor: colores.blanco, borderWidth: 2 },
-               data: listaValida.map((item, indiceItem) => ({
-                  value: item.total,
-                  name: item[llaveNombre],
-                  itemStyle: {
-                     color: item[llaveNombre] === "PTE" ? colores.naranja :
-                        item[llaveNombre] === "OT" ? colores.azul :
-                        paletaDinamica[indiceItem % paletaDinamica.length]
-                  }
-               }))
+               ...configBase.series[0],
+               center: [
+                  "50%",
+                  cantidadElementos > 15 ? "38%" :
+                  cantidadElementos > 10 ? "40%" : "42%"
+               ],
+               radius: [
+                  cantidadElementos > 15 ? "35%" :
+                  cantidadElementos > 10 ? "38%" : "40%",
+                  cantidadElementos > 15 ? "60%" :
+                  cantidadElementos > 10 ? "63%" : "65%"
+               ]
             }
          ]
       };
-   };
+   }
+
+   return configBase;
+};
 
    const fnOptEmbudo = (datos) => {
       const listaValida = datos ? datos : [];
@@ -185,7 +255,7 @@ const ccDashboard = (() => {
          tooltip: { ...tooltipBase, trigger: "item" },
          series: [
             {
-               name: "Embudo Operativo",
+               name: "Estatus",
                type: "funnel",
                left: "10%",
                width: "80%",
@@ -203,12 +273,12 @@ const ccDashboard = (() => {
    const fnObtenerOpcionGrafica = (identificadorTab) => {
       const mapeoGraficas = {
          "lideres": () => fnOptBarras(datosMaestros.rendimiento_lideres, "nombre"),
-         "origenes": () => fnOptDonut(datosMaestros.distribucion_origenes, "origen"),
+         "origenes": () => fnOptDonut(datosMaestros.distribucion_origenes, "origen", false),
          "documentos": () => fnOptHorizontales(datosMaestros.tipos_documentos, "documento"),
          "clientes": () => fnOptBarras(datosMaestros.estatus_clientes, "cliente"),
          "folios": () => fnOptHorizontales(datosMaestros.avance_folios, "folio"),
-         "frentes": () => fnOptDonut(datosMaestros.frentes_ot, "frente"),
-         "sitios": () => fnOptDonut(datosMaestros.sitios_ot, "sitio"),
+         "frentes": () => fnOptDonut(datosMaestros.frentes_ot, "frente", false),
+         "sitios": () => fnOptDonut(datosMaestros.sitios_ot, "sitio", true),
          "embudo": () => fnOptEmbudo(datosMaestros.embudo_estatus)
       };
 
@@ -230,17 +300,52 @@ const ccDashboard = (() => {
       graficaInstancia.setOption(configuracionECharts, { notMerge: true });
    };
 
-   const fnActualizarKPIs = (totales) => {
-      const datosKPI = totales ? totales : { cargados: 0, pendientes: 0 };
-      const sumaTotal = datosKPI.cargados + datosKPI.pendientes;
 
-      const porcentajeCargados = sumaTotal > 0 ? ((datosKPI.cargados / sumaTotal) * 100).toFixed(1) : 0;
-      const porcentajePendientes = sumaTotal > 0 ? ((datosKPI.pendientes / sumaTotal) * 100).toFixed(1) : 0;
+const fnGenerarTooltipAvanzado = (parametrosArreglo, listaOriginal) => {
+      const indiceFila = parametrosArreglo[0].dataIndex;
+      const registro = listaOriginal[indiceFila];
+      
+      const valorCargados = registro.cargados ? registro.cargados : 0;
+      const valorPendientes = registro.pendientes ? registro.pendientes : 0;
+      const valorNoAplica = registro.no_aplica ? registro.no_aplica : 0;
+      const nombreEtiqueta = parametrosArreglo[0].name;
+
+      const totalExigible = valorCargados + valorPendientes;
+      const totalAbsoluto = totalExigible + valorNoAplica;
+      const porcentajeAvance = totalExigible > 0 ? Math.round((valorCargados / totalExigible) * 100) : 0;
+      const existenNoAplica = valorNoAplica > 0 ? true : false;
+
+      let htmlTooltip = `<div style="font-family: inherit; min-width: 150px;">`;
+      htmlTooltip += `<strong style="color: ${colores.morado}; font-size: 13px;">${nombreEtiqueta}</strong><br/>`;
+      htmlTooltip += `<span style="color: ${colores.naranja};">Cargados: <b>${valorCargados}</b></span><br/>`;
+      htmlTooltip += `<span style="color: ${colores.gris};">Pendientes: <b>${valorPendientes}</b></span><br/>`;
+
+      if (existenNoAplica) {
+         htmlTooltip += `<span style="color: #6c757d;">No Aplica (Omitidos): <b>${valorNoAplica}</b></span><br/>`;
+      }
+
+      htmlTooltip += `<hr style="margin: 5px 0; border-color: ${colores.borde};">`;
+      htmlTooltip += `<span style="color: ${colores.gris};">Total General: <b>${totalAbsoluto}</b></span><br/>`;
+      htmlTooltip += `<span style="color: ${colores.naranja};">Avance Real: <b>${porcentajeAvance}%</b></span>`;
+      htmlTooltip += `</div>`;
+
+      return htmlTooltip;
+   };
+
+const fnActualizarKPIs = (totales) => {
+      const datosKPI = totales ? totales : { cargados: 0, pendientes: 0, no_aplica: 0 };
+      const cantidadCargados = datosKPI.cargados ? datosKPI.cargados : 0;
+      const cantidadPendientes = datosKPI.pendientes ? datosKPI.pendientes : 0;
+      const cantidadNoAplica = datosKPI.no_aplica ? datosKPI.no_aplica : 0;
+      const sumaAbsoluta = cantidadCargados + cantidadPendientes + cantidadNoAplica;
+
+      const porcentajeCargados = sumaAbsoluta > 0 ? ((cantidadCargados / sumaAbsoluta) * 100).toFixed(1) : 0;
+      const porcentajePendientes = sumaAbsoluta > 0 ? ((cantidadPendientes / sumaAbsoluta) * 100).toFixed(1) : 0;
       const totalLideres = datosMaestros.rendimiento_lideres ? datosMaestros.rendimiento_lideres.length : 0;
 
-      document.getElementById("cc-kpi-total").textContent = sumaTotal.toLocaleString("es-MX");
-      document.getElementById("cc-kpi-cargados").textContent = datosKPI.cargados.toLocaleString("es-MX");
-      document.getElementById("cc-kpi-pendientes").textContent = datosKPI.pendientes.toLocaleString("es-MX");
+      document.getElementById("cc-kpi-total").textContent = sumaAbsoluta.toLocaleString("es-MX");
+      document.getElementById("cc-kpi-cargados").textContent = cantidadCargados.toLocaleString("es-MX");
+      document.getElementById("cc-kpi-pendientes").textContent = cantidadPendientes.toLocaleString("es-MX");
 
       document.getElementById("cc-kpi-pct-cargados").textContent = `${porcentajeCargados}% del total`;
       document.getElementById("cc-kpi-pct-pendientes").textContent = `${porcentajePendientes}% del total`;
@@ -280,6 +385,9 @@ const ccDashboard = (() => {
       }, 100);
    };
 
-   return { actualizar: fnActualizar };
+   return {
+      actualizar: fnActualizar ,
+      obtenerConfiguracion: fnObtenerOpcionGrafica
+   };
 
 })();

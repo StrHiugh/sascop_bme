@@ -41,6 +41,9 @@ class PTEHeader(models.Model):
 
     class Meta:
         db_table = 'pte_header'
+        permissions = [
+            ("view_centro_consulta", "Puede visualizar el centro de consulta"),
+        ]
 
     def __str__(self):
         return self.oficio_pte

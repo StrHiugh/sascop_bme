@@ -20,11 +20,14 @@
                 <h1 class="h2 fw-bold mb-0">BÚSQUEDA Y GESTIÓN DOCUMENTAL</h1>
             </div>
             <div class="header-buttons-section">
+                <button id="btn-exportar-excel" class="btn btn-primary">
+                    <i class="fas fa-file-export me-2"></i>Exportar Excel
+                </button>
+                <button id="btn-enviar-correo" class="btn btn-primary">
+                    <i class="fas fa-paper-plane me-2"></i>Enviar a mi Correo
+                </button>
                 <button class="btn btn-outline-secondary me-2" id="btn-panel-filtros">
                     <i class="fas fa-filter me-2"></i>Filtros
-                </button>
-                <button class="btn btn-primary">
-                    <i class="fas fa-file-export me-2"></i>Exportar Excel
                 </button>
             </div>
         </div>
@@ -35,6 +38,12 @@
     <div class="bm-content">
         <div class="bm-cont-elementos">
             <div class="bm-cont-elementos-body">
+                <div class="cc-periodo-indicator" id="cc-periodo-container" style="display:none; text-align:center;">
+                    <div class="cc-periodo-badge">
+                        <i class="far fa-calendar-alt me-2"></i>
+                        <span id="cc-periodo-texto">Cargando...</span>
+                    </div>
+                </div>
                 <div class="cc-kpis" id="cc-kpis-container" style="display:none;">
                     <div class="cc-kpi">
                         <div class="cc-kpi-label">Total registros</div>
@@ -57,77 +66,81 @@
                         <div class="cc-kpi-sub">en el periodo</div>
                     </div>
                 </div>
-                <div class="cc-chart-card" id="cc-chart-card" style="display:none;">
-                            <div class="cc-chart-header">
-                                    <div class="d-flex align-items-center justify-content-between w-100 pb-2 pb-md-0">
-                                        <div class="d-flex align-items-center gap-3">
-                                            <span class="cc-chart-title mb-0 pb-0" id="cc-chart-title-label">Gráficas</span>
-                                            <div class="cc-toggle-wrapper" id="timeline-toggle" style="display: none;">
-                                                <button class="cc-toggle-btn active" data-view="evolucion">Evolución</button>
-                                                <button class="cc-toggle-btn" data-view="aging">Atrasos</button>
-                                            </div>
-                                        </div>
-                                        <button class="btn btn-sm btn-outline-secondary" id="btn-expandir-grafica" title="Expandir Gráficas">
-                                            <i class="fas fa-expand"></i>
-                                        </button>
-                                    </div>
 
-                                    <div class="cc-tabs mt-2 mt-md-0" style="overflow-x: auto; white-space: nowrap;">
-                                        <button class="cc-tab-btn active" data-tab="lideres">
-                                            <i class="fas fa-users me-1"></i>Líderes
-                                        </button>
-                                        <button class="cc-tab-btn" data-tab="origenes">
-                                            <i class="fas fa-chart-pie me-1"></i>Orígenes
-                                        </button>
-                                        <button class="cc-tab-btn" data-tab="documentos">
-                                            <i class="fas fa-file-alt me-1"></i>Documentos
-                                        </button>
-                                        <button class="cc-tab-btn" data-tab="folios">
-                                            <i class="fas fa-exclamation-triangle me-1"></i>Folios
-                                        </button>
-                                        <button class="cc-tab-btn" data-tab="clientes">
-                                            <i class="fas fa-building me-1"></i>Clientes
-                                        </button>
-                                        <button class="cc-tab-btn" data-tab="frentes">
-                                            <i class="fas fa-map me-1"></i>Frentes (OT)
-                                        </button>
-                                        <button class="cc-tab-btn" data-tab="sitios">
-                                            <i class="fas fa-map-marker-alt me-1"></i>Sitios (OT)
-                                        </button>
-                                        <button class="cc-tab-btn" data-tab="embudo">
-                                            <i class="fas fa-filter me-1"></i>Embudo
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="cc-chart-body">
-                                    <div id="cc-chart-main"></div>
+                <div class="cc-chart-card" id="cc-chart-card" style="display:none;">
+                    <div class="cc-chart-header">
+                        <div class="d-flex align-items-center justify-content-between w-100 pb-2 pb-md-0">
+                            <div class="d-flex align-items-center gap-3">
+                                <span class="cc-chart-title mb-0 pb-0" id="cc-chart-title-label">Gráficas</span>
+                                <div class="cc-toggle-wrapper" id="timeline-toggle" style="display: none;">
+                                    <button class="cc-toggle-btn active" data-view="evolucion">Evolución</button>
+                                    <button class="cc-toggle-btn" data-view="aging">Atrasos</button>
                                 </div>
                             </div>
-                            <div class="cc-chart-card" id="cc-table-card">
-                                <div class="cc-chart-header d-flex align-items-center justify-content-between pb-3 mb-3 border-bottom">
-                                    <span class="cc-chart-title mb-0 pb-0">Registros Detallados</span>
-                                    <button class="btn btn-sm btn-outline-secondary" id="btn-expandir-tabla" title="Expandir Tabla">
-                                        <i class="fas fa-expand"></i>
-                                    </button>
-                                </div>
-                                <div class="row mb-3 align-items-center">
-                                    <div class="col-md-6 col-lg-4">
-                                        <div class="input-group mb-2" style="margin-left: 1rem;">
-                                            <span class="input-group-text bg-light border-end-0"><i class="fas fa-search"></i></span>
-                                            <input type="text" class="form-control border-start-0" id="filtro-buscar"
-                                                placeholder="Buscar por folio, cliente, documento...">
-                                        </div>
-                                    </div>
-                                    <div class="col-md-2 col-lg-2" id="select-length"></div>
-                                </div>
-                                <div class="table-responsive w-100">
-                                    <table id="tabla-resultados" class="table table-hover w-100"></table>
-                                </div>
-                            </div>
+                            <button class="btn btn-sm btn-outline-secondary" id="btn-expandir-grafica" title="Expandir Gráficas">
+                                <i class="fas fa-expand"></i>
+                            </button>
                         </div>
+
+                        <div class="cc-tabs mt-2 mt-md-0" style="overflow-x: auto; white-space: nowrap;">
+                            <button class="cc-tab-btn active" data-tab="lideres">
+                                <i class="fas fa-users me-1"></i>Líderes
+                            </button>
+                            <button class="cc-tab-btn" data-tab="origenes">
+                                <i class="fas fa-chart-pie me-1"></i>Orígenes
+                            </button>
+                            <button class="cc-tab-btn" data-tab="documentos">
+                                <i class="fas fa-file-alt me-1"></i>Documentos
+                            </button>
+                            <button class="cc-tab-btn" data-tab="folios">
+                                <i class="fas fa-exclamation-triangle me-1"></i>Folios
+                            </button>
+                            <button class="cc-tab-btn" data-tab="clientes">
+                                <i class="fas fa-building me-1"></i>Clientes
+                            </button>
+                            <button class="cc-tab-btn" data-tab="frentes">
+                                <i class="fas fa-map me-1"></i>Frentes (OT)
+                            </button>
+                            <button class="cc-tab-btn" data-tab="sitios">
+                                <i class="fas fa-map-marker-alt me-1"></i>Sitios (OT)
+                            </button>
+                            <button class="cc-tab-btn" data-tab="embudo">
+                                <i class="fas fa-filter me-1"></i>Estatus
+                            </button>
+                        </div>
+                    </div>
+                    <div class="cc-chart-body">
+                        <div id="cc-chart-main"></div>
                     </div>
                 </div>
 
+                <div class="cc-chart-card" id="cc-table-card">
+                    <div class="cc-chart-header d-flex align-items-center justify-content-between pb-3 mb-3 border-bottom">
+                        <span class="cc-chart-title mb-0 pb-0">Registros Detallados</span>
+                        <button class="btn btn-sm btn-outline-secondary" id="btn-expandir-tabla" title="Expandir Tabla">
+                            <i class="fas fa-expand"></i>
+                        </button>
+                    </div>
+                    <div class="row mb-3 align-items-center">
+                        <div class="col-md-6 col-lg-4">
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0"><i class="fas fa-search"></i></span>
+                                <input type="text" class="form-control border-start-0" id="filtro-buscar"
+                                    placeholder="Buscar por folio, cliente, documento...">
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-lg-2" id="select-length"></div>
+                    </div>
+                    <div class="table-responsive w-100">
+                        <table id="tabla-resultados" class="table table-hover w-100"></table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== OFFCANVAS FILTROS ===== -->
     <div class="offcanvas offcanvas-end" tabindex="-1" id="panelFiltros" aria-labelledby="panelFiltrosLabel">
         <div class="offcanvas-header bg-light border-bottom py-3">
             <h5 class="offcanvas-title fw-bold" id="panelFiltrosLabel">
@@ -171,15 +184,11 @@
                 <span class="section-title">Detalles del Documento</span>
                 <div class="mb-3">
                     <label class="form-label">Tipo de Documento</label>
-                    <select class="form-select select2" id="filtro-tipo-doc" name="tipo_doc">
-                        <option value="">Todos los Tipos</option>
-                    </select>
+                    <select class="form-select select2" multiple="multiple" id="filtro-tipo-doc" name="tipo_doc"></select>
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Estatus Proceso</label>
-                    <select class="form-select select2" id="filtro-estatus" name="estatus">
-                        <option value="">Todos los Estatus</option>
-                    </select>
+                    <select class="form-select select2" multiple="multiple" id="filtro-estatus" name="estatus"></select>
                 </div>
                 <div class="mb-3">
                     <label class="form-label"><i class="far fa-calendar-alt me-1 text-muted"></i>Fecha de Entrega</label>
@@ -201,27 +210,19 @@
                 <span class="section-title">Proyecto y Ubicación</span>
                 <div class="mb-3">
                     <label class="form-label">Responsable</label>
-                    <select class="form-select select2" id="filtro-lider" name="lider">
-                        <option value="">Todos los Responsables</option>
-                    </select>
+                    <select class="form-select select2" multiple="multiple" id="filtro-lider" name="lider"></select>
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Cliente</label>
-                    <select class="form-select select2" id="filtro-cliente" name="cliente">
-                        <option value="">Todos los Clientes</option>
-                    </select>
+                    <select class="form-select select2" multiple="multiple" id="filtro-cliente" name="cliente"></select>
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Frente</label>
-                    <select class="form-select select2" id="filtro-frente" name="frente">
-                        <option value="">Todos los Frentes</option>
-                    </select>
+                    <select class="form-select select2" multiple="multiple" id="filtro-frente" name="frente"></select>
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Sitio Específico</label>
-                    <select class="form-select select2" id="filtro-sitio" name="sitio">
-                        <option value="">Todos los Sitios</option>
-                    </select>
+                    <select class="form-select select2" multiple="multiple" id="filtro-sitio" name="sitio"></select>
                 </div>
                 <div id="contenedor-switch-frente">
                     <div class="d-flex align-items-center justify-content-between p-3 mt-4 bg-light rounded border">
@@ -244,20 +245,139 @@
             </button>
         </div>
     </div>
+
+    <!-- ===== MODAL ENVIAR CORREO ===== -->
+    <div class="modal fade" id="modal-enviar-correo" tabindex="-1" aria-labelledby="modalCorreoLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-light border-bottom">
+                    <h5 class="modal-title fw-bold text-primary" id="modalCorreoLabel">
+                        <i class="fas fa-envelope me-2"></i>Enviar Reporte y Gráficas
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="form-enviar-correo">
+                        <div class="mb-4">
+                            <label for="input-correos" class="form-label fw-bold">Correos destinatarios</label>
+                            <input type="text" class="form-control" id="input-correos"  name="correos_destino" placeholder="ejemplo@correo.com, gerente@empresa.com" required>
+                            <div class="form-text text-muted small">Separa múltiples correos usando comas.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Selecciona las gráficas a incluir:</label>
+                            <div class="row g-2" id="contenedor-graficas-correo">
+                                <div class="col-md-4">
+                                    <div class="form-check custom-check-simple">
+                                        <input class="form-check-input chk-grafica-exportar" type="checkbox" value="lideres" id="chk-exp-lideres" checked>
+                                        <label class="form-check-label small" for="chk-exp-lideres">Líderes</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check custom-check-simple">
+                                        <input class="form-check-input chk-grafica-exportar" type="checkbox" value="origenes" id="chk-exp-origenes" checked>
+                                        <label class="form-check-label small" for="chk-exp-origenes">Orígenes</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check custom-check-simple">
+                                        <input class="form-check-input chk-grafica-exportar" type="checkbox" value="documentos" id="chk-exp-documentos" checked>
+                                        <label class="form-check-label small" for="chk-exp-documentos">Documentos</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check custom-check-simple">
+                                        <input class="form-check-input chk-grafica-exportar" type="checkbox" value="folios" id="chk-exp-folios">
+                                        <label class="form-check-label small" for="chk-exp-folios">Folios</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check custom-check-simple">
+                                        <input class="form-check-input chk-grafica-exportar" type="checkbox" value="clientes" id="chk-exp-clientes">
+                                        <label class="form-check-label small" for="chk-exp-clientes">Clientes</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check custom-check-simple">
+                                        <input class="form-check-input chk-grafica-exportar" type="checkbox" value="frentes" id="chk-exp-frentes">
+                                        <label class="form-check-label small" for="chk-exp-frentes">Frentes (OT)</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check custom-check-simple">
+                                        <input class="form-check-input chk-grafica-exportar" type="checkbox" value="sitios" id="chk-exp-sitios">
+                                        <label class="form-check-label small" for="chk-exp-sitios">Sitios (OT)</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check custom-check-simple">
+                                        <input class="form-check-input chk-grafica-exportar" type="checkbox" value="embudo" id="chk-exp-embudo">
+                                        <label class="form-check-label small" for="chk-exp-embudo">Estatus</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary fw-bold" id="btn-procesar-envio">
+                        <i class="fas fa-paper-plane me-2"></i>Enviar Correo
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="modal fade" id="modal-exito-correo" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content border-0 shadow text-center">
+            <div class="modal-body p-4">
+                <i class="fas fa-check-circle mb-3" style="font-size: 4rem; color: #F05523;"></i>
+                <h4 class="fw-bold text-dark mb-2">¡Envío Exitoso!</h4>
+                <p class="text-muted mb-4">
+                    El reporte fue enviado correctamente a:<br>
+                    <strong id="destinatarios-exito" class="mt-2 d-block text-break" style="color: #F05523;"></strong>
+                </p>
+                <button type="button" class="btn px-4 fw-bold w-100" style="background-color: #F05523; border-color: #F05523; color: #FFFFFF;" data-bs-dismiss="modal">
+                    Aceptar
+                </button>
+            </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modal-error-global" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content border-0 shadow text-center">
+            <div class="modal-body p-4">
+                <i class="fas fa-times-circle text-danger mb-3" style="font-size: 4rem;"></i>
+                <h4 class="fw-bold text-dark mb-2">¡Ups, algo falló!</h4>
+                <p class="text-muted mb-4" id="texto-error-global"></p>
+                <button type="button" class="btn btn-danger px-4 fw-bold w-100" data-bs-dismiss="modal">
+                    Cerrar
+                </button>
+            </div>
+            </div>
+        </div>
+    </div>
+
 {% endblock %}
+
 {% block scripts %}
     <script src="{% static 'operaciones/js/modulos/centro_consulta/centro_consulta.js' %}"></script>
     <script src="{% static 'operaciones/js/modulos/centro_consulta/centro_consulta_graficas.js' %}"></script>
     <script>
-        var urlObtenerResponsables = "{% url 'operaciones:obtener_responsables_proyecto' %}";
-        var urlObtenerClientes = "{% url 'operaciones:obtener_clientes' %}";
-        var urlObtenerSitios = "{% url 'operaciones:obtener_sitios' %}";
-        var urlObtenerSitiosPorFrente = "{% url 'operaciones:obtener_sitios_por_frente' %}";
-        var urlObtenerFrentes = "{% url 'operaciones:obtener_frente_afectacion_dos' %}";
-        var urlObtenerEstatus = "{% url 'operaciones:obtener_estatus_afectacion_uno' %}";
-        var urlObtenerTiposDoc = "{% url 'operaciones:obtener_documentos_unificados' %}";
-        var urlBuscarDocumentos = "{% url 'operaciones:api_busqueda_global' %}";
-        var urlObtenerDashboard = "{% url 'operaciones:api_busqueda_global_graficas' %}";
-        var csrfToken = "{{ csrf_token }}";
+        var urlObtenerResponsables   = "{% url 'operaciones:obtener_responsables_proyecto' %}";
+        var urlObtenerClientes       = "{% url 'operaciones:obtener_clientes' %}";
+        var urlObtenerSitios         = "{% url 'operaciones:obtener_sitios' %}";
+        var urlObtenerSitiosPorFrente= "{% url 'operaciones:obtener_sitios_por_frente' %}";
+        var urlObtenerFrentes        = "{% url 'operaciones:obtener_frente_afectacion_dos' %}";
+        var urlObtenerEstatus        = "{% url 'operaciones:obtener_estatus_afectacion_uno' %}";
+        var urlObtenerTiposDoc       = "{% url 'operaciones:obtener_documentos_unificados' %}";
+        var urlBuscarDocumentos      = "{% url 'operaciones:api_busqueda_global' %}";
+        var urlObtenerDashboard      = "{% url 'operaciones:api_busqueda_global_graficas' %}";
+        var urlEnviarCorreoBi        = "{% url 'operaciones:api_enviar_correo_bi' %}";
+        var csrfToken                = "{{ csrf_token }}";
     </script>
 {% endblock %}

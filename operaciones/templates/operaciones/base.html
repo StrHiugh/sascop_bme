@@ -92,6 +92,9 @@
                             <span class="nav-text">Producción</span>
                         </a>
                     </li>
+                    {% endif %}
+                    {% if perms.operaciones.view_centro_consulta %}
+
                     <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.url_name == 'centro_consulta' %}active{% endif %}"
                         href="{% url 'operaciones:centro_consulta' %}">
