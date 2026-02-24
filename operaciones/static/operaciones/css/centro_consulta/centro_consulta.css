@@ -284,7 +284,7 @@ body .offcanvas.offcanvas-end#panelFiltros {
 .cc-kpi:nth-child(4)::before { background: #54565a; }
 
 .cc-kpi-label {
-    font-size: 0.68rem;
+    font-size: 0.8rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: .06em;
@@ -330,7 +330,7 @@ body .offcanvas.offcanvas-end#panelFiltros {
 }
 
 .cc-chart-title {
-    font-size: 0.82rem;
+    font-size: 1rem;
     font-weight: 600;
     color: #20145f;
     letter-spacing: -.01em;
@@ -441,6 +441,7 @@ body .offcanvas.offcanvas-end#panelFiltros {
     font-size: 0.85rem;
     color: #54565a;
     box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    font-weight: 600;
 }
 
 .cc-periodo-badge i {
