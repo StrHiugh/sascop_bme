@@ -14,6 +14,16 @@ import calendar
 import json
 from collections import defaultdict
 
+def to_dec(val):
+    """Convierte cualquier valor a Decimal exacto"""
+    if val is None or val == '':
+        return Decimal('0.0')
+    try:
+        return Decimal(str(val))
+    except (ValueError, TypeError):
+        return Decimal('0.0')
+
+
 @login_required(login_url='/accounts/login/')
 def lista_produccion(request):
     """Lista de producción"""
@@ -413,15 +423,16 @@ def obtener_partidas_produccion(request):
     mapa_acumulado_vol = {}
     for item in qs_acumulado:
         p_id = item['id_partida_anexo_id']
-        vol = item['vol_total'] or 0.0
-        mapa_acumulado_vol[p_id] = float(vol)
+        vol = item['vol_total']
+        mapa_acumulado_vol[p_id] = to_dec(vol)
 
     partidas_consolidadas = {}
     mapa_id_a_key = {}
-    total_aut_mn = 0.0
-    total_aut_usd = 0.0
-    total_acum_mn = 0.0
-    total_acum_usd = 0.0
+    
+    total_aut_mn = Decimal('0.0')
+    total_aut_usd = Decimal('0.0')
+    total_acum_mn = Decimal('0.0')
+    total_acum_usd = Decimal('0.0')
 
     for p in todas_partidas:
         anexo_clean = p.anexo.strip() if p.anexo else 'S/A'
@@ -430,13 +441,15 @@ def obtener_partidas_produccion(request):
         
         key = (anexo_clean, codigo_clean, desc_clean)
         
-        vol_registro = float(p.volumen_proyectado or 0)
-        pu_mn = float(p.precio_unitario_mn or 0)
-        pu_usd = float(p.precio_unitario_usd or 0)
+        vol_registro = to_dec(p.volumen_proyectado)
+        pu_mn = to_dec(p.precio_unitario_mn)
+        pu_usd = to_dec(p.precio_unitario_usd)
 
         total_aut_mn += vol_registro * pu_mn
         total_aut_usd += vol_registro * pu_usd
-        vol_hist = float(mapa_acumulado_vol.get(p.id, 0.0) or 0.0)
+        
+        vol_hist = mapa_acumulado_vol.get(p.id, Decimal('0.0'))
+        
         total_acum_mn += vol_hist * pu_mn
         total_acum_usd += vol_hist * pu_usd
 
@@ -485,10 +498,10 @@ def obtener_partidas_produccion(request):
         master_key = (key_consolidada, dia)
         
         if master_key not in produccion_mapa:
-            produccion_mapa[master_key] = {'TE': 0.0, 'CMA': 0.0, 'es_excedente': False}
+            produccion_mapa[master_key] = {'TE': Decimal('0.0'), 'CMA': Decimal('0.0'), 'es_excedente': False}
         
         t = item['tipo_tiempo'] 
-        vol = float(item['volumen_produccion'])
+        vol = to_dec(item['volumen_produccion'])
         
         produccion_mapa[master_key][t] += vol
         
@@ -512,18 +525,30 @@ def obtener_partidas_produccion(request):
         dia = item['fecha__day']
         master_key = (key_consolidada, dia)
         
-        vol_prog = float(item['volumen_programado'] or 0)
-        
-        programacion_mapa[master_key] = programacion_mapa.get(master_key, 0.0) + vol_prog
+        vol_prog = to_dec(item['volumen_programado'])
+        programacion_mapa[master_key] = programacion_mapa.get(master_key, Decimal('0.0')) + vol_prog
 
     data_final = []
-    total_ejec_mn = 0.0
-    total_ejec_usd = 0.0
+    total_ejec_mn = Decimal('0.0')
+    total_ejec_usd = Decimal('0.0')
+    anexos_agrupados = {}
 
     for key, datos in partidas_consolidadas.items():
+        anexo_actual = datos['anexo']
         
-        suma_mes_visual = 0.0
-        suma_prog_mes_visual = 0.0
+        if anexo_actual not in anexos_agrupados:
+            anexos_agrupados[anexo_actual] = {
+                'filas': [],
+                'vol_total_proyectado': Decimal('0.0'),
+                'acumulado_mes': Decimal('0.0'),
+                'acumulado_programado': Decimal('0.0'),
+                'monto_mn': Decimal('0.0'),
+                'monto_usd': Decimal('0.0'),
+                'dias': {d: {'te': Decimal('0.0'), 'cma': Decimal('0.0'), 'prog': Decimal('0.0')} for d in range(1, 32)}
+            }
+        
+        suma_mes_visual = Decimal('0.0')
+        suma_prog_mes_visual = Decimal('0.0')
         hay_excedente_visual = False
         
         fila_grid = {
@@ -531,68 +556,126 @@ def obtener_partidas_produccion(request):
             'codigo': datos['codigo'],
             'concepto': datos['concepto'],
             'unidad': datos['unidad'],
-            'vol_total_proyectado': datos['vol_total_proyectado'],
+            'vol_total_proyectado': float(datos['vol_total_proyectado']),
             'acumulado_mes': 0.0,
             'acumulado_programado': 0.0,
             'archivo': datos['archivo'],
             'anexo': datos['anexo'],
             'monto_mn': 0.0,
-            'monto_usd': 0.0
+            'monto_usd': 0.0,
+            'es_subtitulo': False
         }
 
         for d in range(1, 32):
             master_key = (key, d)
             
             info_dia = produccion_mapa.get(master_key)
-            val_te = info_dia['TE'] if info_dia else 0.0
-            val_cma = info_dia['CMA'] if info_dia else 0.0
+            val_te = info_dia['TE'] if info_dia else Decimal('0.0')
+            val_cma = info_dia['CMA'] if info_dia else Decimal('0.0')
             es_exc = info_dia['es_excedente'] if info_dia else False
-            val_prog = programacion_mapa.get(master_key, 0.0)
+            val_prog = programacion_mapa.get(master_key, Decimal('0.0'))
             
             valor_visual = val_te if tipo_tiempo == 'TE' else val_cma
             
-            if val_te == 0 and val_cma == 0 and val_prog == 0 and not es_exc:
+            if val_te == Decimal('0.0') and val_cma == Decimal('0.0') and val_prog == Decimal('0.0') and not es_exc:
                 fila_grid[f'dia{d}'] = None
             else:
                 fila_grid[f'dia{d}'] = {
-                    'valor': valor_visual,
-                    'programado': val_prog,
+                    'valor': float(valor_visual),
+                    'programado': float(val_prog),
                     'es_excedente': es_exc,
-                    'te_dia': val_te,
-                    'cma_dia': val_cma
+                    'te_dia': float(val_te),
+                    'cma_dia': float(val_cma)
                 }
             
             suma_mes_visual += val_te + val_cma
             suma_prog_mes_visual += val_prog
             if es_exc: hay_excedente_visual = True
+
+            anexos_agrupados[anexo_actual]['dias'][d]['te'] += val_te
+            anexos_agrupados[anexo_actual]['dias'][d]['cma'] += val_cma
+            anexos_agrupados[anexo_actual]['dias'][d]['prog'] += val_prog
         
-        fila_grid['acumulado_mes'] = suma_mes_visual
-        fila_grid['acumulado_programado'] = suma_prog_mes_visual
+        fila_grid['acumulado_mes'] = float(suma_mes_visual)
+        fila_grid['acumulado_programado'] = float(suma_prog_mes_visual)
         fila_grid['estatus_gpu'] = 'BLOQUEADO' if hay_excedente_visual else 'AUTORIZADO'
         
         fila_monto_mn = suma_mes_visual * datos['pu_mn']
         fila_monto_usd = suma_mes_visual * datos['pu_usd']
 
-        fila_grid['monto_mn'] = fila_monto_mn
-        fila_grid['monto_usd'] = fila_monto_usd
+        fila_grid['monto_mn'] = float(fila_monto_mn)
+        fila_grid['monto_usd'] = float(fila_monto_usd)
         
         total_ejec_mn += fila_monto_mn
         total_ejec_usd += fila_monto_usd
 
-        data_final.append(fila_grid)
-    
+        anexos_agrupados[anexo_actual]['vol_total_proyectado'] += datos['vol_total_proyectado']
+        anexos_agrupados[anexo_actual]['acumulado_mes'] += suma_mes_visual
+        anexos_agrupados[anexo_actual]['acumulado_programado'] += suma_prog_mes_visual
+        anexos_agrupados[anexo_actual]['monto_mn'] += fila_monto_mn
+        anexos_agrupados[anexo_actual]['monto_usd'] += fila_monto_usd
+
+        anexos_agrupados[anexo_actual]['filas'].append(fila_grid)
+
+    for anexo, agru in anexos_agrupados.items():
+        
+        fila_subtitulo = {
+            'id_partida_imp': f'SUBTITULO_{anexo}',
+            'codigo': '',
+            'concepto': f'TOTAL ANEXO: {anexo}',
+            'unidad': '',
+            'vol_total_proyectado': float(agru['vol_total_proyectado']),
+            'acumulado_mes': float(agru['acumulado_mes']),
+            'acumulado_programado': float(agru['acumulado_programado']),
+            'archivo': '',
+            'anexo': anexo,
+            'monto_mn': float(agru['monto_mn']),
+            'monto_usd': float(agru['monto_usd']),
+            'estatus_gpu': '',
+            'es_subtitulo': True,
+            '_attributes': {
+                'disabled': True, 
+                'className': {
+                    'row': ['bg-secondary text-white']
+                }
+            }
+        }
+        
+        for d in range(1, 32):
+            val_te = agru['dias'][d]['te']
+            val_cma = agru['dias'][d]['cma']
+            val_prog = agru['dias'][d]['prog']
+            
+            valor_visual = val_te if tipo_tiempo == 'TE' else val_cma
+            
+            if val_te == Decimal('0.0') and val_cma == Decimal('0.0') and val_prog == Decimal('0.0'):
+                fila_subtitulo[f'dia{d}'] = None
+            else:
+                fila_subtitulo[f'dia{d}'] = {
+                    'valor': float(valor_visual),
+                    'programado': float(val_prog),
+                    'es_excedente': False,
+                    'te_dia': float(val_te),
+                    'cma_dia': float(val_cma)
+                }
+                
+        data_final.append(fila_subtitulo)
+        
+        data_final.extend(agru['filas'])
+
+
     por_ejecutar_mn = total_aut_mn - total_acum_mn - total_ejec_mn
     por_ejecutar_usd = total_aut_usd - total_acum_usd - total_ejec_usd
 
     totales_financieros = {
-        'aut_mn': total_aut_mn,
-        'aut_usd': total_aut_usd,
-        'ejec_mn': total_ejec_mn,
-        'ejec_usd': total_ejec_usd,
-        'acum_mn': total_acum_mn,
-        'acum_usd': total_acum_usd,
-        'resta_mn': por_ejecutar_mn,
-        'resta_usd': por_ejecutar_usd
+        'aut_mn': float(total_aut_mn),
+        'aut_usd': float(total_aut_usd),
+        'ejec_mn': float(total_ejec_mn),
+        'ejec_usd': float(total_ejec_usd),
+        'acum_mn': float(total_acum_mn),
+        'acum_usd': float(total_acum_usd),
+        'resta_mn': float(por_ejecutar_mn),
+        'resta_usd': float(por_ejecutar_usd)
     }
 
     respuesta = {

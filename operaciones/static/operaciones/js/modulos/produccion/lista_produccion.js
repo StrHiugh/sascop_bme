@@ -182,7 +182,9 @@ class ProduccionRenderer {
     
     render(props) {
         const data = props.value;
-        
+        const rowData = props.grid.getRow(props.rowKey);
+        const isSubtitle = rowData && rowData.es_subtitulo;
+
         let valorVisual = data; 
         let programado = 0.0;
         let esExcedente = false;
@@ -203,10 +205,12 @@ class ProduccionRenderer {
             ? numberFormatter.format(valNum)
             : '';
 
-        let htmlContent = `<span class="val-real">${displayValue}</span>`;
+        let valClass = isSubtitle ? 'val-real-subtitulo fw-bold text-white' : 'val-real';
+        let htmlContent = `<span class="${valClass}">${displayValue}</span>`;
         
         if (programado > 0) {
-            htmlContent += `<span class="prog-text">P: ${numberFormatter.format(programado)}</span>`;
+            let progClass = isSubtitle ? 'prog-text-subtitulo fw-bold text-white' : 'prog-text';
+            htmlContent += `<span class="${progClass}">P: ${numberFormatter.format(programado)}</span>`;
         }
         
         this.el.innerHTML = htmlContent;
@@ -227,10 +231,10 @@ class ProduccionRenderer {
                         `Detalle:\n` + 
                         `TE:  ${fmt(teDia)}\n` +
                         `CMA: ${fmt(cmaDia)}`;
-        if (esExcedente) {
+        if (esExcedente && !isSubtitle) {
             this.el.classList.add('celda-excedente-moderna');
             tooltipText = "⚠️ VOLUMEN EXCEDENTE ⚠️\n\n" + tooltipText;
-        } else if (valNum > 0 && programado > 0 && valNum >= programado) {
+        } else if (valNum > 0 && programado > 0 && valNum >= programado && !isSubtitle) {
             this.el.classList.add('text-success'); 
         }
 
@@ -342,6 +346,11 @@ class OpcionesRenderer {
     getElement() { return this.el; }
 
     render(props) {
+        const rowData = props.grid.getRow(props.rowKey);
+        if (rowData && rowData.es_subtitulo) {
+            this.el.innerHTML = '';
+            return;
+        }
         const archivo = props.value; 
         const rowKey = props.rowKey;
         
@@ -512,25 +521,27 @@ $(document).ready(function() {
         }
 
         const rawData = gridProduccion.getData();
-        const partidasProcesadas = rawData.map(row => {
-            const valoresDias = [];
-            for (let i = 1; i <= DAYS_IN_MONTH; i++) {
-                let celda = row[`dia${i}`];
-                let valor = celda;
+        const partidasProcesadas = rawData
+            .filter(row => !row.es_subtitulo)
+            .map(row => {
+                const valoresDias = [];
+                for (let i = 1; i <= DAYS_IN_MONTH; i++) {
+                    let celda = row[`dia${i}`];
+                    let valor = celda;
 
-                if (celda && typeof celda === 'object' && celda.valor !== undefined) {
-                    valor = celda.valor;
+                    if (celda && typeof celda === 'object' && celda.valor !== undefined) {
+                        valor = celda.valor;
+                    }
+                    
+                    let valNum = parseFloat(valor);
+                    valoresDias.push(isNaN(valNum) ? 0 : valNum);
                 }
-                
-                let valNum = parseFloat(valor);
-                valoresDias.push(isNaN(valNum) ? 0 : valNum);
-            }
-            return {
-                id_partida_imp: row.id_partida_imp,
-                codigo: row.codigo,
-                valores: valoresDias
-            };
-        });
+                return {
+                    id_partida_imp: row.id_partida_imp,
+                    codigo: row.codigo,
+                    valores: valoresDias
+                };
+            });
         const numero_partidas = partidasProcesadas.length;
         let log = new RegistroActividad(10,otSeleccionada.id_ot,"REGISTRAR")
         log.agregar_actividad({
@@ -978,6 +989,13 @@ $(document).ready(function() {
                         }
                     }
                 });
+            });
+
+            gridProduccion.on('editingStart', (ev) => {
+                const rowData = gridProduccion.getRow(ev.rowKey);
+                if (rowData && rowData.es_subtitulo) {
+                    ev.stop();
+                }
             });
         }
 
