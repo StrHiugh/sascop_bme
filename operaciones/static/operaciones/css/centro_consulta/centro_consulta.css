@@ -380,9 +380,16 @@ body .offcanvas.offcanvas-end#panelFiltros {
 }
 
 /* ── Área del canvas ECharts ─────────────────────────────────── */
-.cc-chart-body { padding: 8px 16px 16px; }
+.cc-chart-body {
+    padding: 8px 16px 16px;
+    transition: all 0.35s ease;
+}
 
-#cc-chart-main { width: 100%; height: 340px; }
+#cc-chart-main {
+    width: 100%;
+    height: 340px;
+    transition: height 0.35s ease;
+}
 
 /* ── Responsive ──────────────────────────────────────────────── */
 @media (max-width: 768px) {
@@ -421,7 +428,10 @@ body .offcanvas.offcanvas-end#panelFiltros {
     box-shadow: 0 2px 5px rgba(0,0,0,0.08);
 }
 
-.grafica-expandida-full { height: calc(100vh - 280px) !important; }
+.grafica-expandida-full {
+    height: calc(100vh - 280px) !important;
+    transition: height 0.35s ease;
+}
 .tabla-expandida-full { min-height: calc(100vh - 280px) !important; }
 #cc-chart-card { margin-bottom: 1.5rem; }
 
