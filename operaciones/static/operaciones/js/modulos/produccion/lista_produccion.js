@@ -10,6 +10,9 @@ let celdaGpuEnEdicion = null;
 let gridAvances = null;
 let sCurveChart = null;
 let currentViewMode = 'subtec';
+let mapaRowKeySubtitulos = {};
+let recalculando = false;
+let hayPendientesProd = false;
 
 const numberFormatter = new Intl.NumberFormat('es-MX', { 
     minimumFractionDigits: 6, 
@@ -62,6 +65,12 @@ function calcularHomologado() {
 
 $('#input-tc-kpi').on('input change', function() {
     calcularHomologado();
+});
+
+window.addEventListener('beforeunload', function(e) {
+    if (!hayPendientesProd) return;
+    e.preventDefault();
+    e.returnValue = '';
 });
 
 class StatusRenderer {
@@ -570,6 +579,8 @@ $(document).ready(function() {
             success: function(response) {
                 if (response.exito) {
                     aviso("exito", `Sábana de ${tipoTiempoActivo} guardada correctamente`);
+                    hayPendientesProd = false;
+                    $('#indicador-cambios-pendientes').addClass('d-none');
                     cargarDetalleProduccion(otSeleccionada);
                     if (gridGpus && $('#gpus-tab').hasClass('active')) {
                         cargarDatosGpus();
@@ -997,6 +1008,31 @@ $(document).ready(function() {
                     ev.stop();
                 }
             });
+
+            gridProduccion.on('afterChange', (ev) => {
+                if (recalculando) return;
+                const colsDia = ev.changes.filter(c => c.columnName.startsWith('dia'));
+                if (colsDia.length === 0) return;
+                const hayPartidasReales = ev.changes.some(c => {
+                    const row = gridProduccion.getRow(c.rowKey);
+                    return row && !row.es_subtitulo;
+                });
+                if (!hayPartidasReales) return;
+                recalculando = true;
+                const anexosAfectados = new Set();
+                ev.changes.forEach(c => {
+                    const row = gridProduccion.getRow(c.rowKey);
+                    if (row && !row.es_subtitulo) {
+                        fn_actualizarResumenFila(c.rowKey);
+                        anexosAfectados.add(row.anexo);
+                    }
+                });
+                anexosAfectados.forEach(fn_recalcularSubtituloAnexo);
+                fn_recalcularKPIsDesdeGrid();
+                recalculando = false;
+                hayPendientesProd = true;
+                $('#indicador-cambios-pendientes').removeClass('d-none');
+            });
         }
 
         const elGridGpus = document.getElementById('grid-gpus');
@@ -1052,6 +1088,85 @@ $(document).ready(function() {
                     }
                 }
             });
+    }
+
+    function fn_extraerValorCelda(celda) {
+        if (celda && typeof celda === 'object') return parseFloat(celda.valor) || 0;
+        if (celda !== null && celda !== undefined && celda !== '') return parseFloat(celda) || 0;
+        return 0;
+    }
+
+    function fn_actualizarResumenFila(rowKey) {
+        const row = gridProduccion.getRow(rowKey);
+        if (!row || row.es_subtitulo) return;
+        let acum = 0;
+        for (let d = 1; d <= DAYS_IN_MONTH; d++) {
+            acum += fn_extraerValorCelda(row[`dia${d}`]);
+        }
+        gridProduccion.setValue(rowKey, 'acumulado_mes', acum);
+        gridProduccion.setValue(rowKey, 'monto_mn', acum * (row.pu_mn || 0));
+        gridProduccion.setValue(rowKey, 'monto_usd', acum * (row.pu_usd || 0));
+    }
+
+    function fn_recalcularSubtituloAnexo(anexo) {
+        const rowKeySubtitulo = mapaRowKeySubtitulos[anexo];
+        if (rowKeySubtitulo === undefined) return;
+        const todasFilas = gridProduccion.getData();
+        const filaPartidas = todasFilas.filter(r => !r.es_subtitulo && r.anexo === anexo);
+        if (filaPartidas.length === 0) return;
+        let nuevoAcumulado = 0;
+        let nuevoMontoMn = 0;
+        let nuevoMontoUsd = 0;
+        for (let d = 1; d <= DAYS_IN_MONTH; d++) {
+            let totalDia = 0;
+            let totalProgDia = 0;
+            filaPartidas.forEach(row => {
+                const celda = row[`dia${d}`];
+                totalDia += fn_extraerValorCelda(celda);
+                totalProgDia += (celda && typeof celda === 'object') ? parseFloat(celda.programado) || 0 : 0;
+            });
+            nuevoAcumulado += totalDia;
+            const nuevaCelda = (totalDia > 0 || totalProgDia > 0)
+                ? { valor: totalDia, programado: totalProgDia, es_excedente: false, te_dia: totalDia, cma_dia: 0 }
+                : null;
+            gridProduccion.setValue(rowKeySubtitulo, `dia${d}`, nuevaCelda);
+        }
+        filaPartidas.forEach(row => {
+            let acumFila = 0;
+            for (let d = 1; d <= DAYS_IN_MONTH; d++) {
+                acumFila += fn_extraerValorCelda(row[`dia${d}`]);
+            }
+            nuevoMontoMn += acumFila * (row.pu_mn || 0);
+            nuevoMontoUsd += acumFila * (row.pu_usd || 0);
+        });
+        gridProduccion.setValue(rowKeySubtitulo, 'acumulado_mes', nuevoAcumulado);
+        gridProduccion.setValue(rowKeySubtitulo, 'monto_mn', nuevoMontoMn);
+        gridProduccion.setValue(rowKeySubtitulo, 'monto_usd', nuevoMontoUsd);
+    }
+
+    function fn_recalcularKPIsDesdeGrid() {
+        const todasFilas = gridProduccion.getData();
+        let totalEjecMn = 0;
+        let totalEjecUsd = 0;
+        todasFilas.filter(r => !r.es_subtitulo).forEach(row => {
+            let acumFila = 0;
+            for (let d = 1; d <= DAYS_IN_MONTH; d++) {
+                acumFila += fn_extraerValorCelda(row[`dia${d}`]);
+            }
+            totalEjecMn += acumFila * (row.pu_mn || 0);
+            totalEjecUsd += acumFila * (row.pu_usd || 0);
+        });
+        storeTotales.ejec_mn = totalEjecMn;
+        storeTotales.ejec_usd = totalEjecUsd;
+        storeTotales.resta_mn = storeTotales.aut_mn - storeTotales.acum_mn - totalEjecMn;
+        storeTotales.resta_usd = storeTotales.aut_usd - storeTotales.acum_usd - totalEjecUsd;
+        $('#lbl-ejec-mn').text(moneyFormatter.format(totalEjecMn));
+        $('#lbl-ejec-usd').text(moneyFormatter.format(totalEjecUsd));
+        $('#lbl-acum-mn').text(moneyFormatter.format(storeTotales.acum_mn + totalEjecMn));
+        $('#lbl-acum-usd').text(moneyFormatter.format(storeTotales.acum_usd + totalEjecUsd));
+        $('#lbl-resta-mn').text(moneyFormatter.format(storeTotales.resta_mn));
+        $('#lbl-resta-usd').text(moneyFormatter.format(storeTotales.resta_usd));
+        calcularHomologado();
     }
 
     function cargarDatosTablero() {
@@ -1120,6 +1235,12 @@ $(document).ready(function() {
 
                 if (gridProduccion) {
                     gridProduccion.resetData(data);
+                    hayPendientesProd = false;
+                    $('#indicador-cambios-pendientes').addClass('d-none');
+                    mapaRowKeySubtitulos = {};
+                    data.forEach((row, index) => {
+                        if (row.es_subtitulo) mapaRowKeySubtitulos[row.anexo] = index;
+                    });
                     bloquearDiasFueraDeVigencia(ot, parseInt(mes), parseInt(anio));
                     bloquearDiasFirmados(diasBloqueados);
                 }
