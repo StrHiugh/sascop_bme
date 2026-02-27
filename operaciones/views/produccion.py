@@ -561,6 +561,8 @@ def obtener_partidas_produccion(request):
             'acumulado_programado': 0.0,
             'archivo': datos['archivo'],
             'anexo': datos['anexo'],
+            'pu_mn': float(datos['pu_mn']),
+            'pu_usd': float(datos['pu_usd']),
             'monto_mn': 0.0,
             'monto_usd': 0.0,
             'es_subtitulo': False
