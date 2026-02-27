@@ -479,6 +479,7 @@ $(document).ready(function () {
          fnCargarCatalogo(urlObtenerFrentes, "#filtro-frente");
          fnCargarCatalogo(urlObtenerEstatus, "#filtro-estatus");
          fnCargarCatalogo(urlObtenerTiposDoc, "#filtro-tipo-doc");
+         fnAsegurarSelect2("#filtro-sitio");
          const opcionesSitio = $("#filtro-sitio option").length;
          if (opcionesSitio <= 1) {
             if (!$("#chk_buscar_por_frente").is(":checked")) fnGestionarCargaSitios(null, false);
