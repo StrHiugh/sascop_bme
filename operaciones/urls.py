@@ -187,4 +187,9 @@ urlpatterns = [
     path('centro_consulta/busqueda-global-graficas/', centro_consulta.fn_api_obtener_dashboard, name='api_busqueda_global_graficas'),
     path("centro_consulta/descargar-excel/", centro_consulta.fn_api_descargar_excel_bi, name="api_descargar_excel_bi"),
     path("centro_consulta/enviar-correo/", centro_consulta.fn_api_enviar_correo_bi, name="api_enviar_correo_bi"),
+    path("centro_consulta/catalogos/ots/", centro_consulta.fn_api_obtener_ots_cc, name="api_obtener_ots_cc"),
+    path("centro_consulta/catalogos/estatus-cobro/", centro_consulta.fn_api_obtener_estatus_cobro_cc, name="api_obtener_estatus_cobro_cc"),
+    path("centro_consulta/catalogos/anexos/", centro_consulta.fn_api_obtener_anexos_cc, name="api_obtener_anexos_cc"),
+    path("centro_consulta/catalogos/partidas/", centro_consulta.fn_api_buscar_partidas_cc, name="api_buscar_partidas_cc"),
+    path("centro_consulta/busqueda-prod-info/", centro_consulta.fn_api_busqueda_prod_informacion, name="api_busqueda_prod_info"),
 ]

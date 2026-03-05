@@ -1,20 +1,20 @@
+const fnFormatearFecha = (fecha) => {
+   const anio = fecha.getFullYear();
+   const mes = String(fecha.getMonth() + 1).padStart(2, "0");
+   const dia = String(fecha.getDate()).padStart(2, "0");
+   return `${anio}-${mes}-${dia}`;
+};
+
 const fnObtenerFiltrosEstaticos = () => {
    const fechaActual = new Date();
    const primerDiaMes = new Date(fechaActual.getFullYear(), fechaActual.getMonth(), 1);
 
-   const fnFormatear = (fecha) => {
-      const anio = fecha.getFullYear();
-      const mes = String(fecha.getMonth() + 1).padStart(2, "0");
-      const dia = String(fecha.getDate()).padStart(2, "0");
-      return `${anio}-${mes}-${dia}`;
-   };
-
    return {
-      "origenes": [],
+      "origenes": ["PTE", "OT", "PROD"],
       "check_entregados": false,
       "check_no_entregados": false,
-      "fecha_inicio": fnFormatear(primerDiaMes),
-      "fecha_fin": fnFormatear(fechaActual),
+      "fecha_inicio": fnFormatearFecha(primerDiaMes),
+      "fecha_fin": fnFormatearFecha(fechaActual),
       "lideres_id": [],
       "clientes_id": [],
       "frentes_id": [],
@@ -22,6 +22,23 @@ const fnObtenerFiltrosEstaticos = () => {
       "nombres_doc": [],
       "estatus_proceso_id": [],
       "buscar_por_frente": "0",
+      "texto_busqueda": ""
+   };
+};
+
+const fnObtenerFiltrosEstaticosInfo = () => {
+   const fechaActual = new Date();
+   const primerDiaMes = new Date(fechaActual.getFullYear(), fechaActual.getMonth(), 1);
+
+   return {
+      "ots_id":        [],
+      "tipos_tiempo":  ["TE", "CMA"],
+      "anexos":        [],
+      "clientes_id":   [],
+      "lideres_id":    [],
+      "fecha_inicio":  fnFormatearFecha(primerDiaMes),
+      "fecha_fin":     fnFormatearFecha(fechaActual),
+      "es_excedente":  null,
       "texto_busqueda": ""
    };
 };
@@ -43,6 +60,13 @@ const fnEstadoInicialPanel = () => {
    $("#filtro-buscar").val("");
    $("#filtro-sitio").empty().trigger("change");
 
+   $("#orig_pro").prop("checked", true);
+   $("input[name='prod_tabs'][value='documentacion']").prop("checked", true);
+   $("#filtro-ot").val(null).trigger("change");
+   $("#filtro-anexo").val(null).trigger("change");
+   $("#chk_tipo_normal").prop("checked", true);
+   $("#chk_tipo_extraordinario").prop("checked", true);
+   $("#chk_excedentes").prop("checked", false);
    const validador = $("#form-filtros-bi").data("validator");
    if (validador) {
       validador.resetForm();
@@ -138,6 +162,8 @@ const fnObtenerFiltrosActuales = () => {
    const documentosSeleccionados = $("#filtro-tipo-doc").val();
    const estatusSeleccionados = $("#filtro-estatus").val();
 
+   const otsSeleccionados = $("#filtro-ot").val();
+
    return {
       "origenes": listaOrigenes,
       "check_entregados": $("#chk_entregados").is(":checked"),
@@ -151,7 +177,8 @@ const fnObtenerFiltrosActuales = () => {
       "nombres_doc": documentosSeleccionados ? documentosSeleccionados : [],
       "estatus_proceso_id": estatusSeleccionados ? estatusSeleccionados : [],
       "buscar_por_frente": esBusquedaPorFrente,
-      "texto_busqueda": $("#filtro-buscar").val()
+      "texto_busqueda": $("#filtro-buscar").val(),
+      "ots_id": otsSeleccionados ? otsSeleccionados : []
    };
 };
 
@@ -339,10 +366,36 @@ const fnGestionarVisibilidadUbicacion = () => {
 };
 
 let tablaResultados;
+let tablaProduccionInfo = null;
 let panelFiltrosOffcanvas = null;
+let periodoActivoInfo = null;
 
 $(document).ready(function () {
    const elementoDOMPanel = document.getElementById("panelFiltros");
+
+   const opcionesAjaxSelect2 = (url, placeholder) => ({
+      width: "100%",
+      dropdownParent: $("#panelFiltros"),
+      multiple: true,
+      placeholder,
+      allowClear: true,
+      minimumInputLength: 2,
+      language: {
+         inputTooShort: () => "Escribe al menos 2 caracteres",
+         noResults: () => "Sin resultados"
+      },
+      ajax: {
+         url,
+         dataType: "json",
+         delay: 300,
+         data: (params) => ({ q: params.term || "", page: params.page || 1 }),
+         processResults: (datos) => ({ results: datos.results, pagination: { more: datos.more } })
+      }
+   });
+
+   $("#filtro-ot").select2(opcionesAjaxSelect2(urlObtenerOts, "Buscar OT..."));
+   $("#filtro-partida").select2(opcionesAjaxSelect2(urlBuscarPartidasCc, "Buscar partida..."));
+
    fnEstadoInicialPanel();
    filtrosActivos = fnObtenerFiltrosEstaticos();
    fnActualizarPeriodo(filtrosActivos);
@@ -478,7 +531,8 @@ $(document).ready(function () {
          fnCargarCatalogo(urlObtenerClientes, "#filtro-cliente");
          fnCargarCatalogo(urlObtenerFrentes, "#filtro-frente");
          fnCargarCatalogo(urlObtenerEstatus, "#filtro-estatus");
-         fnCargarCatalogo(urlObtenerTiposDoc, "#filtro-tipo-doc");
+         fnCargarTiposDoc();
+         fnGestionarVisibilidadFiltroOt();
          fnAsegurarSelect2("#filtro-sitio");
          const opcionesSitio = $("#filtro-sitio option").length;
          if (opcionesSitio <= 1) {
@@ -522,7 +576,7 @@ $(document).ready(function () {
       }
    });
 
-   $("#filtro-buscar").on("keyup", function (eventoTeclado) {
+$("#filtro-buscar").on("keyup", function (eventoTeclado) {
       if (eventoTeclado.key === "Enter") {
          filtrosActivos = fnObtenerFiltrosActuales();
          fnActualizarTodo();
@@ -542,18 +596,47 @@ $(document).ready(function () {
       }
 
       const instanciaBoton = $(this);
+
+      if (fnModoActual() === "informacion") {
+         periodoActivoInfo = fnObtenerFiltrosProdInfo();
+         fnActualizarPeriodo(periodoActivoInfo);
+         instanciaBoton.prop("disabled", true).html("<i class=\"fas fa-spinner fa-spin me-2\"></i>Consultando...");
+         fnInicializarTablaInfo();
+         tablaProduccionInfo.ajax.reload(() => {
+            instanciaBoton.prop("disabled", false).html("<i class=\"fas fa-search me-2\"></i>Buscar");
+         }, true);
+         const existePanel = typeof panelFiltrosOffcanvas !== "undefined" && panelFiltrosOffcanvas ? true : false;
+         if (existePanel) panelFiltrosOffcanvas.hide();
+         return;
+      }
+
       filtrosActivos = fnObtenerFiltrosActuales();
       fnActualizarTodo(instanciaBoton);
    });
 
    $("#btn-limpiar-filtros").on("click", function () {
+      const modoPrevio = fnModoActual();
       fnEstadoInicialPanel();
-      filtrosActivos = fnObtenerFiltrosEstaticos();
-      fnActualizarTodo();
+
+      if (modoPrevio === "informacion") {
+         $("#filtro-frente").closest(".mb-3").stop(true).hide();
+         $("#filtro-sitio").closest(".mb-3").stop(true).hide();
+         $("#contenedor-switch-frente").stop(true).hide();
+         $("input[name='prod_tabs'][value='informacion']").prop("checked", true);
+         fnMostrarModoInformacion();
+         periodoActivoInfo = null;
+         fnActualizarPeriodo(periodoActivoInfo);
+         fnRecargarTablaInfo();
+      } else {
+         fnMostrarModoDocumentacion();
+         filtrosActivos = fnObtenerFiltrosEstaticos();
+         fnActualizarTodo();
+      }
    });
 
    $("input[name=\"origen\"]").on("change", function () {
       fnGestionarVisibilidadUbicacion();
+      fnGestionarVisibilidadFiltroOt();
    });
 
    $("#btn-expandir-grafica").on("click", function () {
@@ -585,6 +668,38 @@ $(document).ready(function () {
       }
       setTimeout(() => {
          if (tablaResultados) tablaResultados.columns.adjust().responsive.recalc();
+      }, 350);
+   });
+
+   $("#btn-expandir-grafica-info").on("click", function () {
+      const botonActual = $(this);
+      const esModoExpandido = botonActual.find("i").hasClass("fa-compress") ? true : false;
+      if (esModoExpandido) {
+         $("#cc-table-info-card").slideDown(300);
+         botonActual.html("<i class=\"fas fa-expand\"></i>");
+         $("#cc-chart-info-main").removeClass("grafica-expandida-full");
+      } else {
+         $("#cc-table-info-card").slideUp(300);
+         botonActual.html("<i class=\"fas fa-compress\"></i>");
+         $("#cc-chart-info-main").addClass("grafica-expandida-full");
+      }
+      setTimeout(() => window.dispatchEvent(new Event("resize")), 350);
+   });
+
+   $("#btn-expandir-tabla-info").on("click", function () {
+      const botonActual = $(this);
+      const esModoExpandido = botonActual.find("i").hasClass("fa-compress") ? true : false;
+      if (esModoExpandido) {
+         $("#cc-kpis-info, #cc-chart-info").slideDown(300);
+         botonActual.html("<i class=\"fas fa-expand\"></i>");
+         $("#cc-table-info-card").removeClass("tabla-expandida-full");
+      } else {
+         $("#cc-kpis-info, #cc-chart-info").slideUp(300);
+         botonActual.html("<i class=\"fas fa-compress\"></i>");
+         $("#cc-table-info-card").addClass("tabla-expandida-full");
+      }
+      setTimeout(() => {
+         if (tablaProduccionInfo) tablaProduccionInfo.columns.adjust().responsive.recalc();
       }, 350);
    });
 
@@ -731,6 +846,274 @@ $(document).ready(function () {
       return arregloImagenes;
    };
 
+   const fnEsProdActivo = () => $("#orig_pro").is(":checked");
+   const fnModoActual = () => $("input[name='prod_tabs']:checked").val();
+
+   const fnGestionarVisibilidadFiltroOt = () => {
+      const otActivo = $("#orig_ot").is(":checked");
+      const prodActivo = fnEsProdActivo();
+
+      if (otActivo || prodActivo) {
+         $("#contenedor-filtro-ot").slideDown();
+      } else {
+         $("#contenedor-filtro-ot").slideUp();
+         $("#filtro-ot").val(null).trigger("change");
+      }
+   };
+
+   const fnObtenerFiltrosProdInfo = () => {
+      const tiposSeleccionados = [];
+      if ($("#chk_tipo_normal").is(":checked")) tiposSeleccionados.push($("#chk_tipo_normal").val());
+      if ($("#chk_tipo_extraordinario").is(":checked")) tiposSeleccionados.push($("#chk_tipo_extraordinario").val());
+
+      const anexos      = $("#filtro-anexo").val();
+      const partidas    = $("#filtro-partida").val();
+      const ots         = $("#filtro-ot").val();
+      const clientes    = $("#filtro-cliente").val();
+      const lideres     = $("#filtro-lider").val();
+      const sitios      = $("#filtro-sitio").val();
+      return {
+         "ots_id":        ots ? ots : [],
+         "tipos_tiempo":  tiposSeleccionados,
+         "anexos":        anexos ? anexos : [],
+         "partidas_id":   partidas ? partidas : [],
+         "clientes_id":   clientes ? clientes : [],
+         "lideres_id":    lideres ? lideres : [],
+         "sitios_id":     sitios ? sitios : [],
+         "fecha_inicio":  $("#fecha_inicio").val() || null,
+         "fecha_fin":     $("#fecha_fin").val() || null,
+         "es_excedente":  $("#chk_excedentes").is(":checked") ? true : null,
+         "texto_busqueda": $("#filtro-buscar-info").val()
+      };
+   };
+
+   const fnSincronizarOpcionesProdTipoDoc = () => {
+      const elementoSelect = $("#filtro-tipo-doc");
+      if (!elementoSelect.find("option").length) return;
+
+      elementoSelect.find("option[data-prod]").remove();
+
+      if (fnEsProdActivo() && fnModoActual() === "documentacion") {
+         elementoSelect.append(`<option value="REPORTE MENSUAL" data-prod="1">REPORTE MENSUAL</option>`);
+         elementoSelect.append(`<option value="GENERADOR DE PRECIOS UNITARIOS" data-prod="1">GENERADOR DE PRECIOS UNITARIOS</option>`);
+      }
+
+      if (elementoSelect.hasClass("select2-hidden-accessible")) {
+         fnAsegurarSelect2(elementoSelect);
+      }
+   };
+
+   const fnCargarTiposDoc = () => {
+      const elementoSelect = $("#filtro-tipo-doc");
+      if (elementoSelect.find("option").length > 1) {
+         fnSincronizarOpcionesProdTipoDoc();
+         return;
+      }
+
+      $.ajax({
+         url: urlObtenerTiposDoc,
+         type: "GET",
+         dataType: "json",
+         success: function (datosBackend) {
+            const primeraOpcion = elementoSelect.find("option:first").detach();
+            elementoSelect.empty().append(primeraOpcion);
+            const listaRespuesta = datosBackend ? datosBackend : [];
+            listaRespuesta.forEach(item => {
+               elementoSelect.append(`<option value="${item.id}">${item.descripcion}</option>`);
+            });
+            fnSincronizarOpcionesProdTipoDoc();
+            fnAsegurarSelect2(elementoSelect);
+         },
+         error: function (errorPeticion) {
+            console.error(`Error en catálogo:`, errorPeticion);
+         }
+      });
+   };
+
+   const fnMostrarModoDocumentacion = () => {
+      $("#cc-kpis-container").show();
+      $("#cc-chart-card").show();
+      $("#cc-table-card").show();
+      $("#cc-table-info-card").hide();
+      $("#cc-kpis-info").hide();
+      $("#cc-chart-info").hide();
+
+      $("#contenedor-origen-datos").show();
+      $("#contenedor-filtro-disponibilidad").show();
+      $("#contenedor-filtro-tipo-doc").show();
+      $("#contenedor-filtro-estatus").show();
+      $("#prod-info-filtros").hide();
+      $("#section-title-detalles").text("Detalles del Documento");
+
+      $("#orig_pte, #orig_ot").prop("disabled", false).prop("checked", true)
+         .closest(".form-check").css({ "opacity": "", "cursor": "" });
+      fnGestionarVisibilidadUbicacion();
+      fnSincronizarOpcionesProdTipoDoc();
+      fnGestionarVisibilidadFiltroOt();
+   };
+
+   const fnMostrarModoInformacion = () => {
+      if (!fnEsProdActivo()) {
+         $("#orig_pro").prop("checked", true);
+      }
+      fnCargarCatalogo(urlObtenerAnexos, "#filtro-anexo");
+      fnAsegurarSelect2($("#filtro-anexo"));
+
+      fnGestionarVisibilidadFiltroOt();
+
+      $("#cc-kpis-container").hide();
+      $("#cc-chart-card").hide();
+      $("#cc-table-card").hide();
+      $("#cc-table-info-card").show();
+
+      $("#contenedor-origen-datos").hide();
+      $("#contenedor-filtro-disponibilidad").hide();
+      $("#contenedor-filtro-tipo-doc").hide();
+      $("#contenedor-filtro-estatus").hide();
+      $("#prod-info-filtros").show();
+      $("#section-title-detalles").text("Rango de Fechas");
+
+      $("#orig_pte, #orig_ot").prop("checked", false).prop("disabled", true)
+         .closest(".form-check").css({ "opacity": "0.35", "cursor": "not-allowed" });
+
+      $("#filtro-frente").closest(".mb-3").stop(true, true).hide();
+      $("#contenedor-switch-frente").stop(true, true).hide();
+      $("#filtro-frente").val(null).trigger("change.select2");
+
+      const opcionesSitioInfo = $("#filtro-sitio option").length;
+      if (opcionesSitioInfo <= 1) fnGestionarCargaSitios(null, false);
+      fnAsegurarSelect2($("#filtro-sitio"));
+      $("#filtro-sitio").closest(".mb-3").stop(true, true).show();
+
+      if (typeof ccDashboardInfo !== "undefined") ccDashboardInfo.fnInicializar();
+   };
+
+   const fnInicializarTablaInfo = () => {
+      if (tablaProduccionInfo) return;
+
+      tablaProduccionInfo = $("#tabla-produccion-info").DataTable({
+         serverSide: true,
+         processing: true,
+         pageLength: 10,
+         dom: '<"row"><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
+         responsive: true,
+         searching: false,
+         lengthChange: true,
+         language: {
+            "lengthMenu": "_MENU_",
+            "processing": "Procesando...",
+            "info": "Mostrando _END_ de _TOTAL_ registros.",
+            "infoEmpty": "No hay registros disponibles",
+            "infoFiltered": "(filtrado de _MAX_ registros totales)",
+            "emptyTable": "Ningún dato disponible en esta tabla",
+            "zeroRecords": "No se encontraron resultados",
+            "paginate": { "previous": "‹", "next": "›" }
+         },
+         ajax: function (parametrosDT, callbackDT) {
+            const payloadPaginacion = {
+               "draw": parametrosDT.draw,
+               "start": parametrosDT.start,
+               "length": parametrosDT.length,
+               "filtros": fnObtenerFiltrosProdInfo()
+            };
+
+            $.ajax({
+               url: urlBusquedaProdInfo,
+               type: "POST",
+               data: JSON.stringify(payloadPaginacion),
+               contentType: "application/json",
+               headers: { "X-CSRFToken": csrfToken },
+               success: function (respuestaServidor) {
+                  callbackDT(respuestaServidor);
+                  if (typeof ccDashboardInfo !== "undefined") {
+                     ccDashboardInfo.fnActualizar(respuestaServidor.dashboard || {});
+                  }
+               },
+               error: function (error) {
+                  console.error("Error en tabla producción info:", error);
+                  callbackDT({ "draw": parametrosDT.draw, "recordsTotal": 0, "recordsFiltered": 0, "data": [] });
+               }
+            });
+         },
+         columns: [
+            { title: "OT", data: "ot", className: "align-middle" },
+            { title: "Anexo", data: "anexo", width: "70px", className: "align-middle text-center" },
+            { title: "Partida", data: "partida", className: "align-middle" },
+            { title: "Vol. Producido", data: "vol_producido", width: "110px", className: "align-middle text-end" },
+            { title: "Vol. Proyectado", data: "vol_proyectado", width: "120px", className: "align-middle text-end" },
+            { title: "Vol. Programado", data: "vol_programado", width: "120px", className: "align-middle text-end" },
+            { title: "Fecha", data: "fecha_produccion", width: "100px", className: "align-middle text-nowrap" },
+            { title: "Tipo", data: "tipo_tiempo", width: "70px", className: "align-middle text-center" },
+            { title: "Sitio", data: "sitio", className: "align-middle" }
+         ],
+         drawCallback: function () {
+            const api = this.api();
+            const filasActuales = api.data().toArray();
+            const hayProgramado = filasActuales.some(
+               fila => fila.vol_programado !== null && fila.vol_programado !== undefined
+            );
+            if (api.column(5).visible() !== hayProgramado) {
+               api.column(5).visible(hayProgramado, false);
+            }
+         },
+         initComplete: function () {
+            const contenedorSelector = $("#tabla-produccion-info_length").detach();
+            $("#select-length-info").html(contenedorSelector);
+            $("#select-length-info select").addClass("form-select form-select-sm d-inline-block w-auto mx-2");
+         }
+      });
+   };
+
+   const fnRecargarTablaInfo = () => {
+      fnInicializarTablaInfo();
+      tablaProduccionInfo.ajax.reload(null, true);
+   };
+
+   $("#orig_pro").on("change", function () {
+      const estaActivo = $(this).is(":checked");
+      if (estaActivo) {
+         fnCargarCatalogo(urlObtenerAnexos, "#filtro-anexo");
+         fnAsegurarSelect2($("#filtro-anexo"));
+         fnGestionarVisibilidadFiltroOt();
+         if (fnModoActual() === "informacion") {
+            fnMostrarModoInformacion();
+         } else {
+            fnSincronizarOpcionesProdTipoDoc();
+         }
+      } else {
+         fnGestionarVisibilidadFiltroOt();
+         fnMostrarModoDocumentacion();
+         $("input[name='prod_tabs'][value='documentacion']").prop("checked", true);
+      }
+   });
+
+   $("input[name='prod_tabs']").on("change", function () {
+      const modoSeleccionado = $(this).val();
+      if (modoSeleccionado === "informacion") {
+         fnMostrarModoInformacion();
+         if (periodoActivoInfo === null) {
+            const fechaInicio = $("#fecha_inicio").val();
+            const fechaFin    = $("#fecha_fin").val();
+            if (!fechaInicio || !fechaFin) {
+               const filtrosEstaticos = fnObtenerFiltrosEstaticosInfo();
+               $("#fecha_inicio").val(filtrosEstaticos.fecha_inicio);
+               $("#fecha_fin").val(filtrosEstaticos.fecha_fin);
+            }
+            periodoActivoInfo = fnObtenerFiltrosProdInfo();
+            fnRecargarTablaInfo();
+         }
+         fnActualizarPeriodo(periodoActivoInfo);
+      } else {
+         fnMostrarModoDocumentacion();
+         fnActualizarPeriodo(filtrosActivos);
+      }
+   });
+
+   $("#filtro-buscar-info").on("keyup", function (eventoTeclado) {
+      if (eventoTeclado.key === "Enter" && tablaProduccionInfo) {
+         tablaProduccionInfo.ajax.reload(null, true);
+      }
+   });
 
    $("#btn-procesar-envio").on("click", function () {
       const formularioCorreo = $("#form-enviar-correo");

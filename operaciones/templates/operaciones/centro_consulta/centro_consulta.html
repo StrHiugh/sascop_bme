@@ -38,6 +38,15 @@
     <div class="bm-content">
         <div class="bm-cont-elementos">
             <div class="bm-cont-elementos-body">
+                <div class="cc-mode-header">
+                    <div class="tabs-container" id="prod-mode-glider">
+                        <input type="radio" id="tab-doc" name="prod_tabs" value="documentacion" checked>
+                        <label for="tab-doc">Documentación</label>
+                        <input type="radio" id="tab-info" name="prod_tabs" value="informacion">
+                        <label for="tab-info">Información</label>
+                        <div class="glider"></div>
+                    </div>
+                </div>
                 <div class="cc-periodo-indicator" id="cc-periodo-container" style="display:none; text-align:center;">
                     <div class="cc-periodo-badge">
                         <i class="far fa-calendar-alt me-2"></i>
@@ -135,6 +144,87 @@
                         <table id="tabla-resultados" class="table table-hover w-100"></table>
                     </div>
                 </div>
+                {% comment %} <div class="cc-kpis" id="cc-kpis-info" style="display:none;">
+                    <div class="cc-kpi">
+                        <div class="cc-kpi-label">Producción Total</div>
+                        <div class="cc-kpi-value" id="info-kpi-produccion">—</div>
+                        <div class="cc-kpi-sub">importe producido ($)</div>
+                    </div>
+                    <div class="cc-kpi">
+                        <div class="cc-kpi-label">Promedio Diario</div>
+                        <div class="cc-kpi-value" id="info-kpi-promedio">—</div>
+                        <div class="cc-kpi-sub">por día con producción</div>
+                    </div>
+                    <div class="cc-kpi">
+                        <div class="cc-kpi-label">Proyectos Ejecutados</div>
+                        <div class="cc-kpi-value" id="info-kpi-proyectos">—</div>
+                        <div class="cc-kpi-sub">OTs con producción real</div>
+                    </div>
+                    <div class="cc-kpi">
+                        <div class="cc-kpi-label">Mejor Día</div>
+                        <div class="cc-kpi-value" id="info-kpi-mejor-dia">—</div>
+                        <div class="cc-kpi-sub" id="info-kpi-mejor-dia-fecha">fecha</div>
+                    </div>
+                </div> {% endcomment %}
+
+                {% comment %} <div class="cc-chart-card" id="cc-chart-info" style="display:none;">
+                    <div class="cc-chart-header">
+                        <div class="d-flex align-items-center justify-content-between w-100 pb-2 pb-md-0">
+                            <div class="d-flex align-items-center gap-3">
+                                <span class="cc-chart-title mb-0 pb-0">GRÁFICAS DE PRODUCCIÓN</span>
+                                <span class="badge ms-2" style="background-color: #fad91f; color: #54565a; font-size: 0.7rem;">PROD — Información</span>
+                            </div>
+                            <button class="btn btn-sm btn-outline-secondary" id="btn-expandir-grafica-info" title="Expandir Gráficas">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                        </div>
+                        <div class="cc-tabs mt-2 mt-md-0" style="overflow-x: auto; white-space: nowrap;">
+                            <button class="cc-tab-btn cc-tab-btn-info active" data-info-tab="ejecucion">
+                                <i class="fas fa-chart-line me-1"></i>Ejecución
+                            </button>
+                            <button class="cc-tab-btn cc-tab-btn-info" data-info-tab="comportamiento">
+                                <i class="fas fa-layer-group me-1"></i>Comportamiento Diario
+                            </button>
+                            <button class="cc-tab-btn cc-tab-btn-info" data-info-tab="tiempos">
+                                <i class="fas fa-chart-pie me-1"></i>Tiempos
+                            </button>
+                            <button class="cc-tab-btn cc-tab-btn-info" data-info-tab="sitios">
+                                <i class="fas fa-map-marker-alt me-1"></i>Sitios
+                            </button>
+                            <button class="cc-tab-btn cc-tab-btn-info" data-info-tab="lideres">
+                                <i class="fas fa-users me-1"></i>Líderes
+                            </button>
+                        </div>
+                    </div>
+                    <div class="cc-chart-body">
+                        <div id="cc-chart-info-main" style="height: 340px;"></div>
+                    </div>
+                </div> {% endcomment %}
+
+                <div class="cc-chart-card" id="cc-table-info-card" style="display: none;">
+                    <div class="cc-chart-header d-flex align-items-center justify-content-between pb-3 mb-3 border-bottom">
+                        <div>
+                            <span class="cc-chart-title mb-0 pb-0">INFORMACIÓN DE PRODUCCIÓN</span>
+                            <span class="badge ms-2" style="background-color: #fad91f; color: #54565a; font-size: 0.7rem;">PROD — Información</span>
+                        </div>
+                        <button class="btn btn-sm btn-outline-secondary" id="btn-expandir-tabla-info" title="Expandir Tabla">
+                            <i class="fas fa-expand"></i>
+                        </button>
+                    </div>
+                    <div class="row mb-3 ms-1">
+                        <div class="col-md-6 col-lg-4">
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0"><i class="fas fa-search"></i></span>
+                                <input type="text" class="form-control border-start-0" id="filtro-buscar-info"
+                                    placeholder="Buscar por partida, descripción...">
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-lg-2" id="select-length-info"></div>
+                    </div>
+                    <div class="table-responsive w-100">
+                        <table id="tabla-produccion-info" class="table table-hover w-100"></table>
+                    </div>
+                </div>
 
             </div>
         </div>
@@ -150,8 +240,7 @@
         </div>
         <div class="offcanvas-body">
             <form id="form-filtros-bi">
-                <span class="section-title mt-0">Configuración</span>
-                <div class="mb-3">
+                <div class="mb-3" id="contenedor-origen-datos">
                     <label class="form-label">Origen de Datos</label>
                     <div class="group-checkboxes group-origen" data-grupo-validacion="true">
                         <div class="form-check custom-check-simple mb-0">
@@ -163,12 +252,16 @@
                             <label class="form-check-label small" for="orig_ot">OT</label>
                         </div>
                         <div class="form-check custom-check-simple mb-0">
-                            <input class="form-check-input" type="checkbox" name="origen" value="PRO" id="orig_pro" checked disabled>
+                            <input class="form-check-input" type="checkbox" name="origen" value="PROD" id="orig_pro">
                             <label class="form-check-label small" for="orig_pro">PROD</label>
                         </div>
                     </div>
                 </div>
-                <div class="mb-3">
+                <div class="mb-3" id="contenedor-filtro-ot" style="display: none;">
+                    <label class="form-label">Orden de Trabajo</label>
+                    <select class="form-select select2" multiple="multiple" id="filtro-ot" name="ot"></select>
+                </div>
+                <div class="mb-3" id="contenedor-filtro-disponibilidad">
                     <label class="form-label">Disponibilidad de Archivo</label>
                     <div class="group-checkboxes justify-content-start gap-4">
                         <div class="form-check mb-0">
@@ -178,32 +271,6 @@
                         <div class="form-check mb-0">
                             <input class="form-check-input" type="checkbox" id="chk_pendientes" checked>
                             <label class="form-check-label small" for="chk_pendientes">Sin archivo</label>
-                        </div>
-                    </div>
-                </div>
-                <span class="section-title">Detalles del Documento</span>
-                <div class="mb-3">
-                    <label class="form-label">Tipo de Documento</label>
-                    <select class="form-select select2" multiple="multiple" id="filtro-tipo-doc" name="tipo_doc"></select>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">Estatus Proceso</label>
-                    <select class="form-select select2" multiple="multiple" id="filtro-estatus" name="estatus"></select>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label"><i class="far fa-calendar-alt me-1 text-muted"></i>Fecha de Entrega</label>
-                    <div class="row g-3">
-                        <div class="col-6">
-                            <div class="form-floating-custom">
-                                <input type="date" class="form-control" id="fecha_inicio" name="fecha_inicio">
-                                <div class="form-text mt-1 text-xs text-muted">Desde</div>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="form-floating-custom">
-                                <input type="date" class="form-control" id="fecha_fin" name="fecha_fin">
-                                <div class="form-text mt-1 text-xs text-muted">Hasta</div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -232,6 +299,64 @@
                         <div class="form-check form-switch mb-0">
                             <input class="form-check-input" type="checkbox" role="switch" id="chk_buscar_por_frente" checked>
                         </div>
+                    </div>
+                </div>
+                <div id="prod-info-filtros" style="display: none;">
+                    <span class="section-title">Filtros de Producción</span>
+                    <div class="mb-3">
+                        <label class="form-label">Tipo de Tiempo</label>
+                        <div class="group-checkboxes justify-content-start gap-4">
+                            <div class="form-check mb-0">
+                                <input class="form-check-input" type="checkbox" id="chk_tipo_normal" value="TE" checked>
+                                <label class="form-check-label small" for="chk_tipo_normal">Tiempo Efectivo</label>
+                            </div>
+                            <div class="form-check mb-0">
+                                <input class="form-check-input" type="checkbox" id="chk_tipo_extraordinario" value="CMA" checked>
+                                <label class="form-check-label small" for="chk_tipo_extraordinario">Costo Mín./Muerto</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Anexo</label>
+                        <select class="form-select select2" multiple="multiple" id="filtro-anexo" name="anexo"></select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Partida</label>
+                        <select class="form-select" multiple="multiple" id="filtro-partida" name="partida"></select>
+                    </div>
+                </div>
+                <span class="section-title" id="section-title-detalles">Detalles del Documento</span>
+                <div class="mb-3" id="contenedor-filtro-tipo-doc">
+                    <label class="form-label">Tipo de Documento</label>
+                    <select class="form-select select2" multiple="multiple" id="filtro-tipo-doc" name="tipo_doc"></select>
+                </div>
+                <div class="mb-3" id="contenedor-filtro-estatus">
+                    <label class="form-label">Estatus Proceso</label>
+                    <select class="form-select select2" multiple="multiple" id="filtro-estatus" name="estatus"></select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label"><i class="far fa-calendar-alt me-1 text-muted"></i>Fecha de Entrega</label>
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="form-floating-custom">
+                                <input type="date" class="form-control" id="fecha_inicio" name="fecha_inicio">
+                                <div class="form-text mt-1 text-xs text-muted">Desde</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-floating-custom">
+                                <input type="date" class="form-control" id="fecha_fin" name="fecha_fin">
+                                <div class="form-text mt-1 text-xs text-muted">Hasta</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center justify-content-between p-3 bg-light rounded border">
+                    <label class="form-check-label small fw-bold text-dark mb-0" for="chk_excedentes">
+                        Solo excedentes
+                    </label>
+                    <div class="form-check form-switch mb-0">
+                        <input class="form-check-input" type="checkbox" role="switch" id="chk_excedentes">
                     </div>
                 </div>
             </form>
@@ -378,6 +503,11 @@
         var urlBuscarDocumentos      = "{% url 'operaciones:api_busqueda_global' %}";
         var urlObtenerDashboard      = "{% url 'operaciones:api_busqueda_global_graficas' %}";
         var urlEnviarCorreoBi        = "{% url 'operaciones:api_enviar_correo_bi' %}";
+        var urlObtenerOts            = "{% url 'operaciones:api_obtener_ots_cc' %}";
+        var urlObtenerEstatusCobro   = "{% url 'operaciones:api_obtener_estatus_cobro_cc' %}";
+        var urlObtenerAnexos         = "{% url 'operaciones:api_obtener_anexos_cc' %}";
+        var urlBuscarPartidasCc      = "{% url 'operaciones:api_buscar_partidas_cc' %}";
+        var urlBusquedaProdInfo      = "{% url 'operaciones:api_busqueda_prod_info' %}";
         var csrfToken                = "{{ csrf_token }}";
     </script>
 {% endblock %}
