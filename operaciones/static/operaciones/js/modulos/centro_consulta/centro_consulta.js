@@ -624,7 +624,7 @@ $("#filtro-buscar").on("keyup", function (eventoTeclado) {
          $("#contenedor-switch-frente").stop(true).hide();
          $("input[name='prod_tabs'][value='informacion']").prop("checked", true);
          fnMostrarModoInformacion();
-         periodoActivoInfo = null;
+         periodoActivoInfo = fnObtenerFiltrosProdInfo();
          fnActualizarPeriodo(periodoActivoInfo);
          fnRecargarTablaInfo();
       } else {
@@ -937,6 +937,7 @@ $("#filtro-buscar").on("keyup", function (eventoTeclado) {
       $("#cc-table-info-card").hide();
       $("#cc-kpis-info").hide();
       $("#cc-chart-info").hide();
+      setTimeout(() => window.dispatchEvent(new Event("resize")), 100);
 
       $("#contenedor-origen-datos").show();
       $("#contenedor-filtro-disponibilidad").show();
@@ -1098,9 +1099,18 @@ $("#filtro-buscar").on("keyup", function (eventoTeclado) {
                const filtrosEstaticos = fnObtenerFiltrosEstaticosInfo();
                $("#fecha_inicio").val(filtrosEstaticos.fecha_inicio);
                $("#fecha_fin").val(filtrosEstaticos.fecha_fin);
+               periodoActivoInfo = fnObtenerFiltrosProdInfo();
+               fnRecargarTablaInfo();
+               $("#fecha_inicio").val("");
+               $("#fecha_fin").val("");
+            } else {
+               periodoActivoInfo = fnObtenerFiltrosProdInfo();
+               fnRecargarTablaInfo();
             }
-            periodoActivoInfo = fnObtenerFiltrosProdInfo();
-            fnRecargarTablaInfo();
+         } else {
+            $("#cc-kpis-info").show();
+            $("#cc-chart-info").show();
+            setTimeout(() => window.dispatchEvent(new Event("resize")), 100);
          }
          fnActualizarPeriodo(periodoActivoInfo);
       } else {

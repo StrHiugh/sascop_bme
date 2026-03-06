@@ -404,6 +404,11 @@ const ccDashboardInfo = (() => {
    let graficaInstancia = null;
    let pestanaActiva    = "ejecucion";
    let datosMaestros    = {};
+   let nivelBase        = "dia";
+   let nivelActual      = "dia";
+   let filtroActivo     = null;
+   let clavesEjecucion  = [];
+   let pilaNavegacion   = [];
 
    const fnFormatoMoneda = (valor) =>
       `$${Number(valor).toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -423,8 +428,71 @@ const ccDashboardInfo = (() => {
       axisTick: { show: false }
    };
 
-   const fnOptEjecucion = (datos) => {
-      const lista = datos ? datos : [];
+   const fn_parsearFecha = (fechaStr) => {
+      const [d, m, a] = fechaStr.split("/");
+      return new Date(Number(a), Number(m) - 1, Number(d));
+   };
+
+   const fn_detectarNivel = (lista) => {
+      if (!lista.length) return "dia";
+      const timestamps = lista.map(r => fn_parsearFecha(r.fecha).getTime());
+      const diffDias = (Math.max(...timestamps) - Math.min(...timestamps)) / 86400000;
+      if (diffDias <= 60) return "dia";
+      if (diffDias <= 730) return "mes";
+      return "año";
+   };
+
+   const fn_agregarPorMes = (lista) => {
+      const MESES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+      const mapa = {};
+      lista.forEach(r => {
+         const f = fn_parsearFecha(r.fecha);
+         const clave = `${f.getFullYear()}-${String(f.getMonth() + 1).padStart(2, "0")}`;
+         if (!mapa[clave]) mapa[clave] = { fecha: `${MESES[f.getMonth()]} ${f.getFullYear()}`, clave, importe_producido: 0, importe_programado: 0 };
+         mapa[clave].importe_producido += Number(r.importe_producido);
+         mapa[clave].importe_programado += Number(r.importe_programado);
+      });
+      return Object.values(mapa).sort((a, b) => a.clave.localeCompare(b.clave));
+   };
+
+   const fn_agregarPorAnio = (lista) => {
+      const mapa = {};
+      lista.forEach(r => {
+         const clave = String(fn_parsearFecha(r.fecha).getFullYear());
+         if (!mapa[clave]) mapa[clave] = { fecha: clave, clave, importe_producido: 0, importe_programado: 0 };
+         mapa[clave].importe_producido += Number(r.importe_producido);
+         mapa[clave].importe_programado += Number(r.importe_programado);
+      });
+      return Object.values(mapa).sort((a, b) => a.clave.localeCompare(b.clave));
+   };
+
+   const fn_obtenerDatosEjecucion = () => {
+      const listaCompleta = datosMaestros.por_fecha ? datosMaestros.por_fecha : [];
+      let listaBase = listaCompleta;
+      if (filtroActivo) {
+         listaBase = listaCompleta.filter(r => {
+            const f = fn_parsearFecha(r.fecha);
+            const claveAnio = String(f.getFullYear());
+            const claveMes = `${claveAnio}-${String(f.getMonth() + 1).padStart(2, "0")}`;
+            return filtroActivo.length === 4 ? claveAnio === filtroActivo : claveMes === filtroActivo;
+         });
+      }
+      if (nivelActual === "año") {
+         const agregado = fn_agregarPorAnio(listaBase);
+         clavesEjecucion = agregado.map(r => r.clave);
+         return agregado;
+      }
+      if (nivelActual === "mes") {
+         const agregado = fn_agregarPorMes(listaBase);
+         clavesEjecucion = agregado.map(r => r.clave);
+         return agregado;
+      }
+      clavesEjecucion = listaBase.map(r => r.fecha);
+      return listaBase;
+   };
+
+   const fnOptEjecucion = (lista) => {
+      const datos = lista ? lista : [];
       return {
          backgroundColor: "transparent",
          tooltip: {
@@ -439,14 +507,18 @@ const ccDashboardInfo = (() => {
                params.forEach(p => {
                   html += `<span style="color:${p.color};">● ${p.seriesName}: <b>${fnFormatoMoneda(p.value)}</b></span><br/>`;
                });
+               if (nivelActual !== "dia") {
+                  html += `<small style="color:${colores.gris};font-style:italic;">Clic para ver detalle</small>`;
+               }
                return html;
             }
          },
          legend: { bottom: 0, itemWidth: 11, itemHeight: 8, textStyle: { fontSize: 11, color: colores.gris } },
          grid: { top: 32, left: 12, right: 30, bottom: 52, containLabel: true },
+         dataZoom: [{ type: "inside", xAxisIndex: 0 }],
          xAxis: {
             type: "category",
-            data: lista.map(r => r.fecha),
+            data: datos.map(r => r.fecha),
             axisLabel: { fontSize: 9, color: colores.gris, rotate: 30 },
             axisLine: { lineStyle: { color: colores.borde } }
          },
@@ -455,7 +527,7 @@ const ccDashboardInfo = (() => {
             {
                name: "Programado",
                type: "line",
-               data: lista.map(r => r.importe_programado),
+               data: datos.map(r => r.importe_programado),
                smooth: true,
                symbol: "none",
                lineStyle: { color: colores.azul, width: 2 },
@@ -464,16 +536,114 @@ const ccDashboardInfo = (() => {
             {
                name: "Producido",
                type: "line",
-               data: lista.map(r => r.importe_producido),
+               data: datos.map(r => r.importe_producido),
                smooth: true,
-               symbol: "circle",
-               symbolSize: 5,
+               symbol: nivelActual !== "dia" ? "circle" : "none",
+               symbolSize: 7,
                lineStyle: { color: colores.naranja, width: 2 },
                itemStyle: { color: colores.naranja },
                areaStyle: { color: { type: "linear", x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: "rgba(240,85,35,0.15)" }, { offset: 1, color: "rgba(240,85,35,0)" }] } }
             }
          ]
       };
+   };
+
+   const fn_actualizarBreadcrumb = () => {
+      const btnVolver = document.getElementById("cc-ejecucion-volver");
+      if (!btnVolver) return;
+      if (!pilaNavegacion.length) {
+         btnVolver.style.display = "none";
+         return;
+      }
+      const textos = { "año": "años", "mes": "meses", "dia": "días" };
+      const nivelAnterior = pilaNavegacion[pilaNavegacion.length - 1].nivel;
+      btnVolver.textContent = `← Ver por ${textos[nivelAnterior]}`;
+      btnVolver.style.display = "inline-block";
+   };
+
+   const fn_volverNivel = () => {
+      if (!pilaNavegacion.length) return;
+      const estadoAnterior = pilaNavegacion.pop();
+      nivelActual  = estadoAnterior.nivel;
+      filtroActivo = estadoAnterior.filtro;
+      pestanaActiva === "comportamiento" ? fn_renderizarComportamientoInteligente() : fn_renderizarEjecucionInteligente();
+   };
+
+   const fn_renderizarEjecucionInteligente = (resetear = false) => {
+      if (resetear) {
+         const listaCompleta = datosMaestros.por_fecha ? datosMaestros.por_fecha : [];
+         nivelBase      = fn_detectarNivel(listaCompleta);
+         nivelActual    = nivelBase;
+         filtroActivo   = null;
+         pilaNavegacion = [];
+      }
+      const lista = fn_obtenerDatosEjecucion();
+      graficaInstancia.clear();
+      graficaInstancia.setOption(fnOptEjecucion(lista), { notMerge: true });
+      fn_actualizarBreadcrumb();
+   };
+
+   const fn_agregarComportamientoPorMes = (lista) => {
+      const MESES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+      const mapa = {};
+      lista.forEach(r => {
+         const f = fn_parsearFecha(r.fecha);
+         const clave = `${f.getFullYear()}-${String(f.getMonth() + 1).padStart(2, "0")}`;
+         const key = `${clave}|${r.sitio}`;
+         if (!mapa[key]) mapa[key] = { fecha: `${MESES[f.getMonth()]} ${f.getFullYear()}`, clave, sitio: r.sitio, importe: 0 };
+         mapa[key].importe += Number(r.importe);
+      });
+      return Object.values(mapa).sort((a, b) => a.clave.localeCompare(b.clave));
+   };
+
+   const fn_agregarComportamientoPorAnio = (lista) => {
+      const mapa = {};
+      lista.forEach(r => {
+         const clave = String(fn_parsearFecha(r.fecha).getFullYear());
+         const key = `${clave}|${r.sitio}`;
+         if (!mapa[key]) mapa[key] = { fecha: clave, clave, sitio: r.sitio, importe: 0 };
+         mapa[key].importe += Number(r.importe);
+      });
+      return Object.values(mapa).sort((a, b) => a.clave.localeCompare(b.clave));
+   };
+
+   const fn_obtenerDatosComportamiento = () => {
+      const listaCompleta = datosMaestros.por_fecha_sitio ? datosMaestros.por_fecha_sitio : [];
+      let listaBase = listaCompleta;
+      if (filtroActivo) {
+         listaBase = listaCompleta.filter(r => {
+            const f = fn_parsearFecha(r.fecha);
+            const claveAnio = String(f.getFullYear());
+            const claveMes = `${claveAnio}-${String(f.getMonth() + 1).padStart(2, "0")}`;
+            return filtroActivo.length === 4 ? claveAnio === filtroActivo : claveMes === filtroActivo;
+         });
+      }
+      if (nivelActual === "año") {
+         const agregado = fn_agregarComportamientoPorAnio(listaBase);
+         clavesEjecucion = [...new Set(agregado.map(r => r.clave))];
+         return agregado;
+      }
+      if (nivelActual === "mes") {
+         const agregado = fn_agregarComportamientoPorMes(listaBase);
+         clavesEjecucion = [...new Set(agregado.map(r => r.clave))];
+         return agregado;
+      }
+      clavesEjecucion = [...new Set(listaBase.map(r => r.fecha))];
+      return listaBase;
+   };
+
+   const fn_renderizarComportamientoInteligente = (resetear = false) => {
+      if (resetear) {
+         const listaCompleta = datosMaestros.por_fecha_sitio ? datosMaestros.por_fecha_sitio : [];
+         nivelBase      = fn_detectarNivel(listaCompleta);
+         nivelActual    = nivelBase;
+         filtroActivo   = null;
+         pilaNavegacion = [];
+      }
+      const lista = fn_obtenerDatosComportamiento();
+      graficaInstancia.clear();
+      graficaInstancia.setOption(fnOptComportamientoDiario(lista), { notMerge: true });
+      fn_actualizarBreadcrumb();
    };
 
    const fnOptTiempos = (datos) => {
@@ -577,7 +747,8 @@ const ccDashboardInfo = (() => {
          name: sitio.length > 20 ? `${sitio.substring(0, 18)}…` : sitio,
          type: "line",
          smooth: true,
-         symbol: "none",
+         symbol: nivelActual !== "dia" ? "circle" : "none",
+         symbolSize: 7,
          connectNulls: false,
          data: fechas.map(f => pivote[sitio][f] ?? null),
          lineStyle: { color: paleta[idx % paleta.length], width: 2 },
@@ -600,6 +771,9 @@ const ccDashboardInfo = (() => {
                      html += `<span style="color:${p.color};">● ${p.seriesName}: <b>${fnFormatoMoneda(p.value)}</b></span><br/>`;
                   }
                });
+               if (nivelActual !== "dia") {
+                  html += `<small style="color:${colores.gris};font-style:italic;">Clic para ver detalle</small>`;
+               }
                return html;
             }
          },
@@ -609,6 +783,7 @@ const ccDashboardInfo = (() => {
             textStyle: { fontSize: 10, color: colores.gris }
          },
          grid: { top: 32, left: 12, right: 30, bottom: 72, containLabel: true },
+         dataZoom: [{ type: "inside", xAxisIndex: 0 }],
          xAxis: {
             type: "category",
             data: fechas,
@@ -622,8 +797,6 @@ const ccDashboardInfo = (() => {
 
    const fnObtenerOpcion = (tab) => {
       const mapa = {
-         "ejecucion":       () => fnOptEjecucion(datosMaestros.por_fecha),
-         "comportamiento":  () => fnOptComportamientoDiario(datosMaestros.por_fecha_sitio),
          "tiempos":         () => fnOptTiempos(datosMaestros.por_tipo_tiempo),
          "sitios":          () => fnOptSitios(datosMaestros.por_sitio),
          "lideres":         () => fnOptLideres(datosMaestros.por_lider),
@@ -637,6 +810,16 @@ const ccDashboardInfo = (() => {
       document.querySelectorAll(".cc-tab-btn-info").forEach(btn => {
          btn.classList.toggle("active", btn.dataset.infoTab === tab);
       });
+      const btnVolver = document.getElementById("cc-ejecucion-volver");
+      if (tab === "ejecucion") {
+         fn_renderizarEjecucionInteligente(true);
+         return;
+      }
+      if (tab === "comportamiento") {
+         fn_renderizarComportamientoInteligente(true);
+         return;
+      }
+      if (btnVolver) btnVolver.style.display = "none";
       graficaInstancia.clear();
       graficaInstancia.setOption(fnObtenerOpcion(tab), { notMerge: true });
    };
@@ -659,8 +842,28 @@ const ccDashboardInfo = (() => {
       if (!contenedor || typeof echarts === "undefined") return;
       if (graficaInstancia) return;
 
+      const contenedorChart = document.getElementById("cc-chart-info");
+      if (contenedorChart) {
+         const btnVolver = document.createElement("button");
+         btnVolver.id = "cc-ejecucion-volver";
+         btnVolver.style.cssText = `display:none; margin-bottom:6px; background:transparent; border:1px solid ${colores.borde}; color:${colores.morado}; font-size:11px; padding:3px 10px; border-radius:4px; cursor:pointer;`;
+         btnVolver.addEventListener("click", fn_volverNivel);
+         contenedorChart.parentNode.insertBefore(btnVolver, contenedorChart);
+      }
+
       graficaInstancia = echarts.init(contenedor);
       window.addEventListener("resize", () => { if (graficaInstancia) graficaInstancia.resize(); });
+
+      graficaInstancia.on("click", (params) => {
+         if (pestanaActiva !== "ejecucion" && pestanaActiva !== "comportamiento") return;
+         if (nivelActual === "dia") return;
+         const clave = clavesEjecucion[params.dataIndex];
+         if (!clave) return;
+         pilaNavegacion.push({ nivel: nivelActual, filtro: filtroActivo });
+         filtroActivo = clave;
+         nivelActual  = nivelActual === "año" ? "mes" : "dia";
+         pestanaActiva === "ejecucion" ? fn_renderizarEjecucionInteligente() : fn_renderizarComportamientoInteligente();
+      });
 
       document.querySelectorAll(".cc-tab-btn-info").forEach(btn => {
          btn.addEventListener("click", () => fnRenderizarPestana(btn.dataset.infoTab));
