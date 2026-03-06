@@ -436,6 +436,32 @@ body .offcanvas.offcanvas-end#panelFiltros {
 #cc-chart-card { margin-bottom: 1.5rem; }
 
 
+.header-buttons-section {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
+@media (max-width: 768px) {
+    .header-buttons-section {
+        justify-content: flex-start;
+    }
+}
+
+
+.cc-mode-header {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+}
+
+.cc-mode-header .tabs-container {
+    max-width: 380px;
+    width: 100%;
+    margin-bottom: 0;
+}
+
 .cc-periodo-indicator {
     margin: 0 0 1rem 0;
     padding: 0;
@@ -464,4 +490,68 @@ body .offcanvas.offcanvas-end#panelFiltros {
         font-size: 0.75rem;
         padding: 0.3rem 0.8rem;
     }
+}
+
+/* ============================================================
+   GLIDER TABS — Switch Documentación / Información (PROD)
+   ============================================================ */
+.tabs-container {
+    display: flex;
+    position: relative;
+    background-color: #e9ecef;
+    padding: 6px;
+    border-radius: 14px;
+    width: 100%;
+    user-select: none;
+    margin-bottom: 1.2rem;
+}
+
+.tabs-container input[type="radio"] { display: none; }
+
+.tabs-container label {
+    flex: 1;
+    padding: 12px 0;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    color: #868e96;
+    text-align: center;
+    z-index: 2;
+    transition: color 0.3s ease;
+    margin-bottom: 0;
+}
+
+.tabs-container input[type="radio"]:checked + label {
+    color: #f05523;
+    font-weight: 700;
+}
+
+.glider {
+    position: absolute;
+    height: calc(100% - 12px);
+    width: calc(50% - 6px);
+    background-color: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1;
+}
+
+#tab-doc:checked ~ .glider { transform: translateX(0); }
+#tab-info:checked ~ .glider { transform: translateX(100%); }
+
+/* ============================================================
+   TABLA DE INFORMACIÓN PROD — paginación con color naranja
+   ============================================================ */
+#tabla-produccion-info_paginate .paginate_button.page-item .page-link {
+    color: #f05523 !important;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    margin: 0 2px;
+}
+#tabla-produccion-info_paginate .paginate_button.page-item.active .page-link {
+    background-color: #f05523 !important;
+    border-color: #f05523 !important;
+    color: #fff !important;
 }
