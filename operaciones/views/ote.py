@@ -1254,11 +1254,24 @@ def importar_anexo_ot(request):
                             hay_programacion_diaria = True
 
                     try:
+                        precio_mn_excel = p_mn_check
+                        precio_usd_excel = limpiar_moneda(row.get('P.U. USD'))
+                        precio_mn_final = precio_mn_excel
+                        precio_usd_final = precio_usd_excel
+                        if producto_encontrado:
+                            precio_bd_mn = getattr(producto_encontrado, 'precio_unitario_mn', None)
+                            if precio_bd_mn is not None and precio_bd_mn > 0:
+                                precio_mn_final = float(precio_bd_mn)
+                                
+                            precio_bd_usd = getattr(producto_encontrado, 'precio_unitario_usd', None)
+                            if precio_bd_usd is not None and precio_bd_usd > 0:
+                                precio_usd_final = float(precio_bd_usd)
+
                         partidas_validas.append({
                             'producto': producto_encontrado,
                             'volumen': vol_check,
-                            'pu_mn': p_mn_check, 
-                            'pu_usd': limpiar_moneda(row.get('P.U. USD')),
+                            'pu_mn': precio_mn_final, 
+                            'pu_usd': precio_usd_final,
                             'orden': index + 1,
                             'codigo': norm_codigo,
                             'concepto': norm_concepto,

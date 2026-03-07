@@ -302,8 +302,9 @@ def obtener_volumenes_consolidados(id_ot_actual, ids_partidas_codigos):
         importacion_anexo__ot_id__in=familia_ots,
         importacion_anexo__es_activo=True,
         id_partida__in=ids_partidas_codigos
-    ).values('id_partida').annotate(total_vol=Sum('volumen_proyectado'))
-    partidas = {p['id_partida']: p['total_vol'] or 0 for p in partidas_query}
+    ).order_by('id_partida', '-importacion_anexo_id').distinct('id_partida')
+    
+    partidas = {p.id_partida: p.volumen_proyectado or 0 for p in partidas_query}
     return partidas
 
 @login_required
@@ -404,7 +405,7 @@ def obtener_partidas_produccion(request):
         except:
             val_code = raw_code.split('.')
         
-        return (val_anexo, val_code)
+        return (val_anexo, val_code, p.importacion_anexo_id)
 
     todas_partidas.sort(key=sort_key_partidas)
 
@@ -444,18 +445,13 @@ def obtener_partidas_produccion(request):
         vol_registro = to_dec(p.volumen_proyectado)
         pu_mn = to_dec(p.precio_unitario_mn)
         pu_usd = to_dec(p.precio_unitario_usd)
-
-        total_aut_mn += vol_registro * pu_mn
-        total_aut_usd += vol_registro * pu_usd
-        
         vol_hist = mapa_acumulado_vol.get(p.id, Decimal('0.0'))
-        
         total_acum_mn += vol_hist * pu_mn
         total_acum_usd += vol_hist * pu_usd
 
         if key not in partidas_consolidadas:
             partidas_consolidadas[key] = {
-                'id_principal': p.id,
+                'id_principal': p.id, 
                 'ids_agrupados': [p.id],
                 'codigo': codigo_clean,
                 'concepto': p.descripcion_concepto,
@@ -467,10 +463,16 @@ def obtener_partidas_produccion(request):
                 'archivo': archivo_url
             }
         else:
-            partidas_consolidadas[key]['vol_total_proyectado'] += vol_registro
+            partidas_consolidadas[key]['vol_total_proyectado'] = vol_registro 
+            partidas_consolidadas[key]['pu_mn'] = pu_mn 
+            partidas_consolidadas[key]['pu_usd'] = pu_usd 
             partidas_consolidadas[key]['ids_agrupados'].append(p.id)
         
         mapa_id_a_key[p.id] = key
+
+    for datos in partidas_consolidadas.values():
+        total_aut_mn += datos['vol_total_proyectado'] * datos['pu_mn']
+        total_aut_usd += datos['vol_total_proyectado'] * datos['pu_usd']
 
     resumen_produccion = Produccion.objects.filter(
         id_reporte_mensual__id_ot_id=id_ot,
