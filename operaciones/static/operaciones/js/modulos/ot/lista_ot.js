@@ -1452,6 +1452,10 @@ $(document).ready(function () {
                 btn.prop('disabled', false).html(originalText);
             });
     });
+
+    $('#modalImportarAnexo').on('hidden.bs.modal', function () {
+        $('#formImportarAnexo')[0].reset();
+    });
 });
 
 function guardarEnlaceArchivo() {
