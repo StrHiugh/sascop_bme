@@ -414,11 +414,11 @@ def obtener_partidas_produccion(request):
 
     ids_totales_db = [p.id for p in todas_partidas]
     
-    fecha_limite = date(anio, mes, last_day)
+    fecha_limite = date(anio, mes, 1)
 
     qs_acumulado = Produccion.objects.filter(
         id_partida_anexo_id__in=ids_totales_db,
-        fecha_produccion__lte=fecha_limite
+        fecha_produccion__lt=fecha_limite
     ).values('id_partida_anexo_id').annotate(vol_total=Sum('volumen_produccion')).order_by()
 
     mapa_acumulado_vol = {}
