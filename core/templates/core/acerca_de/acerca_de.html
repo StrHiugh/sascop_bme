@@ -133,6 +133,11 @@
         margin-bottom: 0;
         border-bottom: 1px solid #dee2e6;
     }
+
+    /* Estilo para que la gráfica muestre cursor de clic */
+    #chartModulosProgreso {
+        cursor: pointer;
+    }
 </style>
 
 <div class="bm-content">
@@ -171,7 +176,7 @@
                     <div class="cc-kpi-card">
                         <div class="cc-kpi-icon-wrapper icon-verde"><i class="fas fa-check-double"></i></div>
                         <div class="cc-kpi-info">
-                            <h3>93%</h3>
+                            <h3>67%</h3>
                             <p>Avance Global Operable</p>
                         </div>
                     </div>
@@ -188,7 +193,7 @@
                         </li>
                         <li class="nav-item" role="presentation">
                             <button class="nav-link text-secondary fw-medium" id="backlog-tab" data-bs-toggle="tab" data-bs-target="#backlog" type="button" role="tab" aria-controls="backlog" aria-selected="false">
-                                <i class="fas fa-tasks me-2"></i>Backlog & Tareas
+                                <i class="fas fa-tasks me-2"></i>Backlog
                             </button>
                         </li>
                     </ul>
@@ -203,15 +208,16 @@
                                     <div class="cc-panel">
                                         <div class="cc-panel-title"><i class="fas fa-layer-group"></i> Progreso de Módulos Principales</div>
                                         <div class="alert alert-light border small text-muted mb-3 py-2">
-                                            <i class="fas fa-info-circle me-1" style="color: var(--naranja)"></i> 
-                                            El avance del 90% indica que el sistema es totalmente operable. Los faltantes corresponden a integraciones visuales o minimas y dashboards en el Centro de Consulta.
+                                            <i class="fas fa-hand-pointer me-1" style="color: var(--naranja)"></i> 
+                                            Haz clic sobre cualquier barra de la gráfica para ver la lista de características e implementaciones desarrolladas en ese módulo.
                                         </div>
                                         <div id="chartModulosProgreso" style="width: 100%; height: 320px;"></div>
                                     </div>
                                 </div>
 
                                 <div class="col-lg-5">
-                                    <div class="cc-panel">
+                                    <!-- PANEL DEFAULT: HITOS Y METAS -->
+                                    <div class="cc-panel" id="panel-hitos-default">
                                         <div class="cc-panel-title"><i class="fas fa-trophy"></i> Hitos y Metas Alcanzadas</div>
                                         <div class="mt-4">
                                             <div class="logro-item">
@@ -236,6 +242,21 @@
                                             </div>
                                         </div>
                                     </div>
+
+                                    <!-- PANEL DINÁMICO: DETALLE DEL MÓDULO (Oculto por defecto) -->
+                                    <div class="cc-panel d-none shadow-sm border-secondary" id="panel-hitos-detalle">
+                                        <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+                                            <div class="cc-panel-title mb-0" id="titulo-detalle-modulo" style="font-size: 1rem;">
+                                                <i class="fas fa-list-check"></i> Detalle
+                                            </div>
+                                            <button class="btn btn-sm btn-light border text-secondary fw-bold" id="btn-volver-hitos">
+                                                <i class="fas fa-arrow-left me-1"></i> Volver
+                                            </button>
+                                        </div>
+                                        <div class="mt-3" id="lista-detalle-modulo" style="max-height: 280px; overflow-y: auto;">
+                                            <!-- Aquí se inyectan las tareas mediante JS -->
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -245,37 +266,52 @@
                                 <div class="col-lg-7">
                                     <div class="cc-panel">
                                         <div class="cc-panel-title">
-                                            <i class="fas fa-clipboard-list"></i> Desvíos y Mejoras Pendientes
+                                            <i class="fas fa-cubes"></i> Módulos Faltantes / Backlog
                                         </div>
                                         <ul class="task-list mt-3">
+                                            <!-- Alta -->
                                             <li class="task-item prioridad-alta">
-                                                <span class="task-name">Módulo de Embarcaciones</span>
+                                                <span class="task-name">Módulo de bitácora de embarcaciones</span>
                                                 <span class="badge bg-danger">Alta</span>
                                             </li>
-                                            <li class="task-item prioridad-alta">
-                                                <span class="task-name">Atención a modificaciones en Centro de Consulta</span>
-                                                <span class="badge bg-danger">Alta</span>
-                                            </li>
-                                            <li class="task-item prioridad-alta">
-                                                <span class="task-name">Alertas visuales al añadir partida no contemplada en PROD</span>
+                                            <li class="task-item prioridad-media">
+                                                <span class="task-name">Módulo de costos</span>
                                                 <span class="badge" style="background-color: var(--azul);">Media</span>
                                             </li>
+                                            <li class="task-item prioridad-media">
+                                                <span class="task-name">Módulo de requisiciones</span>
+                                                <span class="badge" style="background-color: var(--azul);">Media</span>
+                                            </li>
+                                            <li class="task-item prioridad-media">
+                                                <span class="task-name">Módulo de PUES</span>
+                                                <span class="badge" style="background-color: var(--azul);">Media</span>
+                                            </li>
+                                            <li class="task-item prioridad-media">
+                                                <span class="task-name">Módulo para PTES</span>
+                                                <span class="badge" style="background-color: var(--azul);">Media</span>
+                                            </li>
+                                            <li class="task-item prioridad-media">
+                                                <span class="task-name">Desarrollo de aplicación móvil para generación de información offshore</span>
+                                                <span class="badge" style="background-color: var(--azul);">Media</span>
+                                            </li>
+                                            
                                             <!-- Media -->
                                             <li class="task-item prioridad-media">
-                                                <span class="task-name">Agregar log de eventos en GPUs, Reportes, y al importar</span>
+                                                <span class="task-name">Módulo para ingeniería</span>
                                                 <span class="badge" style="background-color: var(--azul);">Media</span>
                                             </li>
                                             <li class="task-item prioridad-media">
-                                                <span class="task-name">Aplicación de filtros en vistas faltantes</span>
+                                                <span class="task-name">Módulo para P&L</span>
                                                 <span class="badge" style="background-color: var(--azul);">Media</span>
                                             </li>
-                                            <!-- Baja -->
+
+                                            <!-- Baja / Al final -->
                                             <li class="task-item prioridad-baja">
-                                                <span class="task-name">Registro de actividad en catálogos</span>
+                                                <span class="task-name">Módulo de almacén</span>
                                                 <span class="badge bg-secondary">Baja</span>
                                             </li>
                                             <li class="task-item prioridad-baja">
-                                                <span class="task-name">Adición de botón para limpiar/borrar enlace en modal</span>
+                                                <span class="task-name">Módulo de logística</span>
                                                 <span class="badge bg-secondary">Baja</span>
                                             </li>
                                         </ul>
@@ -287,8 +323,8 @@
                                         <div class="cc-panel-title"><i class="fas fa-tachometer-alt"></i> Tiempo de Desarrollo</div>
                                         
                                         <div class="text-center mb-4 mt-3">
-                                            <h2 class="fw-bold mb-0" style="color: var(--naranja); font-size: 2.5rem;">3 - 4</h2>
-                                            <span class="text-muted fw-bold">Tareas Resueltas / Semana</span>
+                                            <h2 class="fw-bold mb-0" style="color: var(--naranja); font-size: 2.5rem;">2 - 3</h2>
+                                            <span class="text-muted fw-bold">Tareas por semana</span>
                                         </div>
 
                                         <div class="row text-center mt-4">
@@ -322,6 +358,53 @@
 {% block scripts %}
 <script>
 const urlActividadReciente = '{% url "operaciones:datatable_registro_actividad" %}';
+
+// DICCIONARIO DE IMPLEMENTACIONES POR MÓDULO
+const implementacionesModulos = {
+    'PTEs': [
+        'Importación histórica de PTEs.',
+        'Conciliación de entregables.',
+        'Adición de las barras de progreso según los estatus.',
+        'Conversión de una PTE a una Orden de Trabajo (OT).',
+        'Dashboard de KPIs del módulo.'
+    ],
+    'Órdenes de Trabajo': [
+        'Migración inicial de una orden desde PTE.',
+        'Configuración de frentes de trabajo.',
+        'Configuración de fase de patio.',
+        'Conciliación de entregables y dashboard de KPIs.',
+        'Creación de reprogramaciones.',
+        'Importación de Anexo C mediante Excel.',
+        'Importación de Microsoft Project (Programa de trabajo).',
+        'Cálculo de afectaciones de reprogramaciones al plazo de la orden.'
+    ],
+    'Producción': [
+        'Buscador de órdenes en ejecución con anexo importado según el frente.',
+        'Desarrollo del grid de producción, dinamizando en tiempo real volúmenes, montos y plazos.',
+        'Cálculo automático de excedentes según el volumen proyectado importado.',
+        'Separación de grid por afectación (TE, CMA).',
+        'Resumen en vivo de KPIs financieros.'
+    ],
+    'Reportes Diarios': [
+        'Desarrollo del grid interactivo de reportes diarios.',
+        'Bloqueo dinámico del grid de producción según estatus del reporte diario (Firma/Pendiente, etc).',
+        'Conjunción y administración de una carpeta mensual de evidencias.'
+    ],
+    'GPUs': [
+        'Desarrollo del grid de GPUs (Generadores de Pago Unitario).',
+        'Creación automática del registro a partir de un volumen capturado en producción.',
+        'Configuración de estatus de revisión y validación.',
+        'Configuración de carga de los generadores y anexos.'
+    ],
+    'Centro de Consulta': [
+        'Consulta documental dependiendo la fuente que queramos ver.',
+        'Gráficas en tiempo real de los documentos cargados y KPIs faltantes de los mismos.',
+        'Envío automático de gráficas por email.',
+        'Generación de reportes Excel en base a la consulta.',
+        'Pestaña interactiva para consulta y gráficas de producción (montos, proyecciones).',
+        'Comparativa dinámica por frentes, líderes, etc.'
+    ]
+};
 
 $(document).ready(function() {
     
@@ -439,7 +522,6 @@ $(document).ready(function() {
         tooltip: {
             trigger: 'axis',
             axisPointer: { type: 'shadow' },
-            // FORMATEADOR PERSONALIZADO PARA TOOLTIPS
             formatter: function (params) {
                 let data = params[0];
                 let infoExtra = '';
@@ -459,6 +541,9 @@ $(document).ready(function() {
                         </div>
                         <div style="font-size: 13px; color: #54565a;">
                             ${infoExtra}
+                        </div>
+                        <div style="font-size: 11px; color: #f05523; margin-top: 6px; font-weight: bold;">
+                            <i class="fas fa-mouse-pointer"></i> Clic para ver implementaciones
                         </div>
                     </div>
                 `;
@@ -490,13 +575,14 @@ $(document).ready(function() {
                 name: 'Avance',
                 type: 'bar',
                 barWidth: '50%',
+                cursor: 'pointer',
                 data: [
-                    { value: 70, itemStyle: { color: colores.azul } },
-                    { value: 95, itemStyle: { color: colores.verde } },
-                    { value: 95, itemStyle: { color: colores.verde } },
-                    { value: 95, itemStyle: { color: colores.verde } },
-                    { value: 100, itemStyle: { color: colores.verde } },
-                    { value: 100, itemStyle: { color: colores.verde } }
+                    { value: 50, itemStyle: { color: colores.azul } },
+                    { value: 65, itemStyle: { color: colores.verde } },
+                    { value: 65, itemStyle: { color: colores.verde } },
+                    { value: 65, itemStyle: { color: colores.verde } },
+                    { value: 80, itemStyle: { color: colores.verde } },
+                    { value: 80, itemStyle: { color: colores.verde } }
                 ],
                 label: {
                     show: true,
@@ -513,6 +599,41 @@ $(document).ready(function() {
     };
     
     chartModulos.setOption(modulosOption);
+
+    // EVENTO CLICK EN LA GRÁFICA
+    chartModulos.on('click', function (params) {
+        const nombreModulo = params.name;
+        const listaImplementaciones = implementacionesModulos[nombreModulo];
+
+        if (listaImplementaciones) {
+            // Ocultar panel default
+            $('#panel-hitos-default').addClass('d-none');
+            
+            // Actualizar título
+            $('#titulo-detalle-modulo').html(`<i class="fas fa-puzzle-piece me-2"></i>Módulo: ${nombreModulo}`);
+            
+            // Construir lista de tareas
+            let htmlLista = '';
+            listaImplementaciones.forEach(tarea => {
+                htmlLista += `
+                    <div class="logro-item mb-2">
+                        <div class="logro-icon"><i class="fas fa-check-square text-secondary"></i></div>
+                        <div class="logro-text text-dark" style="font-size: 0.9rem;">${tarea}</div>
+                    </div>
+                `;
+            });
+            
+            // Insertar y mostrar
+            $('#lista-detalle-modulo').html(htmlLista);
+            $('#panel-hitos-detalle').removeClass('d-none').hide().fadeIn(300);
+        }
+    });
+
+    // EVENTO DEL BOTÓN VOLVER
+    $('#btn-volver-hitos').on('click', function() {
+        $('#panel-hitos-detalle').addClass('d-none');
+        $('#panel-hitos-default').removeClass('d-none').hide().fadeIn(300);
+    });
 
     window.addEventListener("resize", function() {
         if(chartModulos) chartModulos.resize();
