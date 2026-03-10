@@ -171,7 +171,7 @@
                     <div class="cc-kpi-card">
                         <div class="cc-kpi-icon-wrapper icon-verde"><i class="fas fa-check-double"></i></div>
                         <div class="cc-kpi-info">
-                            <h3>90%</h3>
+                            <h3>93%</h3>
                             <p>Avance Global Operable</p>
                         </div>
                     </div>
@@ -304,7 +304,7 @@
                                         
                                         <div class="mt-4 pt-3 border-top">
                                             <p class="small text-muted mb-0 text-center">
-                                                <i class="fas fa-info-circle me-1"></i> El ritmo de resolución depende de la complejidad de la integración.
+                                                <i class="fas fa-info-circle me-1"></i> El ritmo de implementación depende de la complejidad del requerimiento.
                                             </p>
                                         </div>
                                     </div>
@@ -439,7 +439,30 @@ $(document).ready(function() {
         tooltip: {
             trigger: 'axis',
             axisPointer: { type: 'shadow' },
-            formatter: '{b} : {c}%'
+            // FORMATEADOR PERSONALIZADO PARA TOOLTIPS
+            formatter: function (params) {
+                let data = params[0];
+                let infoExtra = '';
+
+                if (data.name === 'Producción' || data.name === 'GPUs' || data.name === 'Reportes Diarios') {
+                    infoExtra = 'Faltan pequeñas adiciones visuales, y confirmar el uso correcto sin errores de los usuarios.';
+                } else if (data.name === 'Centro de Consulta') {
+                    infoExtra = 'Falta verificar las consultas, añadir gráfica por OTs, y mejorar la visualización de la información.';
+                } else if (data.name === 'PTEs' || data.name === 'Órdenes de Trabajo') {
+                    infoExtra = 'Módulo completamente funcional y estable.';
+                }
+
+                return `
+                    <div style="max-width: 250px; white-space: normal; line-height: 1.4;">
+                        <div style="font-weight: bold; margin-bottom: 5px; color: ${data.color};">
+                            ${data.name} : ${data.value}%
+                        </div>
+                        <div style="font-size: 13px; color: #54565a;">
+                            ${infoExtra}
+                        </div>
+                    </div>
+                `;
+            }
         },
         grid: { top: 10, left: 10, right: 40, bottom: 20, containLabel: true },
         xAxis: {
@@ -469,9 +492,9 @@ $(document).ready(function() {
                 barWidth: '50%',
                 data: [
                     { value: 70, itemStyle: { color: colores.azul } },
-                    { value: 90, itemStyle: { color: colores.azul } },
-                    { value: 90, itemStyle: { color: colores.azul } },
-                    { value: 93, itemStyle: { color: colores.verde } },
+                    { value: 95, itemStyle: { color: colores.verde } },
+                    { value: 95, itemStyle: { color: colores.verde } },
+                    { value: 95, itemStyle: { color: colores.verde } },
                     { value: 100, itemStyle: { color: colores.verde } },
                     { value: 100, itemStyle: { color: colores.verde } }
                 ],
