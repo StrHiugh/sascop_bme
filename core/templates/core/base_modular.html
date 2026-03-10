@@ -47,14 +47,12 @@
             <!-- Header dentro del sidebar -->
             <div id="bm-header">
                 <div class="header-content">
-                    <button class="sidebar-toggle" id="btn-toggle-sidebar">
-                        <i class="material-icons">menu</i>
-                    </button>
                     <div class="header-brand desktop-only">
                         SASCOP
                     </div>
                 </div>
             </div>
+            
             <!-- Contenido del sidebar -->
             <div class="cont-foto-perfil">
                 <img class="foto-perfil" src="{% static 'operaciones/images/avatar.png' %}" alt="Imagen">
@@ -104,7 +102,10 @@
             <div class="top-header-bar">
                 <div class="top-header-content">
                     <div class="top-header-left">
-                        <!-- Espacio para información adicional si se necesita después -->
+                        <button class="sidebar-toggle" id="btn-toggle-sidebar">
+                            <i class="material-icons">menu</i>
+                        </button>
+                        <!-- Espacio para información adicional si se necesita despues -->
                     </div>
                     <div class="top-header-center">
                         <!-- Espacio para información adicional si se necesita después -->
@@ -128,7 +129,6 @@
                     </div>
                 </div>
                 
-                <!-- Sección de Empresas) -->
                 {% block titulos %}
                 {% endblock %}
             </div>
