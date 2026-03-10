@@ -18,7 +18,7 @@ const ccDashboard = (() => {
    let graficaInstancia = null;
    let pestanaActiva = "lideres";
    let datosMaestros = {};
-
+   let sitioComportamientoSeleccionado = null;
    const tooltipBase = {
       backgroundColor: colores.blanco,
       borderColor: colores.borde,
@@ -520,7 +520,8 @@ const ccDashboardInfo = (() => {
             type: "category",
             data: datos.map(r => r.fecha),
             axisLabel: { fontSize: 9, color: colores.gris, rotate: 30 },
-            axisLine: { lineStyle: { color: colores.borde } }
+            axisLine: { lineStyle: { color: colores.borde } },
+            triggerEvent: true
          },
          yAxis: ejeValorBase,
          series: [
@@ -530,6 +531,7 @@ const ccDashboardInfo = (() => {
                data: datos.map(r => r.importe_programado),
                smooth: true,
                symbol: "none",
+               triggerLineEvent: true,
                lineStyle: { color: colores.azul, width: 2 },
                itemStyle: { color: colores.azul }
             },
@@ -540,6 +542,7 @@ const ccDashboardInfo = (() => {
                smooth: true,
                symbol: nivelActual !== "dia" ? "circle" : "none",
                symbolSize: 7,
+               triggerLineEvent: true,
                lineStyle: { color: colores.naranja, width: 2 },
                itemStyle: { color: colores.naranja },
                areaStyle: { color: { type: "linear", x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: "rgba(240,85,35,0.15)" }, { offset: 1, color: "rgba(240,85,35,0)" }] } }
@@ -566,6 +569,7 @@ const ccDashboardInfo = (() => {
       const estadoAnterior = pilaNavegacion.pop();
       nivelActual  = estadoAnterior.nivel;
       filtroActivo = estadoAnterior.filtro;
+      sitioComportamientoSeleccionado = estadoAnterior.sitio;
       pestanaActiva === "comportamiento" ? fn_renderizarComportamientoInteligente() : fn_renderizarEjecucionInteligente();
    };
 
@@ -590,8 +594,9 @@ const ccDashboardInfo = (() => {
          const f = fn_parsearFecha(r.fecha);
          const clave = `${f.getFullYear()}-${String(f.getMonth() + 1).padStart(2, "0")}`;
          const key = `${clave}|${r.sitio}`;
-         if (!mapa[key]) mapa[key] = { fecha: `${MESES[f.getMonth()]} ${f.getFullYear()}`, clave, sitio: r.sitio, importe: 0 };
+         if (!mapa[key]) mapa[key] = { fecha: `${MESES[f.getMonth()]} ${f.getFullYear()}`, clave, sitio: r.sitio, importe: 0, programado: 0 };
          mapa[key].importe += Number(r.importe);
+         mapa[key].programado += Number(r.programado);
       });
       return Object.values(mapa).sort((a, b) => a.clave.localeCompare(b.clave));
    };
@@ -601,8 +606,9 @@ const ccDashboardInfo = (() => {
       lista.forEach(r => {
          const clave = String(fn_parsearFecha(r.fecha).getFullYear());
          const key = `${clave}|${r.sitio}`;
-         if (!mapa[key]) mapa[key] = { fecha: clave, clave, sitio: r.sitio, importe: 0 };
+         if (!mapa[key]) mapa[key] = { fecha: clave, clave, sitio: r.sitio, importe: 0, programado: 0 };
          mapa[key].importe += Number(r.importe);
+         mapa[key].programado += Number(r.programado);
       });
       return Object.values(mapa).sort((a, b) => a.clave.localeCompare(b.clave));
    };
@@ -638,6 +644,7 @@ const ccDashboardInfo = (() => {
          nivelBase      = fn_detectarNivel(listaCompleta);
          nivelActual    = nivelBase;
          filtroActivo   = null;
+         sitioComportamientoSeleccionado = null;
          pilaNavegacion = [];
       }
       const lista = fn_obtenerDatosComportamiento();
@@ -743,52 +750,111 @@ const ccDashboardInfo = (() => {
          pivote[r.sitio][r.fecha] = r.importe;
       });
 
-      const series = sitiosUnicos.map((sitio, idx) => ({
-         name: sitio.length > 20 ? `${sitio.substring(0, 18)}…` : sitio,
-         type: "line",
-         smooth: true,
-         symbol: nivelActual !== "dia" ? "circle" : "none",
-         symbolSize: 7,
-         connectNulls: false,
-         data: fechas.map(f => pivote[sitio][f] ?? null),
-         lineStyle: { color: paleta[idx % paleta.length], width: 2 },
-         itemStyle: { color: paleta[idx % paleta.length] }
-      }));
+      let series = [];
+      let leyendaData = [];
+
+      if (sitioComportamientoSeleccionado) {
+            const datosSitio = lista.filter(r => r.sitio === sitioComportamientoSeleccionado);
+            const pivote = {};
+            datosSitio.forEach(r => pivote[r.fecha] = r);
+
+            series = [
+               {
+                  name: "Programado " + sitioComportamientoSeleccionado,
+                  type: "line",
+                  smooth: true,
+                  symbol: "none",
+                  triggerLineEvent: true,
+                  data: fechas.map(f => pivote[f] ? pivote[f].programado : 0),
+                  lineStyle: { color: colores.azul, width: 2, type: 'dashed' },
+                  itemStyle: { color: colores.azul }
+               },
+               {
+                  name: "Producido Real " + sitioComportamientoSeleccionado,
+                  type: "line",
+                  smooth: true,
+                  symbol: nivelActual !== "dia" ? "circle" : "none",
+                  symbolSize: 7,
+                  triggerLineEvent: true,
+                  data: fechas.map(f => pivote[f] ? pivote[f].importe : 0),
+                  lineStyle: { color: colores.naranja, width: 3 },
+                  itemStyle: { color: colores.naranja },
+                  areaStyle: { color: { type: "linear", x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: "rgba(240,85,35,0.15)" }, { offset: 1, color: "rgba(240,85,35,0)" }] } }
+               }
+         ];
+         leyendaData = ["Programado " + sitioComportamientoSeleccionado, "Producido Real " + sitioComportamientoSeleccionado];
+      } 
+      // CASO B: Vista General (Todos los sitios juntos)
+      else {
+         const sitiosUnicos = [...new Set(lista.map(r => r.sitio))];
+         const pivote = {};
+         lista.forEach(r => {
+               if (!pivote[r.sitio]) pivote[r.sitio] = {};
+               pivote[r.sitio][r.fecha] = r.importe;
+         });
+
+         series = sitiosUnicos.map((sitio, idx) => ({
+               id: sitio, // ID oculto para saber el nombre original al darle click
+               name: sitio.length > 20 ? `${sitio.substring(0, 18)}…` : sitio,
+               type: "line",
+               smooth: true,
+               symbol: nivelActual !== "dia" ? "circle" : "none",
+               symbolSize: 7,
+               triggerLineEvent: true,
+               connectNulls: false,
+               data: fechas.map(f => pivote[sitio][f] ?? null),
+               lineStyle: { color: paleta[idx % paleta.length], width: 2 },
+               itemStyle: { color: paleta[idx % paleta.length] }
+         }));
+         leyendaData = sitiosUnicos.map(s => s.length > 20 ? `${s.substring(0, 18)}…` : s);
+      }
+
 
       return {
          backgroundColor: "transparent",
+         title: sitioComportamientoSeleccionado ? {
+               text: `Frente: ${sitioComportamientoSeleccionado}`,
+               left: 'center',
+               top: 0,
+               textStyle: { fontSize: 13, color: colores.morado }
+         } : null,
          tooltip: {
-            trigger: "axis",
-            backgroundColor: colores.blanco,
-            borderColor: colores.borde,
-            borderWidth: 1,
-            textStyle: { color: colores.morado, fontSize: 12 },
-            formatter: (params) => {
-               const fecha = params[0] ? params[0].name : "";
-               let html = `<strong style="color:${colores.morado}">${fecha}</strong><br/>`;
-               params.forEach(p => {
-                  if (p.value !== null && p.value !== undefined) {
-                     html += `<span style="color:${p.color};">● ${p.seriesName}: <b>${fnFormatoMoneda(p.value)}</b></span><br/>`;
+               trigger: "axis",
+               backgroundColor: colores.blanco,
+               borderColor: colores.borde,
+               borderWidth: 1,
+               textStyle: { color: colores.morado, fontSize: 12 },
+               formatter: (params) => {
+                  const fecha = params[0] ? params[0].name : "";
+                  let html = `<strong style="color:${colores.morado}">${fecha}</strong><br/>`;
+                  params.forEach(p => {
+                     if (p.value !== null && p.value !== undefined) {
+                           html += `<span style="color:${p.color};">● ${p.seriesName}: <b>${fnFormatoMoneda(p.value)}</b></span><br/>`;
+                     }
+                  });
+                  
+                  if (!sitioComportamientoSeleccionado) {
+                     html += `<small style="color:${colores.gris};font-style:italic; margin-top:5px; display:block;">👆 Clic en una línea para ver su Programado</small>`;
+                  } else if (nivelActual !== "dia") {
+                     html += `<small style="color:${colores.gris};font-style:italic; margin-top:5px; display:block;">Clic para ver detalle por fecha</small>`;
                   }
-               });
-               if (nivelActual !== "dia") {
-                  html += `<small style="color:${colores.gris};font-style:italic;">Clic para ver detalle</small>`;
+                  return html;
                }
-               return html;
-            }
          },
          legend: {
-            bottom: 0, type: "scroll",
-            itemWidth: 11, itemHeight: 8,
-            textStyle: { fontSize: 10, color: colores.gris }
+               bottom: 0, type: "scroll",
+               data: leyendaData,
+               itemWidth: 11, itemHeight: 8,
+               textStyle: { fontSize: 10, color: colores.gris }
          },
-         grid: { top: 32, left: 12, right: 30, bottom: 72, containLabel: true },
+         grid: { top: sitioComportamientoSeleccionado ? 40 : 32, left: 12, right: 30, bottom: 72, containLabel: true },
          dataZoom: [{ type: "inside", xAxisIndex: 0 }],
          xAxis: {
-            type: "category",
-            data: fechas,
-            axisLabel: { fontSize: 9, color: colores.gris, rotate: 30 },
-            axisLine: { lineStyle: { color: colores.borde } }
+               type: "category",
+               data: fechas,
+               axisLabel: { fontSize: 9, color: colores.gris, rotate: 30 },
+               axisLine: { lineStyle: { color: colores.borde } },
+               triggerEvent: true
          },
          yAxis: ejeValorBase,
          series
@@ -856,13 +922,48 @@ const ccDashboardInfo = (() => {
 
       graficaInstancia.on("click", (params) => {
          if (pestanaActiva !== "ejecucion" && pestanaActiva !== "comportamiento") return;
-         if (nivelActual === "dia") return;
-         const clave = clavesEjecucion[params.dataIndex];
-         if (!clave) return;
-         pilaNavegacion.push({ nivel: nivelActual, filtro: filtroActivo });
-         filtroActivo = clave;
-         nivelActual  = nivelActual === "año" ? "mes" : "dia";
-         pestanaActiva === "ejecucion" ? fn_renderizarEjecucionInteligente() : fn_renderizarComportamientoInteligente();
+
+         let actualizarRender = false;
+         let sitioClickeado = null;
+         let fechaClickeada = null;
+
+         if (params.componentType === "series") {
+            if (pestanaActiva === "comportamiento" && !sitioComportamientoSeleccionado) {
+               sitioClickeado = params.seriesId || params.seriesName;
+            }
+            if (nivelActual !== "dia") {
+               fechaClickeada = clavesEjecucion[params.dataIndex];
+            }
+         } 
+         else if (params.componentType === "xAxis" && nivelActual !== "dia") {
+            const xData = graficaInstancia.getOption().xAxis[0].data;
+            const index = xData.indexOf(params.value);
+            if (index !== -1) {
+               fechaClickeada = clavesEjecucion[index];
+            }
+         }
+
+         if (sitioClickeado || fechaClickeada) {
+            pilaNavegacion.push({ 
+               nivel: nivelActual, 
+               filtro: filtroActivo, 
+               sitio: sitioComportamientoSeleccionado 
+            });
+            
+            if (sitioClickeado) {
+               sitioComportamientoSeleccionado = sitioClickeado;
+            }
+            if (fechaClickeada) {
+               filtroActivo = fechaClickeada;
+               nivelActual  = nivelActual === "año" ? "mes" : "dia";
+            }
+            
+            actualizarRender = true;
+         }
+
+         if (actualizarRender) {
+            pestanaActiva === "ejecucion" ? fn_renderizarEjecucionInteligente() : fn_renderizarComportamientoInteligente();
+         }
       });
 
       document.querySelectorAll(".cc-tab-btn-info").forEach(btn => {

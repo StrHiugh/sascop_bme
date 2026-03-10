@@ -1203,7 +1203,13 @@ def fn_ejecutar_query_prod_info(filtros, salto_bd, limite_bd):
 
    if lista_sitios:
       condiciones_a.append("p.id_sitio_produccion_id::text IN %(ids_sitios_info)s")
-      condiciones_b.append("FALSE")
+      condiciones_b.append("""
+         (
+               (o.id_frente_id = 1 AND o.id_patio::text IN %(ids_sitios_info)s) OR
+               (o.id_frente_id = 2 AND o.id_embarcacion::text IN %(ids_sitios_info)s) OR
+               (o.id_frente_id = 4 AND o.id_plataforma::text IN %(ids_sitios_info)s)
+         )
+      """)
       params["ids_sitios_info"] = tuple(lista_sitios)
 
    if es_excedente is True:
@@ -1284,12 +1290,20 @@ def fn_ejecutar_query_prod_info(filtros, salto_bd, limite_bd):
          COALESCE(um.clave, '—') AS unidad_medida,
          TO_CHAR(pp.fecha, 'DD/MM/YYYY') AS fecha_produccion,
          NULL::varchar(3) AS tipo_tiempo,
-         'SIN SITIO' AS sitio,
+         CASE
+            WHEN o.id_frente_id = 1 THEN COALESCE(s_pat.descripcion, 'SIN SITIO')
+            WHEN o.id_frente_id = 2 THEN COALESCE(s_emb.descripcion, 'SIN SITIO')
+            WHEN o.id_frente_id = 4 THEN COALESCE(s_plat.descripcion, 'SIN SITIO')
+            ELSE 'SIN SITIO'
+         END AS sitio,
          pp.fecha AS _fecha_ord
       FROM partida_proyectada pp
       INNER JOIN partida_anexo_importada pai ON pp.partida_anexo_id = pai.id
       INNER JOIN importacion_anexo ia ON pai.importacion_anexo_id = ia.id AND ia.es_activo = true
-      INNER JOIN ot o ON pp.ot_id = o.id
+      INNER JOIN ot o ON ia.ot_id = o.id
+      LEFT JOIN sitio s_pat ON o.id_patio = s_pat.id
+      LEFT JOIN sitio s_emb ON o.id_embarcacion = s_emb.id
+      LEFT JOIN sitio s_plat ON o.id_plataforma = s_plat.id
       LEFT JOIN responsable_proyecto rp ON o.id_responsable_proyecto_id = rp.id
       LEFT JOIN unidad_medida um ON pai.unidad_medida_id = um.id
       {where_b}
@@ -1375,7 +1389,7 @@ def fn_calcular_aggregados_info(sql_union, params):
       """
 
       sql_por_fecha_sitio = f"""
-         SELECT fecha_produccion, sitio, SUM(importe_producido) AS importe_producido
+         SELECT fecha_produccion, sitio, SUM(importe_producido) AS importe_producido, SUM(importe_programado) AS importe_programado
          FROM ({sql_union}) AS c
          WHERE sitio <> 'SIN SITIO'
          GROUP BY fecha_produccion, sitio, _fecha_ord
@@ -1423,6 +1437,7 @@ def fn_calcular_aggregados_info(sql_union, params):
                "fecha":   r["fecha_produccion"],
                "sitio":   r["sitio"],
                "importe": float(r["importe_producido"] or 0),
+               "programado": float(r["importe_programado"] or 0),
             }
             for r in fecha_sitio
          ],
