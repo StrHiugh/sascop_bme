@@ -11,6 +11,9 @@
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     
+    <!-- ECharts JS -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@6.0.0/dist/echarts.min.js"></script>
+
     <!-- DataTables CSS -->
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css">
@@ -72,6 +75,12 @@
                             <span class="nav-text">Inicio</span>
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'core:acerca_de' %}">
+                            <i class="fas fa-info-circle"></i>
+                            <span class="nav-text">Acerca de</span>
+                        </a>
+                    </li>
                     {% comment %} <li class="nav-item">
                         <a class="nav-link" href="#">
                             <i class="fas fa-plus"></i>
@@ -120,21 +129,13 @@
                 </div>
                 
                 <!-- Sección de Empresas) -->
-                <div id="cont-filtros-empresas">
-                    <div class="cont-flex flex-center flex-wrap flex-space-between">
-                        {% comment %} <div class="empresa-logo mb-1 mx-auto" style="display: flex; justify-content: left; align-items: left;"> {% endcomment %}
-                            <div class="header-title-section">
-                                <h1 class="seleccion-modulo">SELECCIONA UN MÓDULO</h1>
-                            </div>
-                        {% comment %} </div> {% endcomment %}
-                        <!-- Aquí puedes agregar más controles si necesitas -->
-                    </div>
-                </div>
+                {% block titulos %}
+                {% endblock %}
             </div>
             
             <!-- Main Content -->
             <main id="content" class="main-content">
-                <div class="container-fluid py-4">
+                <div class="container-fluid pt-5">
                     {% block content %}
                     {% endblock %}
                 </div>

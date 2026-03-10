@@ -3,15 +3,19 @@
 
 {% block title %}SASCOP - Dashboard{% endblock %}
 
-{% block content %}
-<div class="container-fluid">
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="text-left">
-                <h1 class="h3 mb-1">Empresas</h1>
+{% block titulos %}
+    <div class="header-modulo">
+        <div class="header-modulo-container">
+            <div class="header-title-section">
+                <h1 class="h2 fw-bold mb-0">SELECCIONA UN MODULO</h1>
             </div>
         </div>
     </div>
+{% endblock %}
+
+
+{% block content %}
+<div class="container-fluid pt-5">
 
     <!-- Sección Empresas Disponibles -->
     <div class="row justify-content-left">
@@ -59,7 +63,7 @@
                             </div>
                             <div class="modulo-info">
                                 <h6 class="modulo-name">OPERACIONES</h6>
-                                <p class="modulo-desc">Gestión de PTEs y OTs</p>
+                                <p class="modulo-desc">Gestión de obras</p>
                             </div>
                             <div class="modulo-arrow">
                                 <i class="fas fa-chevron-right"></i>
