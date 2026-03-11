@@ -1,19 +1,26 @@
-# bme_subtec/settings.py
 __pycache__/
+pycache/
 *.pyc
-# db.sqlite3
-venv/
-.env
-media/
-staticfiles/
-__pycache__/
 *.py[cod]
 *.pyo
 *.pyd
+venv/
+env/
+ENV/
+.env
+db.sqlite3
+backups_bd.py
+media/
+staticfiles/
 global-bundle.pem
 *.pem
 *.key
 *.cert
 ssl/
 certificates/
-backups_bd.py
+*.mpp
+cronogramas/
+operaciones/cronogramas/
+operaciones/mpps/
+mpps/
+operaciones/anexos_ot/
