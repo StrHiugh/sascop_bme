@@ -61,12 +61,18 @@ const fnEstadoInicialPanel = () => {
    $("#filtro-sitio").empty().trigger("change");
 
    $("#orig_pro").prop("checked", true);
-   $("input[name='prod_tabs'][value='documentacion']").prop("checked", true);
+   const modoAntes = $("input[name='prod_tabs']:checked").val();
+   if (modoAntes !== "informacion") {
+      $("input[name='prod_tabs'][value='documentacion']").prop("checked", true);
+   }
    $("#filtro-ot").val(null).trigger("change");
    $("#filtro-anexo").val(null).trigger("change");
-   $("#chk_tipo_normal").prop("checked", true);
-   $("#chk_tipo_extraordinario").prop("checked", true);
+   $("#chk_tipo_normal").prop("checked", true).prop("disabled", false);
+   $("#chk_tipo_extraordinario").prop("checked", true).prop("disabled", false);
    $("#chk_excedentes").prop("checked", false);
+   $("#chk_estado_prog_ejec").prop("checked", true);
+   $("#chk_estado_prog_sin_ejec").prop("checked", false);
+   $("#chk_estado_ejec_sin_prog").prop("checked", true);
    const validador = $("#form-filtros-bi").data("validator");
    if (validador) {
       validador.resetForm();
@@ -193,36 +199,157 @@ const fnActualizarPeriodo = (filtros = null) => {
    const fInicio = (filtros && filtros.fecha_inicio !== undefined) ? filtros.fecha_inicio : $("#fecha_inicio").val();
    const fFin = (filtros && filtros.fecha_fin !== undefined) ? filtros.fecha_fin : $("#fecha_fin").val();
 
-   if (!fInicio || !fFin || fInicio === "" || fFin === "") {
-      const textoHistorico = "Periodo Histórico";
-      periodoTexto.text(textoHistorico);
-      tablaPeriodoTexto.text(textoHistorico);
-      containerPeriodo.show();
-      return;
-   }
-
    const formatearLegible = (fechaStr) => {
       const partes = fechaStr.split("-");
       const meses = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
       return `${partes[2]}/${meses[parseInt(partes[1]) - 1]}/${partes[0]}`;
    };
 
-   const textoFinal = `${formatearLegible(fInicio)} - ${formatearLegible(fFin)}`;
+   let textoFinal;
+   if (fInicio && fFin) {
+      textoFinal = `${formatearLegible(fInicio)} - ${formatearLegible(fFin)}`;
+   } else if (fInicio) {
+      textoFinal = `Desde ${formatearLegible(fInicio)}`;
+   } else if (fFin) {
+      textoFinal = `Hasta ${formatearLegible(fFin)}`;
+   } else {
+      textoFinal = "Periodo Histórico";
+   }
+
    periodoTexto.text(textoFinal);
    tablaPeriodoTexto.text(textoFinal);
    containerPeriodo.show();
+};
+
+const fn_actualizarLabelOts = () => {
+   const contenedor = $("#cc-ots-container");
+   const otsData = fn_getSelect2Data("#filtro-ot");
+   if (!otsData || otsData.length === 0) {
+      contenedor.hide();
+      return;
+   }
+   const textoOts = otsData.map(ot => ot.text).join(" / ");
+   $("#cc-ots-texto").text(`OTs: ${textoOts}`);
+   contenedor.show();
+};
+
+let modoPrevio = "documentacion";
+
+const estadoFiltrosDoc = {
+   ots: [], lideres: [], clientes: [], frentes: [], sitios: [],
+   tipoDoc: [], estatus: [],
+   fechaInicio: "", fechaFin: "",
+   entregados: true, pendientes: true, buscarPorFrente: true, excedentes: false
+};
+
+const estadoFiltrosInfo = {
+   ots: [], lideres: [], clientes: [], sitios: [],
+   anexos: [], partidas: [],
+   fechaInicio: "", fechaFin: "",
+   tipoNormal: true, tipoExtraordinario: true, excedentes: false,
+   progEjec: true, progSinEjec: false, ejecSinProg: true
+};
+
+const fn_restaurarSelect2 = (selector, items) => {
+   const $el = $(selector);
+   $el.val(null).trigger("change");
+   (items || []).forEach(item => {
+      if (!$el.find(`option[value="${item.id}"]`).length) {
+         $el.append(new Option(item.text, item.id, true, true));
+      } else {
+         $el.find(`option[value="${item.id}"]`).prop("selected", true);
+      }
+   });
+   $el.trigger("change");
+};
+
+const fn_getSelect2Data = (selector) => {
+   const $el = $(selector);
+   return ($el.length && $el.data("select2")) ? $el.select2("data") || [] : [];
+};
+
+const fn_guardarEstadoFiltros = (modo) => {
+   if (modo === "documentacion") {
+      estadoFiltrosDoc.ots           = fn_getSelect2Data("#filtro-ot");
+      estadoFiltrosDoc.lideres       = fn_getSelect2Data("#filtro-lider");
+      estadoFiltrosDoc.clientes      = fn_getSelect2Data("#filtro-cliente");
+      estadoFiltrosDoc.frentes       = fn_getSelect2Data("#filtro-frente");
+      estadoFiltrosDoc.sitios        = fn_getSelect2Data("#filtro-sitio");
+      estadoFiltrosDoc.tipoDoc       = fn_getSelect2Data("#filtro-tipo-doc");
+      estadoFiltrosDoc.estatus       = fn_getSelect2Data("#filtro-estatus");
+      estadoFiltrosDoc.fechaInicio   = $("#fecha_inicio").val();
+      estadoFiltrosDoc.fechaFin      = $("#fecha_fin").val();
+      estadoFiltrosDoc.entregados    = $("#chk_entregados").is(":checked");
+      estadoFiltrosDoc.pendientes    = $("#chk_pendientes").is(":checked");
+      estadoFiltrosDoc.buscarPorFrente = $("#chk_buscar_por_frente").is(":checked");
+      estadoFiltrosDoc.excedentes    = $("#chk_excedentes").is(":checked");
+   } else {
+      estadoFiltrosInfo.ots               = fn_getSelect2Data("#filtro-ot");
+      estadoFiltrosInfo.lideres           = fn_getSelect2Data("#filtro-lider");
+      estadoFiltrosInfo.clientes          = fn_getSelect2Data("#filtro-cliente");
+      estadoFiltrosInfo.sitios            = fn_getSelect2Data("#filtro-sitio");
+      estadoFiltrosInfo.anexos            = fn_getSelect2Data("#filtro-anexo");
+      estadoFiltrosInfo.partidas          = $("#filtro-partida").val() || [];
+      estadoFiltrosInfo.fechaInicio       = $("#fecha_inicio").val();
+      estadoFiltrosInfo.fechaFin          = $("#fecha_fin").val();
+      estadoFiltrosInfo.tipoNormal         = $("#chk_tipo_normal").is(":checked");
+      estadoFiltrosInfo.tipoExtraordinario = $("#chk_tipo_extraordinario").is(":checked");
+      estadoFiltrosInfo.excedentes         = $("#chk_excedentes").is(":checked");
+      estadoFiltrosInfo.progEjec           = $("#chk_estado_prog_ejec").is(":checked");
+      estadoFiltrosInfo.progSinEjec        = $("#chk_estado_prog_sin_ejec").is(":checked");
+      estadoFiltrosInfo.ejecSinProg        = $("#chk_estado_ejec_sin_prog").is(":checked");
+   }
+};
+
+const fn_restaurarEstadoFiltros = (modo) => {
+   if (modo === "documentacion") {
+      fn_restaurarSelect2("#filtro-ot",       estadoFiltrosDoc.ots);
+      fn_restaurarSelect2("#filtro-lider",    estadoFiltrosDoc.lideres);
+      fn_restaurarSelect2("#filtro-cliente",  estadoFiltrosDoc.clientes);
+      fn_restaurarSelect2("#filtro-frente",   estadoFiltrosDoc.frentes);
+      fn_restaurarSelect2("#filtro-sitio",    estadoFiltrosDoc.sitios);
+      fn_restaurarSelect2("#filtro-tipo-doc", estadoFiltrosDoc.tipoDoc);
+      fn_restaurarSelect2("#filtro-estatus",  estadoFiltrosDoc.estatus);
+      $("#fecha_inicio").val(estadoFiltrosDoc.fechaInicio);
+      $("#fecha_fin").val(estadoFiltrosDoc.fechaFin);
+      $("#chk_entregados").prop("checked", estadoFiltrosDoc.entregados);
+      $("#chk_pendientes").prop("checked", estadoFiltrosDoc.pendientes);
+      $("#chk_buscar_por_frente").prop("checked", estadoFiltrosDoc.buscarPorFrente);
+      $("#chk_excedentes").prop("checked", estadoFiltrosDoc.excedentes);
+   } else {
+      fn_restaurarSelect2("#filtro-ot",      estadoFiltrosInfo.ots);
+      fn_restaurarSelect2("#filtro-lider",   estadoFiltrosInfo.lideres);
+      fn_restaurarSelect2("#filtro-cliente", estadoFiltrosInfo.clientes);
+      fn_restaurarSelect2("#filtro-sitio",   estadoFiltrosInfo.sitios);
+      fn_restaurarSelect2("#filtro-anexo",   estadoFiltrosInfo.anexos);
+      $("#filtro-partida").val(estadoFiltrosInfo.partidas).trigger("change");
+      $("#fecha_inicio").val(estadoFiltrosInfo.fechaInicio);
+      $("#fecha_fin").val(estadoFiltrosInfo.fechaFin);
+      $("#chk_excedentes").prop("checked", estadoFiltrosInfo.excedentes);
+      $("#chk_estado_prog_ejec").prop("checked", estadoFiltrosInfo.progEjec);
+      $("#chk_estado_prog_sin_ejec").prop("checked", estadoFiltrosInfo.progSinEjec);
+      $("#chk_estado_ejec_sin_prog").prop("checked", estadoFiltrosInfo.ejecSinProg);
+      const tipoTiempoDeshabilitado = estadoFiltrosInfo.progSinEjec;
+      $("#chk_tipo_normal").prop("disabled", tipoTiempoDeshabilitado).prop("checked", tipoTiempoDeshabilitado ? false : estadoFiltrosInfo.tipoNormal);
+      $("#chk_tipo_extraordinario").prop("disabled", tipoTiempoDeshabilitado).prop("checked", tipoTiempoDeshabilitado ? false : estadoFiltrosInfo.tipoExtraordinario);
+   }
 };
 
 const fnActualizarTodo = (botonEjecutar = null) => {
    const textoOriginal = botonEjecutar ? botonEjecutar.html() : "";
    filtrosActivos = fnObtenerFiltrosActuales();
 
-   if (filtrosActivos.fecha_inicio === "" || filtrosActivos.fecha_fin === "") {
-      filtrosActivos.fecha_inicio = null;
-      filtrosActivos.fecha_fin = null;
-   }
+   const tieneFechaInicio = filtrosActivos.fecha_inicio !== "" && filtrosActivos.fecha_inicio !== null;
+   const tieneFechaFin = filtrosActivos.fecha_fin !== "" && filtrosActivos.fecha_fin !== null;
+   if (!tieneFechaInicio) filtrosActivos.fecha_inicio = null;
 
-   fnActualizarPeriodo(filtrosActivos);
+   const fechaInicioLabel = filtrosActivos.fecha_inicio;
+   const fechaFinLabel    = tieneFechaFin ? filtrosActivos.fecha_fin : null;
+
+   if (!tieneFechaFin) filtrosActivos.fecha_fin = tieneFechaInicio ? fnFormatearFecha(new Date()) : null;
+
+   fnActualizarPeriodo({ ...filtrosActivos, fecha_inicio: fechaInicioLabel, fecha_fin: fechaFinLabel });
+   fn_actualizarLabelOts();
 
    if (botonEjecutar) {
       botonEjecutar.prop("disabled", true).html("<i class=\"fas fa-spinner fa-spin me-2\"></i>Consultando...");
@@ -238,9 +365,24 @@ const fnActualizarTodo = (botonEjecutar = null) => {
       headers: { "X-CSRFToken": csrfToken }
    });
 
-   const promesaTabla = new Promise((resolver) => {
-      tablaResultados.ajax.reload(() => resolver(), true);
-   });
+   const usarGrupos = fn_usarModoGrupos();
+   if (usarGrupos) {
+      $("#tabla-doc-wrapper").hide();
+      $("#tabla-grupos-wrapper").show();
+      $("#select-length").hide();
+      $("#select-tamano-grupos-top").show();
+   } else {
+      $("#tabla-grupos-wrapper").hide();
+      $("#tabla-doc-wrapper").show();
+      $("#select-length").show();
+      $("#select-tamano-grupos-top").hide();
+   }
+
+   const promesaTabla = usarGrupos
+      ? fn_actualizarTablaGrupos(true)
+      : new Promise((resolver) => {
+         tablaResultados.ajax.reload(() => resolver(), true);
+      });
 
    Promise.all([peticionDashboard, promesaTabla])
       .then(respuestas => {
@@ -367,8 +509,269 @@ const fnGestionarVisibilidadUbicacion = () => {
 
 let tablaResultados;
 let tablaProduccionInfo = null;
+let tablaGrupos = null;
 let panelFiltrosOffcanvas = null;
 let periodoActivoInfo = null;
+
+const fn_usarModoGrupos = () => {
+   const origenes = $("input[name=\"origen\"]:checked").map(function () { return $(this).val(); }).get();
+   return origenes.some(o => o === "PTE" || o === "OT" || o === "PROD");
+};
+
+const fn_celdaAccionDetalle = (fila) => {
+   const clasesFlex = "d-inline-flex align-items-center justify-content-center gap-1";
+   const estiloBadge = "font-size: 0.75rem; min-width: 90px; padding: 5px 8px;";
+   const tieneArchivo = (fila.archivo && fila.archivo.trim() !== "") ? true : false;
+
+   if (tieneArchivo) {
+      const esDescarga = /\.(xlsx|xls|csv|zip)$/i.test(fila.archivo);
+      const iconoArchivo = esDescarga ? "fa-download" : "fa-eye";
+      const textoEtiqueta = esDescarga ? "Bajar" : "Ver";
+      const atributosEnlace = esDescarga ? "download" : "target=\"_blank\"";
+      return `<a href="${fila.archivo}" ${atributosEnlace} class="btn-accion-tabla activo text-decoration-none ${clasesFlex}">
+                  <i class="fas ${iconoArchivo}"></i>${textoEtiqueta}
+               </a>`;
+   }
+
+   const esNoAplica = (fila.estatus_paso_id == 14) ? true : false;
+   if (esNoAplica) {
+      return `<span class="badge bg-secondary text-white fw-normal ${clasesFlex}" style="${estiloBadge}">
+                  <i class="fas fa-ban" style="font-size: 0.7rem;"></i>No aplica
+               </span>`;
+   }
+
+   return `<span class="badge bg-transparent border text-muted fw-normal ${clasesFlex}" style="${estiloBadge} color: #54565a !important; border-color: #ccc !important;">
+               <i class="fas fa-clock" style="font-size: 0.7rem;"></i>Pendiente
+            </span>`;
+};
+
+const fn_nombreMes = (mes) => ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"][mes - 1] || "Sin mes";
+
+const fn_cargarDetalleGrupo = (tipo, idPadre, $trHeader) => {
+   const $existentes = $(`.fila-detalle-${idPadre}`);
+   if ($existentes.length) {
+      $existentes.show();
+      return;
+   }
+
+   $.ajax({
+      url: urlDetalleGrupo,
+      type: "POST",
+      data: JSON.stringify({ "tipo": tipo, "id_grupo": idPadre, "filtros": filtrosActivos }),
+      contentType: "application/json",
+      headers: { "X-CSRFToken": csrfToken },
+      success: function (respuesta) {
+         const detalles = respuesta.data || [];
+
+         if (tipo === "PROD") {
+            let htmlFilasMeses = "";
+            detalles.forEach(d => {
+               const labelPeriodo = (d.mes && d.anio) ? `${fn_nombreMes(d.mes)} ${d.anio}` : "Sin Fecha";
+               const idPadreMes = `${idPadre}_${d.mes}_${d.anio}`;
+               htmlFilasMeses += `
+                  <tr>
+                     <td class="align-middle">
+                        <button class="btn-toggle-grupo btn btn-sm p-0 me-1 text-secondary border-0 bg-transparent" data-tipo="PROD_MES" data-id-padre="${idPadreMes}" title="Expandir ${labelPeriodo}">
+                           <i class="fas fa-plus-square"></i>
+                        </button>
+                        ${labelPeriodo}
+                     </td>
+                     <td class="align-middle text-muted" style="font-size: 0.85rem;">${d.total_docs} documento${d.total_docs !== 1 ? "s" : ""}</td>
+                  </tr>`;
+            });
+
+            const htmlVacioMeses = `<tr><td colspan="2" class="text-center text-muted py-2">Sin períodos registrados</td></tr>`;
+            $trHeader.after(`
+               <tr class="fila-detalle fila-detalle-${idPadre}" style="background-color: #f0f4f8;">
+                  <td colspan="3" class="p-0 ps-5" style="border-left: 3px solid #F05523;">
+                     <table class="table table-sm mb-0 w-100">
+                        <thead class="table-light">
+                           <tr>
+                              <th>Período</th>
+                              <th style="width: 150px;">Documentos</th>
+                           </tr>
+                        </thead>
+                        <tbody>
+                           ${htmlFilasMeses || htmlVacioMeses}
+                        </tbody>
+                     </table>
+                  </td>
+               </tr>`);
+
+         } else if (tipo === "PROD_MES") {
+            let htmlFilasDetalle = "";
+            detalles.forEach(d => {
+               htmlFilasDetalle += `
+                  <tr>
+                     <td class="align-middle" style="border-left: 3px solid #F05523;">
+                        <div class="texto-principal" style="font-size: 0.85rem;">${d.documento}</div>
+                        <div class="texto-secundario">${d._descripcion_estatus || "—"}</div>
+                     </td>
+                     <td class="align-middle text-nowrap" style="font-size: 0.85rem;">${fnFormatFecha(d.fecha || "")}</td>
+                     <td class="text-center align-middle">${fn_celdaAccionDetalle(d)}</td>
+                  </tr>`;
+            });
+
+            const htmlVacioDocs = `<tr><td colspan="3" class="text-center text-muted py-2">Sin documentos registrados</td></tr>`;
+            $trHeader.after(`
+               <tr class="fila-detalle fila-detalle-${idPadre}">
+                  <td colspan="2" class="p-0 ps-4">
+                     <table class="table table-sm mb-0 w-100">
+                        <thead class="table-light">
+                           <tr>
+                              <th>Documento / Entregable</th>
+                              <th style="width: 110px;">Fecha</th>
+                              <th class="text-center" style="width: 90px;">Acción</th>
+                           </tr>
+                        </thead>
+                        <tbody>
+                           ${htmlFilasDetalle || htmlVacioDocs}
+                        </tbody>
+                     </table>
+                  </td>
+               </tr>`);
+
+         } else {
+            let htmlFilasDetalle = "";
+            detalles.forEach(d => {
+               const docTexto = d.orden_paso && d.orden_paso !== "0"
+                  ? `${d.orden_paso} — ${d.documento}`
+                  : d.documento;
+               htmlFilasDetalle += `
+                  <tr>
+                     <td class="align-middle" style="border-left: 3px solid #F05523;">
+                        <div class="texto-principal" style="font-size: 0.85rem;">${docTexto}</div>
+                        <div class="texto-secundario">${d._descripcion_estatus || "—"}</div>
+                     </td>
+                     <td class="align-middle text-nowrap" style="font-size: 0.85rem;">${fnFormatFecha(d.fecha || "")}</td>
+                     <td class="text-center align-middle">${fn_celdaAccionDetalle(d)}</td>
+                  </tr>`;
+            });
+
+            const htmlVacio = `<tr><td colspan="3" class="text-center text-muted py-2">Sin documentos registrados</td></tr>`;
+            $trHeader.after(`
+               <tr class="fila-detalle fila-detalle-${idPadre}" style="background-color: #f8f9fa;">
+                  <td colspan="3" class="p-0 ps-5">
+                     <table class="table table-sm mb-0 w-100">
+                        <thead class="table-light">
+                           <tr>
+                              <th>Documento / Entregable</th>
+                              <th style="width: 110px;">Fecha</th>
+                              <th class="text-center" style="width: 90px;">Acción</th>
+                           </tr>
+                        </thead>
+                        <tbody>
+                           ${htmlFilasDetalle || htmlVacio}
+                        </tbody>
+                     </table>
+                  </td>
+               </tr>`);
+         }
+      },
+      error: function () {
+         const colSpan = tipo === "PROD_MES" ? 2 : 3;
+         $trHeader.after(`<tr class="fila-detalle fila-detalle-${idPadre}">
+            <td colspan="${colSpan}" class="text-center text-danger py-2">Error al cargar los documentos.</td>
+         </tr>`);
+      }
+   });
+};
+
+const fn_inicializarTablaGrupos = () => {
+   if (tablaGrupos) return;
+   tablaGrupos = $("#tabla-grupos").DataTable({
+      serverSide: true,
+      processing: true,
+      pageLength: 10,
+      dom: '<"d-none"l><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
+      responsive: true,
+      searching: false,
+      lengthChange: true,
+      language: {
+         "lengthMenu": "_MENU_",
+         "processing": "Procesando...",
+         "info": "Mostrando _END_ de _TOTAL_ registros.",
+         "infoEmpty": "No hay registros disponibles",
+         "infoFiltered": "(filtrado de _MAX_ registros totales)",
+         "emptyTable": "Ningún dato disponible en esta tabla",
+         "zeroRecords": "No se encontraron resultados",
+         "paginate": { "previous": "‹", "next": "›" }
+      },
+      ajax: function (parametrosDT, callbackDT) {
+         const payloadPaginacion = {
+            "draw": parametrosDT.draw,
+            "start": parametrosDT.start,
+            "length": parametrosDT.length,
+            "filtros": filtrosActivos
+         };
+         $.ajax({
+            url: urlBusquedaGrupos,
+            type: "POST",
+            data: JSON.stringify(payloadPaginacion),
+            contentType: "application/json",
+            headers: { "X-CSRFToken": csrfToken },
+            success: function (respuestaServidor) {
+               $("#badge-registros").text(`${respuestaServidor.recordsTotal} Registros`);
+               callbackDT(respuestaServidor);
+            },
+            error: function (error) {
+               console.error("Error en tabla grupos:", error);
+               callbackDT({ "draw": parametrosDT.draw, "recordsTotal": 0, "recordsFiltered": 0, "data": [] });
+            }
+         });
+      },
+      columns: [
+         {
+            title: "Origen", data: null, width: "90px",
+            className: "text-center align-middle", orderable: false,
+            render: (_datoColumna, _tipoRender, fila) => {
+               const esExpandible = (fila.tipo === "PTE" || fila.tipo === "OT" || fila.tipo === "PROD");
+               const htmlToggle = esExpandible
+                  ? `<button class="btn-toggle-grupo btn btn-sm p-0 me-1 text-secondary border-0 bg-transparent" data-id-padre="${fila.id_padre}" data-tipo="${fila.tipo}" title="Expandir"><i class="fas fa-plus-square"></i></button>`
+                  : `<span class="d-inline-block" style="width: 1.4rem;"></span>`;
+               return `${htmlToggle}${fnBadgeTipo(fila.tipo)}`;
+            }
+         },
+         {
+            title: "Folio / Proyecto", data: null, className: "align-middle",
+            render: (_datoColumna, _tipoRender, fila) => `<div class="celda-contenedor">
+               <div class="texto-principal">${fila.folio}</div>
+               <div class="texto-secundario">${fila.cliente}</div>
+            </div>`
+         },
+         {
+            title: "Metadatos (Líder/Frente)", data: null, className: "align-middle",
+            render: (_datoColumna, _tipoRender, fila) => {
+               const sitioMostrable = fila.sitio && fila.sitio !== "NO APLICA" && fila.sitio !== "SIN UBICACIÓN";
+               const htmlSitio = sitioMostrable
+                  ? `<div class="meta-sitio"><i class="fas fa-map-marker-alt"></i>${fila.sitio}</div>`
+                  : "";
+               const htmlFrente = (fila.frente && fila.frente !== "N/A")
+                  ? `<div class="texto-secundario">Frente: ${fila.frente}</div>`
+                  : `<div class="texto-secundario">Cliente: ${fila.cliente}</div>`;
+               return `<div class="celda-contenedor">
+                  <div class="texto-lider">${fila.lider || "Sin Líder"}</div>
+                  ${htmlFrente}
+                  ${htmlSitio}
+               </div>`;
+            }
+         },
+      ],
+      initComplete: function () {
+         const contenedorSelector = $("#tabla-grupos_length").detach();
+         $("#select-tamano-grupos-top").html(contenedorSelector);
+         const selectGrupos = $("#select-tamano-grupos-top select");
+         selectGrupos.addClass("form-select form-select-sm d-inline-block w-auto mx-2");
+      }
+   });
+};
+
+const fn_actualizarTablaGrupos = (resetPagina = true) => {
+   fn_inicializarTablaGrupos();
+   return new Promise((resolver) => {
+      tablaGrupos.ajax.reload(() => resolver(), resetPagina);
+   });
+};
 
 $(document).ready(function () {
    const elementoDOMPanel = document.getElementById("panelFiltros");
@@ -403,7 +806,7 @@ $(document).ready(function () {
       serverSide: true,
       processing: true,
       pageLength: 10,
-      dom: '<"row"><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
+      dom: '<"d-none"l><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
       responsive: true,
       searching: false,
       lengthChange: true,
@@ -455,7 +858,16 @@ $(document).ready(function () {
       initComplete: function () {
          const contenedorSelector = $("#tabla-resultados_length").detach();
          $("#select-length").html(contenedorSelector);
-         $("#select-length select").addClass("form-select form-select-sm d-inline-block w-auto mx-2");
+         const selectDoc = $("#select-length select");
+         selectDoc.addClass("form-select form-select-sm d-inline-block w-auto mx-2");
+         selectDoc.val("10");
+         if (fn_usarModoGrupos()) {
+            $("#tabla-doc-wrapper").hide();
+            $("#tabla-grupos-wrapper").show();
+            $("#select-length").hide();
+            $("#select-tamano-grupos-top").show();
+            fn_actualizarTablaGrupos(true);
+         }
       }
    });
 
@@ -576,6 +988,13 @@ $(document).ready(function () {
       }
    });
 
+   $("#chk_estado_prog_sin_ejec").on("change", function () {
+      const programadaSinEjecActiva = $(this).is(":checked");
+      $("#chk_tipo_normal, #chk_tipo_extraordinario")
+         .prop("disabled", programadaSinEjecActiva)
+         .prop("checked", !programadaSinEjecActiva);
+   });
+
 $("#filtro-buscar").on("keyup", function (eventoTeclado) {
       if (eventoTeclado.key === "Enter") {
          filtrosActivos = fnObtenerFiltrosActuales();
@@ -598,10 +1017,17 @@ $("#filtro-buscar").on("keyup", function (eventoTeclado) {
       const instanciaBoton = $(this);
 
       if (fnModoActual() === "informacion") {
+         const estadosActivos = $("#chk_estado_prog_ejec, #chk_estado_prog_sin_ejec, #chk_estado_ejec_sin_prog").filter(":checked").length;
+         if (estadosActivos === 0) {
+            alert("Selecciona al menos un Estado de Producción.");
+            return;
+         }
          periodoActivoInfo = fnObtenerFiltrosProdInfo();
          fnActualizarPeriodo(periodoActivoInfo);
+         fn_actualizarLabelOts();
          instanciaBoton.prop("disabled", true).html("<i class=\"fas fa-spinner fa-spin me-2\"></i>Consultando...");
          fnInicializarTablaInfo();
+         $("#select-length-info select").val("10").trigger("change");
          tablaProduccionInfo.ajax.reload(() => {
             instanciaBoton.prop("disabled", false).html("<i class=\"fas fa-search me-2\"></i>Buscar");
          }, true);
@@ -610,6 +1036,7 @@ $("#filtro-buscar").on("keyup", function (eventoTeclado) {
          return;
       }
 
+      $("#select-length select").val("10").trigger("change");
       filtrosActivos = fnObtenerFiltrosActuales();
       fnActualizarTodo(instanciaBoton);
    });
@@ -626,10 +1053,13 @@ $("#filtro-buscar").on("keyup", function (eventoTeclado) {
          fnMostrarModoInformacion();
          periodoActivoInfo = fnObtenerFiltrosProdInfo();
          fnActualizarPeriodo(periodoActivoInfo);
+         fn_actualizarLabelOts();
+         $("#select-length-info select").val("10").trigger("change");
          fnRecargarTablaInfo();
       } else {
          fnMostrarModoDocumentacion();
          filtrosActivos = fnObtenerFiltrosEstaticos();
+         $("#select-length select").val("10").trigger("change");
          fnActualizarTodo();
       }
    });
@@ -671,6 +1101,45 @@ $("#filtro-buscar").on("keyup", function (eventoTeclado) {
       }, 350);
    });
 
+   $(document).on("click", ".btn-toggle-grupo", function () {
+      const $btn       = $(this);
+      const idPadre    = $btn.data("id-padre");
+      const tipo       = $btn.data("tipo");
+      const $trHeader  = $btn.closest("tr");
+      const expandido  = $trHeader.data("expandido") === true;
+      const $icono     = $btn.find("i");
+
+      if (expandido) {
+         $(`.fila-detalle-${idPadre}`).hide();
+         $trHeader.data("expandido", false);
+         $icono.removeClass("fa-minus-square").addClass("fa-plus-square");
+      } else {
+         $icono.removeClass("fa-plus-square").addClass("fa-minus-square");
+         fn_cargarDetalleGrupo(tipo, idPadre, $trHeader);
+         $trHeader.data("expandido", true);
+      }
+   });
+
+   $("#grupos-paginacion").on("click", "li.paginate_button", function () {
+      if ($(this).hasClass("disabled") || $(this).hasClass("active")) return;
+      const totalPaginas = Math.ceil(estadoPaginaGrupos.total / estadoPaginaGrupos.tamano) || 1;
+      if ($(this).hasClass("previous")) {
+         if (estadoPaginaGrupos.pagina <= 1) return;
+         estadoPaginaGrupos.pagina--;
+      } else if ($(this).hasClass("next")) {
+         if (estadoPaginaGrupos.pagina >= totalPaginas) return;
+         estadoPaginaGrupos.pagina++;
+      } else {
+         estadoPaginaGrupos.pagina = parseInt($(this).data("pagina"));
+      }
+      fn_actualizarTablaGrupos(false);
+   });
+
+   $("#select-tamano-grupos").on("change", function () {
+      estadoPaginaGrupos.tamano = parseInt($(this).val());
+      fn_actualizarTablaGrupos(true);
+   });
+
    $("#btn-expandir-grafica-info").on("click", function () {
       const botonActual = $(this);
       const esModoExpandido = botonActual.find("i").hasClass("fa-compress") ? true : false;
@@ -708,20 +1177,28 @@ $("#filtro-buscar").on("keyup", function (eventoTeclado) {
 
       const botonExportar = $(this);
       const textoOriginal = botonExportar.html();
+      const esModuloInfo = $("#tab-info").is(":checked");
 
-      const itemsOrigenes = $("input[name=\"origen\"]:checked");
+      let urlEndpoint, payloadExportacion, nombreArchivo;
+      const fechaGeneracion = new Date().toISOString().slice(0, 10).replace(/-/g, "");
 
-      const filtrosParaExportar = (itemsOrigenes.length === 0)
-         ? fnObtenerFiltrosEstaticos()
-         : fnObtenerFiltrosActuales();
+      if (esModuloInfo) {
+         if (!periodoActivoInfo) {
+            alert("Primero ejecuta una búsqueda en el módulo de Información.");
+            return;
+         }
+         urlEndpoint = "/operaciones/centro_consulta/descargar-excel-info/";
+         payloadExportacion = { "filtros": periodoActivoInfo };
+         nombreArchivo = `Reporte_Produccion_${fechaGeneracion}.xlsx`;
+      } else {
+         urlEndpoint = "/operaciones/centro_consulta/descargar-excel/";
+         payloadExportacion = { "filtros": filtrosActivos };
+         nombreArchivo = `Reporte_SASCOP_BI_${fechaGeneracion}.xlsx`;
+      }
 
       botonExportar.prop("disabled", true).html("<i class=\"fas fa-spinner fa-spin me-2\"></i>Generando Reporte...");
 
-      const payloadExportacion = {
-         "filtros": filtrosParaExportar
-      };
-
-      fetch("/operaciones/centro_consulta/descargar-excel/", {
+      fetch(urlEndpoint, {
          method: "POST",
          headers: {
             "Content-Type": "application/json",
@@ -738,9 +1215,7 @@ $("#filtro-buscar").on("keyup", function (eventoTeclado) {
          const urlDescarga = window.URL.createObjectURL(archivoBinario);
          const enlaceDescarga = document.createElement("a");
          enlaceDescarga.href = urlDescarga;
-
-         const fechaGeneracion = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-         enlaceDescarga.download = `Reporte_SASCOP_BI_${fechaGeneracion}.xlsx`;
+         enlaceDescarga.download = nombreArchivo;
 
          document.body.appendChild(enlaceDescarga);
          enlaceDescarga.click();
@@ -809,6 +1284,9 @@ $("#filtro-buscar").on("keyup", function (eventoTeclado) {
 
    $("#btn-enviar-correo").on("click", function (eventoClick) {
       eventoClick.preventDefault();
+      const esInfoMode = fnModoActual() === "informacion";
+      $("#contenedor-graficas-correo").toggle(!esInfoMode);
+      $("#contenedor-graficas-correo-info").toggle(esInfoMode);
       modalCorreoInstancia.show();
    });
 
@@ -882,8 +1360,11 @@ $("#filtro-buscar").on("keyup", function (eventoTeclado) {
          "sitios_id":     sitios ? sitios : [],
          "fecha_inicio":  $("#fecha_inicio").val() || null,
          "fecha_fin":     $("#fecha_fin").val() || null,
-         "es_excedente":  $("#chk_excedentes").is(":checked") ? true : null,
-         "texto_busqueda": $("#filtro-buscar-info").val()
+         "es_excedente":        $("#chk_excedentes").is(":checked") ? true : null,
+         "texto_busqueda":      $("#filtro-buscar-info").val(),
+         "estado_prog_ejec":    $("#chk_estado_prog_ejec").is(":checked"),
+         "estado_prog_sin_ejec": $("#chk_estado_prog_sin_ejec").is(":checked"),
+         "estado_ejec_sin_prog": $("#chk_estado_ejec_sin_prog").is(":checked")
       };
    };
 
@@ -996,7 +1477,7 @@ $("#filtro-buscar").on("keyup", function (eventoTeclado) {
          serverSide: true,
          processing: true,
          pageLength: 10,
-         dom: '<"row"><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
+         dom: '<"d-none"l><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
          responsive: true,
          searching: false,
          lengthChange: true,
@@ -1041,7 +1522,6 @@ $("#filtro-buscar").on("keyup", function (eventoTeclado) {
             { title: "Anexo", data: "anexo", width: "70px", className: "align-middle text-center" },
             { title: "Partida", data: "partida", className: "align-middle" },
             { title: "Vol. Producido", data: "vol_producido", width: "110px", className: "align-middle text-end" },
-            { title: "Vol. Proyectado", data: "vol_proyectado", width: "120px", className: "align-middle text-end" },
             { title: "Vol. Programado", data: "vol_programado", width: "120px", className: "align-middle text-end" },
             { title: "Fecha", data: "fecha_produccion", width: "100px", className: "align-middle text-nowrap" },
             { title: "Tipo", data: "tipo_tiempo", width: "70px", className: "align-middle text-center" },
@@ -1053,14 +1533,16 @@ $("#filtro-buscar").on("keyup", function (eventoTeclado) {
             const hayProgramado = filasActuales.some(
                fila => fila.vol_programado !== null && fila.vol_programado !== undefined
             );
-            if (api.column(5).visible() !== hayProgramado) {
-               api.column(5).visible(hayProgramado, false);
+            if (api.column(4).visible() !== hayProgramado) {
+               api.column(4).visible(hayProgramado, false);
             }
          },
          initComplete: function () {
             const contenedorSelector = $("#tabla-produccion-info_length").detach();
             $("#select-length-info").html(contenedorSelector);
-            $("#select-length-info select").addClass("form-select form-select-sm d-inline-block w-auto mx-2");
+            const selectInfo = $("#select-length-info select");
+            selectInfo.addClass("form-select form-select-sm d-inline-block w-auto mx-2");
+            if (!selectInfo.val()) selectInfo.val("10").trigger("change");
          }
       });
    };
@@ -1090,6 +1572,10 @@ $("#filtro-buscar").on("keyup", function (eventoTeclado) {
 
    $("input[name='prod_tabs']").on("change", function () {
       const modoSeleccionado = $(this).val();
+      fn_guardarEstadoFiltros(modoPrevio);
+      modoPrevio = modoSeleccionado;
+      fn_restaurarEstadoFiltros(modoSeleccionado);
+      fn_actualizarLabelOts();
       if (modoSeleccionado === "informacion") {
          fnMostrarModoInformacion();
          if (periodoActivoInfo === null) {
@@ -1128,37 +1614,38 @@ $("#filtro-buscar").on("keyup", function (eventoTeclado) {
    $("#btn-procesar-envio").on("click", function () {
       const formularioCorreo = $("#form-enviar-correo");
       const esValido = formularioCorreo.valid();
-      if (!esValido) {
-         return;
-      }
+      if (!esValido) return;
 
       const cadenaCorreosCruda = $("#input-correos").val().trim();
       const arregloLimpio = cadenaCorreosCruda.split(",").map(correo => correo.trim()).filter(correo => correo !== "");
       const cadenaCorreosFinal = arregloLimpio.join(", ");
 
-      const checksActivos = $(".chk-grafica-exportar:checked");
-      const graficasSeleccionadas = checksActivos.length > 0 
-         ? checksActivos.map(function() { return $(this).val(); }).get() 
-         : [];
-
       const botonProcesar = $(this);
       const textoOriginal = botonProcesar.html();
       botonProcesar.prop("disabled", true).html("<i class=\"fas fa-spinner fa-spin me-2\"></i>Enviando...");
 
-      const imagenesExtraidas = fnGenerarImagenesBase64(graficasSeleccionadas);
+      let imagenesExtraidas = [];
+      let payloadCorreo = {};
+      let urlEnvio = "";
 
-      const payloadCorreo = {
-         "correos": cadenaCorreosFinal,
-         "filtros": fnObtenerFiltrosActuales(),
-         "graficas": imagenesExtraidas
-      };
+      if (fnModoActual() === "informacion") {
+         const tabsSeleccionadas = $(".chk-grafica-info:checked").map(function () { return $(this).val(); }).get();
+         imagenesExtraidas = ccDashboardInfo.fnCapturarGraficas(tabsSeleccionadas);
+         payloadCorreo = { "correos": cadenaCorreosFinal, "filtros": periodoActivoInfo, "graficas": imagenesExtraidas };
+         urlEnvio = urlEnviarCorreoInfo;
+      } else {
+         const checksActivos = $(".chk-grafica-exportar:checked");
+         const graficasSeleccionadas = checksActivos.length > 0
+            ? checksActivos.map(function () { return $(this).val(); }).get()
+            : [];
+         imagenesExtraidas = fnGenerarImagenesBase64(graficasSeleccionadas);
+         payloadCorreo = { "correos": cadenaCorreosFinal, "filtros": fnObtenerFiltrosActuales(), "graficas": imagenesExtraidas };
+         urlEnvio = urlEnviarCorreoBi;
+      }
 
-      fetch(urlEnviarCorreoBi, {
+      fetch(urlEnvio, {
          method: "POST",
-         headers: {
-            "Content-Type": "application/json",
-            "X-CSRFToken": csrfToken
-         },
+         headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken },
          body: JSON.stringify(payloadCorreo)
       })
       .then(respuestaServidor => {
@@ -1166,7 +1653,7 @@ $("#filtro-buscar").on("keyup", function (eventoTeclado) {
          if (!peticionExitosa) throw new Error("Error al enviar el correo desde el servidor.");
          return respuestaServidor.json();
       })
-      .then(datosRespuesta => {
+      .then(() => {
          modalCorreoInstancia.hide();
          $("#destinatarios-exito").text(cadenaCorreosFinal);
          modalExitoInstancia.show();

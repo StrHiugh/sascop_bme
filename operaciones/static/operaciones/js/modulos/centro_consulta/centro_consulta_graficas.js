@@ -409,6 +409,7 @@ const ccDashboardInfo = (() => {
    let filtroActivo     = null;
    let clavesEjecucion  = [];
    let pilaNavegacion   = [];
+   let sitioComportamientoSeleccionado = null;
 
    const fnFormatoMoneda = (valor) =>
       `$${Number(valor).toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -861,11 +862,76 @@ const ccDashboardInfo = (() => {
       };
    };
 
+   const fnOptOts = (datos) => {
+      const lista = datos ? datos : [];
+      const etiquetas = lista.map(r => r.ot.length > 22 ? `${r.ot.substring(0, 20)}…` : r.ot);
+      return {
+         backgroundColor: "transparent",
+         tooltip: {
+            trigger: "axis",
+            axisPointer: { type: "shadow" },
+            backgroundColor: colores.blanco,
+            borderColor: colores.borde,
+            borderWidth: 1,
+            formatter: (params) => {
+               const nombre = params[0] ? params[0].name : "";
+               let html = `<strong style="color:${colores.morado}">${nombre}</strong><br/>`;
+               params.forEach(p => {
+                  const val = p.seriesName === "Importe" ? fnFormatoMoneda(p.value) : Number(p.value).toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                  html += `<span style="color:${p.color};">● ${p.seriesName}: <b>${val}</b></span><br/>`;
+               });
+               return html;
+            }
+         },
+         legend: { bottom: 0, itemWidth: 11, itemHeight: 8, textStyle: { fontSize: 11, color: colores.gris } },
+         grid: { top: 12, left: 12, right: 60, bottom: 32, containLabel: true },
+         xAxis: [
+            { ...ejeValorBase, name: "Importe", nameTextStyle: { fontSize: 9 } },
+            {
+               type: "value",
+               splitLine: { show: false },
+               axisLabel: { fontSize: 9, color: colores.gris, formatter: (v) => v >= 1000 ? `${(v/1000).toFixed(0)}K` : v },
+               axisLine: { show: false },
+               axisTick: { show: false },
+               name: "Volumen",
+               nameTextStyle: { fontSize: 9 }
+            }
+         ],
+         yAxis: {
+            type: "category",
+            data: etiquetas,
+            inverse: true,
+            axisLabel: { fontSize: 9, color: colores.morado }
+         },
+         series: [
+            {
+               name: "Importe",
+               type: "bar",
+               xAxisIndex: 0,
+               data: lista.map(r => r.importe),
+               barMaxWidth: 18,
+               itemStyle: { color: colores.azul, borderRadius: [0, 4, 4, 0] },
+               label: { show: true, position: "right", fontSize: 9, color: colores.gris, formatter: (p) => fnFormatoMonedaCorta(p.value) }
+            },
+            {
+               name: "Volumen",
+               type: "scatter",
+               xAxisIndex: 1,
+               data: lista.map(r => r.volumen),
+               symbolSize: 8,
+               itemStyle: { color: colores.naranja },
+               label: { show: false }
+            }
+         ]
+      };
+   };
+
    const fnObtenerOpcion = (tab) => {
       const mapa = {
          "tiempos":         () => fnOptTiempos(datosMaestros.por_tipo_tiempo),
          "sitios":          () => fnOptSitios(datosMaestros.por_sitio),
          "lideres":         () => fnOptLideres(datosMaestros.por_lider),
+         "ots":             () => fnOptOts(datosMaestros.por_ot),
       };
       return mapa[tab] ? mapa[tab]() : {};
    };
@@ -992,5 +1058,42 @@ const ccDashboardInfo = (() => {
       setTimeout(() => { if (graficaInstancia) graficaInstancia.resize(); }, 100);
    };
 
-   return { fnActualizar, fnInicializar };
+   const fnCapturarGraficas = (tabsSeleccionadas) => {
+      if (!graficaInstancia || !tabsSeleccionadas || tabsSeleccionadas.length === 0) return [];
+
+      const opcionesPorTab = {
+         "ejecucion":      () => fnOptEjecucion(fn_obtenerDatosEjecucion()),
+         "comportamiento": () => fnOptComportamientoDiario(fn_obtenerDatosComportamiento()),
+         "tiempos":        () => fnOptTiempos(datosMaestros.por_tipo_tiempo),
+         "sitios":         () => fnOptSitios(datosMaestros.por_sitio),
+         "lideres":        () => fnOptLideres(datosMaestros.por_lider),
+      };
+
+      const nombresPorTab = {
+         "ejecucion":      "Ejecución",
+         "comportamiento": "Comportamiento Diario",
+         "tiempos":        "Tiempos",
+         "sitios":         "Sitios",
+         "lideres":        "Líderes",
+      };
+
+      const imagenes = [];
+      tabsSeleccionadas.forEach(tab => {
+         const fnOpc = opcionesPorTab[tab];
+         if (!fnOpc) return;
+         const opcion = fnOpc();
+         opcion.animation = false;
+         graficaInstancia.clear();
+         graficaInstancia.setOption(opcion, { notMerge: true });
+         imagenes.push({
+            "nombre": nombresPorTab[tab] || tab,
+            "imagen": graficaInstancia.getDataURL({ type: "png", backgroundColor: "#ffffff", pixelRatio: 2 })
+         });
+      });
+
+      fnRenderizarPestana(pestanaActiva);
+      return imagenes;
+   };
+
+   return { fnActualizar, fnInicializar, fnCapturarGraficas };
 })();

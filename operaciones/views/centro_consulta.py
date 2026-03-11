@@ -231,6 +231,270 @@ def fn_obtener_subconsulta_origenes(lista_origenes):
          COALESCE(rp.descripcion, 'SIN LÍDER') AS lider,
          COALESCE(f.descripcion, 'SIN FRENTE') AS frente,
          CASE
+            WHEN o.requiere_patio = true AND o.id_patio = p.id_sitio_produccion_id THEN o.id_patio
+            WHEN o.id_frente_id = 1 THEN o.id_patio
+            WHEN o.id_frente_id = 2 THEN o.id_embarcacion
+            WHEN o.id_frente_id = 4 THEN o.id_plataforma
+            ELSE NULL
+         END AS id_sitio_oficial,
+         CASE
+            WHEN o.requiere_patio = true AND o.id_patio = p.id_sitio_produccion_id THEN COALESCE(s_pat.descripcion, 'SIN PATIO')
+            WHEN o.id_frente_id = 2 THEN COALESCE(s_emb.descripcion, 'SIN EMBARCACION')
+            WHEN o.id_frente_id = 4 THEN COALESCE(s_plat.descripcion, 'SIN PLATAFORMA')
+            ELSE NULL
+         END AS sitio_oficial,
+         s_pat.descripcion AS sitio_pat_desc,
+         s_emb.descripcion AS sitio_emb_desc,
+         s_plat.descripcion AS sitio_plat_desc,
+         'GENERADOR DE PRECIOS UNITARIOS' AS documento,
+         CASE
+            WHEN p.fecha_produccion IS NULL THEN 'NO ENTREGADO'
+            ELSE TO_CHAR(p.fecha_produccion, 'DD/MM/YYYY')
+         END AS fecha,
+         COALESCE(gpu.archivo, '') AS archivo,
+         p.fecha_produccion AS _fecha_sort,
+         gpu.id_estatus_id AS _fid_estatus_paso,
+         o.id_cliente_id AS _fid_cliente,
+         o.id_responsable_proyecto_id AS _fid_lider,
+         o.id_frente_id AS _fid_frente,
+         o.id_patio AS _fid_patio,
+         o.id_embarcacion AS _fid_embarcacion,
+         o.id_plataforma AS _fid_plataforma,
+         ce.descripcion AS _descripcion_estatus
+      FROM
+         registro_generadores_pu gpu
+      INNER JOIN produccion p ON
+         gpu.id_produccion_id = p.id
+      INNER JOIN partida_anexo_importada pai ON
+         p.id_partida_anexo_id = pai.id
+      INNER JOIN importacion_anexo ia ON
+         pai.importacion_anexo_id = ia.id
+      INNER JOIN ot o ON
+         ia.ot_id = o.id
+      LEFT JOIN cliente c ON
+         o.id_cliente_id = c.id
+      LEFT JOIN responsable_proyecto rp ON
+         o.id_responsable_proyecto_id = rp.id
+      LEFT JOIN frente f ON
+         o.id_frente_id = f.id
+      LEFT JOIN sitio s_pat ON
+         o.id_patio = s_pat.id
+      LEFT JOIN sitio s_emb ON
+         o.id_embarcacion = s_emb.id
+      LEFT JOIN sitio s_plat ON
+         o.id_plataforma = s_plat.id
+      LEFT JOIN cat_estatus ce ON
+         gpu.id_estatus_id = ce.id
+      WHERE
+         o.estatus = 1
+   """
+
+   subconsultas = []
+   origenes_validos = lista_origenes if lista_origenes else ["PTE", "OT"]
+
+   if "PTE" in origenes_validos:
+      subconsultas.append(bloque_pte)
+   if "OT" in origenes_validos:
+      subconsultas.append(bloque_ot)
+   if "PROD" in origenes_validos:
+      subconsultas.append(bloque_prod_reportes)
+      subconsultas.append(bloque_prod_gpu)
+
+   return " UNION ALL ".join(subconsultas)
+
+
+def fn_obtener_subconsulta_grupos(lista_origenes):
+   bloque_pte = """
+      SELECT
+         pd.id AS id_origen,
+         ph.id AS id_padre,
+         'PTE' AS tipo,
+         COALESCE(ph.oficio_pte, 'SIN FOLIO') AS folio,
+         COALESCE(c.descripcion, 'CLIENTE NO ASIGNADO') AS cliente,
+         COALESCE(rp.descripcion, 'SIN LÍDER') AS lider,
+         'N/A' AS frente,
+         NULL::integer AS id_sitio_oficial,
+         'NO APLICA' AS sitio_oficial,
+         NULL as sitio_pat_desc,
+         NULL as sitio_emb_desc,
+         NULL as sitio_plat_desc,
+         COALESCE(p.descripcion, 'POR DEFINIR') AS documento,
+         CASE
+            WHEN pd.fecha_entrega IS NULL
+               THEN 'NO ENTREGADO'
+            ELSE TO_CHAR(pd.fecha_entrega, 'DD/MM/YYYY')
+         END AS fecha,
+         COALESCE(pd.archivo, '') AS archivo,
+         pd.fecha_entrega AS _fecha_sort,
+         pd.estatus_paso_id AS _fid_estatus_paso,
+         ph.id_cliente_id AS _fid_cliente,
+         ph.id_responsable_proyecto_id AS _fid_lider,
+         NULL::bigint AS _fid_frente,
+         NULL::integer AS _fid_patio,
+         NULL::integer AS _fid_embarcacion,
+         NULL::integer AS _fid_plataforma,
+         ce.descripcion AS _descripcion_estatus,
+         COALESCE(NULLIF(TRIM(p.orden), ''), '0') AS orden_paso
+      FROM
+         pte_detalle pd
+      INNER JOIN pte_header ph ON
+         pd.id_pte_header_id = ph.id
+      LEFT JOIN cliente c ON
+         ph.id_cliente_id = c.id
+      LEFT JOIN responsable_proyecto rp ON
+         ph.id_responsable_proyecto_id = rp.id
+      LEFT JOIN paso p ON
+         pd.id_paso_id = p.id
+      LEFT JOIN cat_estatus ce ON
+         pd.estatus_paso_id = ce.id
+      WHERE
+         ph.estatus != 0
+   """
+
+   bloque_ot = """
+      SELECT
+         od.id AS id_origen,
+         o.id AS id_padre,
+         'OT' AS tipo,
+         COALESCE(o.orden_trabajo, 'SIN OT') AS folio,
+         COALESCE(c.descripcion, 'CLIENTE NO ASIGNADO') AS cliente,
+         COALESCE(rp.descripcion, 'SIN LÍDER') AS lider,
+         COALESCE(f.descripcion, 'SIN FRENTE') AS frente,
+         CASE
+            WHEN o.id_frente_id = 1 THEN o.id_patio
+            WHEN o.id_frente_id = 2 THEN o.id_embarcacion
+            WHEN o.id_frente_id = 4 THEN o.id_plataforma
+            ELSE NULL
+         END AS id_sitio_oficial,
+         CASE
+            WHEN o.id_frente_id = 1 THEN COALESCE(s_pat.descripcion, 'SIN PATIO')
+            WHEN o.id_frente_id = 2 THEN COALESCE(s_emb.descripcion, 'SIN EMBARCACION')
+            WHEN o.id_frente_id = 4 THEN COALESCE(s_plat.descripcion, 'SIN PLATAFORMA')
+            ELSE 'SIN UBICACIÓN'
+         END AS sitio_oficial,
+         s_pat.descripcion as sitio_pat_desc,
+         s_emb.descripcion as sitio_emb_desc,
+         s_plat.descripcion as sitio_plat_desc,
+         COALESCE(pot.descripcion, 'POR DEFINIR') AS documento,
+         CASE
+            WHEN od.fecha_entrega IS NULL THEN 'NO ENTREGADO'
+            ELSE TO_CHAR(od.fecha_entrega, 'DD/MM/YYYY')
+         END AS fecha,
+         COALESCE(od.archivo, '') AS archivo,
+         od.fecha_entrega AS _fecha_sort,
+         od.estatus_paso_id AS _fid_estatus_paso,
+         o.id_cliente_id AS _fid_cliente,
+         o.id_responsable_proyecto_id AS _fid_lider,
+         o.id_frente_id AS _fid_frente,
+         o.id_patio AS _fid_patio,
+         o.id_embarcacion AS _fid_embarcacion,
+         o.id_plataforma AS _fid_plataforma,
+         ce.descripcion AS _descripcion_estatus,
+         COALESCE(NULLIF(TRIM(pot.orden), ''), '0') AS orden_paso
+      FROM
+         ot_detalle od
+      INNER JOIN ot o ON
+         od.id_ot_id = o.id
+      LEFT JOIN cliente c ON
+         o.id_cliente_id = c.id
+      LEFT JOIN responsable_proyecto rp ON
+         o.id_responsable_proyecto_id = rp.id
+      LEFT JOIN frente f ON
+         o.id_frente_id = f.id
+      LEFT JOIN paso_ot pot ON
+         od.id_paso_id = pot.id
+      LEFT JOIN sitio s_pat ON
+         o.id_patio = s_pat.id
+      LEFT JOIN sitio s_emb ON
+         o.id_embarcacion = s_emb.id
+      LEFT JOIN sitio s_plat ON
+         o.id_plataforma = s_plat.id
+      LEFT JOIN cat_estatus ce ON
+         od.estatus_paso_id = ce.id
+      WHERE
+         o.estatus = 1
+   """
+
+   bloque_prod_reportes = """
+      SELECT
+         rmh.id AS id_origen,
+         o.id AS id_padre,
+         'PROD' AS tipo,
+         COALESCE(o.orden_trabajo, 'SIN OT') AS folio,
+         COALESCE(c.descripcion, 'CLIENTE NO ASIGNADO') AS cliente,
+         COALESCE(rp.descripcion, 'SIN LÍDER') AS lider,
+         COALESCE(f.descripcion, 'SIN FRENTE') AS frente,
+         CASE
+            WHEN o.id_frente_id = 1 THEN o.id_patio
+            WHEN o.id_frente_id = 2 THEN o.id_embarcacion
+            WHEN o.id_frente_id = 4 THEN o.id_plataforma
+            ELSE NULL
+         END AS id_sitio_oficial,
+         CASE
+            WHEN o.id_frente_id = 1 THEN COALESCE(s_pat.descripcion, 'SIN PATIO')
+            WHEN o.id_frente_id = 2 THEN COALESCE(s_emb.descripcion, 'SIN EMBARCACION')
+            WHEN o.id_frente_id = 4 THEN COALESCE(s_plat.descripcion, 'SIN PLATAFORMA')
+            ELSE 'SIN UBICACIÓN'
+         END AS sitio_oficial,
+         s_pat.descripcion AS sitio_pat_desc,
+         s_emb.descripcion AS sitio_emb_desc,
+         s_plat.descripcion AS sitio_plat_desc,
+         'REPORTE MENSUAL' AS documento,
+         CASE
+            WHEN rmh.mes IS NOT NULL AND rmh.anio IS NOT NULL
+               THEN TO_CHAR(
+                  TO_DATE(rmh.anio::text || '-' || LPAD(rmh.mes::text, 2, '0') || '-01', 'YYYY-MM-DD'),
+                  'DD/MM/YYYY'
+               )
+            ELSE 'SIN FECHA'
+         END AS fecha,
+         COALESCE(rmh.archivo, '') AS archivo,
+         CASE
+            WHEN rmh.mes IS NOT NULL AND rmh.anio IS NOT NULL
+               THEN TO_DATE(rmh.anio::text || '-' || LPAD(rmh.mes::text, 2, '0') || '-01', 'YYYY-MM-DD')
+            ELSE NULL
+         END AS _fecha_sort,
+         rmh.id_estatus_id AS _fid_estatus_paso,
+         o.id_cliente_id AS _fid_cliente,
+         o.id_responsable_proyecto_id AS _fid_lider,
+         o.id_frente_id AS _fid_frente,
+         o.id_patio AS _fid_patio,
+         o.id_embarcacion AS _fid_embarcacion,
+         o.id_plataforma AS _fid_plataforma,
+         ce.descripcion AS _descripcion_estatus,
+         NULL AS orden_paso
+      FROM
+         reporte_mensual_header rmh
+      INNER JOIN ot o ON
+         rmh.id_ot_id = o.id
+      LEFT JOIN cliente c ON
+         o.id_cliente_id = c.id
+      LEFT JOIN responsable_proyecto rp ON
+         o.id_responsable_proyecto_id = rp.id
+      LEFT JOIN frente f ON
+         o.id_frente_id = f.id
+      LEFT JOIN sitio s_pat ON
+         o.id_patio = s_pat.id
+      LEFT JOIN sitio s_emb ON
+         o.id_embarcacion = s_emb.id
+      LEFT JOIN sitio s_plat ON
+         o.id_plataforma = s_plat.id
+      LEFT JOIN cat_estatus ce ON
+         rmh.id_estatus_id = ce.id
+      WHERE
+         o.estatus = 1
+   """
+
+   bloque_prod_gpu = """
+      SELECT
+         gpu.id AS id_origen,
+         o.id AS id_padre,
+         'PROD' AS tipo,
+         COALESCE(o.orden_trabajo, 'SIN OT') AS folio,
+         COALESCE(c.descripcion, 'CLIENTE NO ASIGNADO') AS cliente,
+         COALESCE(rp.descripcion, 'SIN LÍDER') AS lider,
+         COALESCE(f.descripcion, 'SIN FRENTE') AS frente,
+         CASE
             WHEN o.id_frente_id = 1 THEN o.id_patio
             WHEN o.id_frente_id = 2 THEN o.id_embarcacion
             WHEN o.id_frente_id = 4 THEN o.id_plataforma
@@ -259,7 +523,8 @@ def fn_obtener_subconsulta_origenes(lista_origenes):
          o.id_patio AS _fid_patio,
          o.id_embarcacion AS _fid_embarcacion,
          o.id_plataforma AS _fid_plataforma,
-         ce.descripcion AS _descripcion_estatus
+         ce.descripcion AS _descripcion_estatus,
+         NULL AS orden_paso
       FROM
          registro_generadores_pu gpu
       INNER JOIN produccion p ON
@@ -406,10 +671,12 @@ def fn_construir_where_dinamico(filtros):
    elif filtro_pendiente:
       condiciones.append("(T.archivo IS NULL OR LENGTH(TRIM(T.archivo)) <= 5)")
 
-   if fecha_ini_input and fecha_fin_input:
+   if fecha_ini_input or fecha_fin_input:
+      fecha_ini_efectiva = fecha_ini_input if fecha_ini_input else "1970-01-01"
+      fecha_fin_efectiva = fecha_fin_input if fecha_fin_input else str(datetime.now().date())
       condiciones.append("T._fecha_sort BETWEEN %(fecha_ini)s::date AND %(fecha_fin)s::date")
-      params["fecha_ini"] = fecha_ini_input
-      params["fecha_fin"] = fecha_fin_input
+      params["fecha_ini"] = fecha_ini_efectiva
+      params["fecha_fin"] = fecha_fin_efectiva
 
    if condiciones:
       clausula_where = "WHERE\n         " + "\n         AND ".join(condiciones)
@@ -431,9 +698,9 @@ def fn_api_busqueda_global(request):
    """
    try:
       cuerpo_peticion = json.loads(request.body)
-      salto_registros  = int(cuerpo_peticion.get("start", 0))
-      limite_registros = int(cuerpo_peticion.get("length", 10))
-      numero_dibujo    = int(cuerpo_peticion.get("draw", 1))
+      salto_registros  = int(cuerpo_peticion.get("start") or 0)
+      limite_registros = int(cuerpo_peticion.get("length") or 10)
+      numero_dibujo    = int(cuerpo_peticion.get("draw") or 1)
 
       resultados_paginados, total_filtrados = fn_ejecutar_busqueda_global(request, cuerpo_peticion, salto_registros, limite_registros)
 
@@ -501,6 +768,8 @@ def fn_ejecutar_busqueda_global(request, payload, salto_bd, limite_bd):
                THEN T.sitio_emb_desc
             WHEN %(buscar_por_frente)s = '0' AND %(sw_sitio)s = 1 AND T._fid_patio::text IN %(ids_sitios)s
                THEN T.sitio_pat_desc
+            WHEN T.documento = 'GENERADOR DE PRECIOS UNITARIOS' AND T.sitio_oficial IS NOT NULL
+               THEN T.sitio_oficial
             ELSE CONCAT_WS(' / ',
                NULLIF(T.sitio_pat_desc,  ''),
                NULLIF(T.sitio_emb_desc,  ''),
@@ -526,6 +795,255 @@ def fn_ejecutar_busqueda_global(request, payload, salto_bd, limite_bd):
    resultados_paginados = ejecutar_query_sql(sql_datos, params)
 
    return resultados_paginados, total_filtrados
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+@login_required
+def fn_api_busqueda_grupos(request):
+   try:
+      cuerpo_peticion = json.loads(request.body)
+      salto_registros  = int(cuerpo_peticion.get("start") or 0)
+      limite_registros = int(cuerpo_peticion.get("length") or 10)
+      numero_dibujo    = int(cuerpo_peticion.get("draw") or 1)
+
+      grupos, total = fn_ejecutar_busqueda_grupos(cuerpo_peticion, salto_registros, limite_registros)
+
+      return JsonResponse({
+         "draw": numero_dibujo,
+         "recordsTotal": total,
+         "recordsFiltered": total,
+         "data": grupos
+      }, status=200)
+
+   except json.JSONDecodeError:
+      return JsonResponse({"estatus": "error", "mensaje": "JSON inválido"}, status=400)
+   except Exception as error_servidor:
+      print(f"Error en busqueda grupos: {str(error_servidor)}")
+      traceback.print_exc()
+      return JsonResponse({"estatus": "error", "mensaje": str(error_servidor)}, status=500)
+
+
+def fn_ejecutar_busqueda_grupos(payload, salto_bd, limite_bd):
+   filtros  = payload.get("filtros", {})
+   origenes = filtros.get("origenes", [])
+
+   subconsulta          = fn_obtener_subconsulta_grupos(origenes)
+   clausula_where, params = fn_construir_where_dinamico(filtros)
+   params["limite_bd"]  = limite_bd
+   params["salto_bd"]   = salto_bd
+
+   sql_conteo = f"""
+      SELECT COUNT(*) AS total_registros FROM (
+         SELECT DISTINCT tipo, id_padre
+         FROM ({subconsulta}) AS T
+         {clausula_where}
+      ) AS grupos
+   """
+
+   sql_datos = f"""
+      SELECT
+         tipo, id_padre, folio, cliente, lider, frente,
+         sitio_oficial AS sitio,
+         COUNT(*) AS total_pasos,
+         MAX(T.documento) AS documento,
+         MAX(T.fecha) AS fecha,
+         MAX(T.archivo) AS archivo,
+         MAX(T._fid_estatus_paso) AS estatus_paso_id,
+         MIN(T._fecha_sort) AS _fecha_ord
+      FROM ({subconsulta}) AS T
+      {clausula_where}
+      GROUP BY tipo, id_padre, folio, cliente, lider, frente, sitio_oficial
+      ORDER BY _fecha_ord ASC NULLS LAST
+      LIMIT %(limite_bd)s OFFSET %(salto_bd)s
+   """
+
+   resultado_conteo = ejecutar_query_sql(sql_conteo, params)
+   total            = resultado_conteo[0]["total_registros"] if resultado_conteo else 0
+   grupos           = ejecutar_query_sql(sql_datos, params)
+
+   return grupos, total
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+@login_required
+def fn_api_detalle_grupo(request):
+   try:
+      cuerpo_peticion = json.loads(request.body)
+      tipo     = cuerpo_peticion.get("tipo", "")
+      id_grupo = cuerpo_peticion.get("id_grupo")
+
+      filtros  = cuerpo_peticion.get("filtros", {})
+
+      if not tipo or not id_grupo:
+         return JsonResponse({"estatus": "error", "mensaje": "Parámetros incompletos."}, status=400)
+
+      detalles = fn_ejecutar_detalle_grupo(tipo, id_grupo, filtros)
+
+      return JsonResponse({"estatus": "ok", "data": detalles}, status=200)
+
+   except json.JSONDecodeError:
+      return JsonResponse({"estatus": "error", "mensaje": "JSON inválido"}, status=400)
+   except Exception as error_servidor:
+      print(f"Error en detalle grupo: {str(error_servidor)}")
+      traceback.print_exc()
+      return JsonResponse({"estatus": "error", "mensaje": str(error_servidor)}, status=500)
+
+
+def fn_ejecutar_detalle_grupo(tipo, id_grupo, filtros):
+   try:
+      if tipo == "PROD":
+         return fn_ejecutar_detalle_prod_meses(id_grupo, filtros)
+
+      if tipo == "PROD_MES":
+         partes = str(id_grupo).split("_")
+         if len(partes) != 3:
+            return []
+         ot_id, mes, anio = partes
+         return fn_ejecutar_detalle_prod_mes_docs(ot_id, mes, anio, filtros)
+
+      if tipo not in ("PTE", "OT"):
+         return []
+
+      subconsulta = fn_obtener_subconsulta_grupos([tipo])
+      clausula_where, params = fn_construir_where_dinamico(filtros)
+
+      params["id_grupo"] = id_grupo
+      if clausula_where:
+         clausula_where += "\n         AND T.id_padre = %(id_grupo)s"
+      else:
+         clausula_where = "WHERE T.id_padre = %(id_grupo)s"
+
+      sql = f"""
+         SELECT
+            orden_paso,
+            documento,
+            archivo,
+            _fid_estatus_paso AS estatus_paso_id,
+            _descripcion_estatus,
+            fecha
+         FROM ({subconsulta}) AS T
+         {clausula_where}
+         ORDER BY CAST(COALESCE(NULLIF(TRIM(orden_paso), ''), '0') AS DECIMAL(10,2)) ASC
+      """
+
+      return ejecutar_query_sql(sql, params)
+
+   except Exception as error_bd:
+      print(f"Error al obtener detalle grupo: {str(error_bd)}")
+      traceback.print_exc()
+      return []
+
+
+def fn_ejecutar_detalle_prod_meses(ot_id, filtros):
+   try:
+      subconsulta = fn_obtener_subconsulta_grupos(["PROD"])
+      clausula_where, params = fn_construir_where_dinamico(filtros)
+      params["ot_id"] = int(ot_id)
+
+      if clausula_where:
+         clausula_where += "\n         AND T.id_padre = %(ot_id)s"
+      else:
+         clausula_where = "WHERE T.id_padre = %(ot_id)s"
+
+      sql = f"""
+         SELECT
+            COALESCE(EXTRACT(MONTH FROM T._fecha_sort)::int, 0) AS mes,
+            COALESCE(EXTRACT(YEAR  FROM T._fecha_sort)::int, 0) AS anio,
+            COUNT(*) AS total_docs
+         FROM ({subconsulta}) AS T
+         {clausula_where}
+         GROUP BY mes, anio
+         ORDER BY anio DESC NULLS LAST, mes DESC NULLS LAST
+      """
+
+      return ejecutar_query_sql(sql, params)
+
+   except Exception as error_bd:
+      print(f"Error al obtener meses PROD: {str(error_bd)}")
+      traceback.print_exc()
+      return []
+
+
+def fn_ejecutar_detalle_prod_mes_docs(ot_id, mes, anio, filtros=None):
+   try:
+      ot_id = int(ot_id)
+      mes   = int(mes)
+      anio  = int(anio)
+
+      filtros = filtros or {}
+      check_entregados = filtros.get("check_entregados")
+      check_pendientes = filtros.get("check_no_entregados")
+      ninguno_marcado  = not check_entregados and not check_pendientes
+      filtro_entregado = check_entregados or ninguno_marcado
+      filtro_pendiente = check_pendientes or ninguno_marcado
+
+      if filtro_entregado and filtro_pendiente:
+         clausula_archivo = ""
+      elif filtro_entregado:
+         clausula_archivo = "WHERE LENGTH(TRIM(T.archivo)) > 5"
+      else:
+         clausula_archivo = "WHERE LENGTH(TRIM(T.archivo)) <= 5"
+
+      filtro_gpu_fecha = (
+         "p.fecha_produccion IS NULL"
+         if mes == 0 or anio == 0
+         else "EXTRACT(MONTH FROM p.fecha_produccion)::int = %(mes)s AND EXTRACT(YEAR FROM p.fecha_produccion)::int = %(anio)s"
+      )
+
+      sql = f"""
+         SELECT documento, fecha, archivo, estatus_paso_id, _descripcion_estatus, orden_paso
+         FROM (
+            SELECT
+               'REPORTE MENSUAL' AS documento,
+               TO_CHAR(
+                  TO_DATE(rmh.anio::text || '-' || LPAD(rmh.mes::text, 2, '0') || '-01', 'YYYY-MM-DD'),
+                  'DD/MM/YYYY'
+               ) AS fecha,
+               COALESCE(rmh.archivo, '') AS archivo,
+               rmh.id_estatus_id AS estatus_paso_id,
+               ce.descripcion AS _descripcion_estatus,
+               NULL AS orden_paso,
+               0 AS sort_order,
+               TO_DATE(rmh.anio::text || '-' || LPAD(rmh.mes::text, 2, '0') || '-01', 'YYYY-MM-DD') AS _fecha_sort
+            FROM reporte_mensual_header rmh
+            INNER JOIN ot o ON rmh.id_ot_id = o.id
+            LEFT JOIN cat_estatus ce ON rmh.id_estatus_id = ce.id
+            WHERE o.id = %(ot_id)s AND rmh.mes = %(mes)s AND rmh.anio = %(anio)s AND o.estatus = 1
+
+            UNION ALL
+
+            SELECT
+               'GENERADOR DE PRECIOS UNITARIOS' AS documento,
+               CASE
+                  WHEN p.fecha_produccion IS NULL THEN 'NO ENTREGADO'
+                  ELSE TO_CHAR(p.fecha_produccion, 'DD/MM/YYYY')
+               END AS fecha,
+               COALESCE(gpu.archivo, '') AS archivo,
+               gpu.id_estatus_id AS estatus_paso_id,
+               ce.descripcion AS _descripcion_estatus,
+               NULL AS orden_paso,
+               1 AS sort_order,
+               p.fecha_produccion AS _fecha_sort
+            FROM registro_generadores_pu gpu
+            INNER JOIN produccion p ON gpu.id_produccion_id = p.id
+            INNER JOIN partida_anexo_importada pai ON p.id_partida_anexo_id = pai.id
+            INNER JOIN importacion_anexo ia ON pai.importacion_anexo_id = ia.id
+            INNER JOIN ot o ON ia.ot_id = o.id
+            LEFT JOIN cat_estatus ce ON gpu.id_estatus_id = ce.id
+            WHERE o.id = %(ot_id)s AND {filtro_gpu_fecha} AND o.estatus = 1
+         ) AS T
+         {clausula_archivo}
+         ORDER BY sort_order ASC, _fecha_sort DESC NULLS LAST
+      """
+
+      return ejecutar_query_sql(sql, {"ot_id": ot_id, "mes": mes, "anio": anio})
+
+   except Exception as error_bd:
+      print(f"Error al obtener docs PROD mes: {str(error_bd)}")
+      traceback.print_exc()
+      return []
 
 
 @csrf_exempt
@@ -771,6 +1289,7 @@ def fn_api_descargar_excel_bi(request):
                WHEN %(buscar_por_frente)s = '0' AND %(sw_sitio)s = 1 AND T._fid_plataforma::text IN %(ids_sitios)s THEN T.sitio_plat_desc
                WHEN %(buscar_por_frente)s = '0' AND %(sw_sitio)s = 1 AND T._fid_embarcacion::text IN %(ids_sitios)s THEN T.sitio_emb_desc
                WHEN %(buscar_por_frente)s = '0' AND %(sw_sitio)s = 1 AND T._fid_patio::text IN %(ids_sitios)s THEN T.sitio_pat_desc
+               WHEN T.documento = 'GENERADOR DE PRECIOS UNITARIOS' AND T.sitio_oficial IS NOT NULL THEN T.sitio_oficial
                ELSE CONCAT_WS(' / ', NULLIF(T.sitio_pat_desc, ''), NULLIF(T.sitio_emb_desc, ''), NULLIF(T.sitio_plat_desc, ''))
             END AS "Sitio",
             T.documento AS "Documento",
@@ -914,6 +1433,90 @@ def fn_api_descargar_excel_bi(request):
 @csrf_exempt
 @require_http_methods(["POST"])
 @login_required
+def fn_api_descargar_excel_prod_info(request):
+   try:
+      cuerpo_peticion = json.loads(request.body)
+      filtros = cuerpo_peticion.get("filtros", {})
+
+      resultados, _, _ = fn_ejecutar_query_prod_info(filtros, salto_bd=0, limite_bd=100000)
+
+      libro_trabajo = openpyxl.Workbook(write_only=True)
+      hoja = libro_trabajo.create_sheet(title="Producción Información")
+
+      estilo_cabecera = PatternFill(start_color="F05523", end_color="F05523", fill_type="solid")
+      fuente_cabecera = Font(color="FFFFFF", bold=True)
+      alineacion_centro = Alignment(horizontal="center", vertical="center")
+      alineacion_izquierda = Alignment(horizontal="left", vertical="center")
+      borde_delgado = Border(
+         left=Side(style="thin", color="D0D1D3"),
+         right=Side(style="thin", color="D0D1D3"),
+         top=Side(style="thin", color="D0D1D3"),
+         bottom=Side(style="thin", color="D0D1D3")
+      )
+
+      columnas = [
+         ("OT",              "ot",               18),
+         ("Anexo",           "anexo",            12),
+         ("Partida",         "partida",          45),
+         ("Vol. Producido",  "vol_producido",    16),
+         ("Vol. Proyectado", "vol_proyectado",   16),
+         ("Vol. Programado", "vol_programado",   16),
+         ("Fecha",           "fecha_produccion", 14),
+         ("Tipo",            "tipo_tiempo",      10),
+         ("Sitio",           "sitio",            25),
+      ]
+
+      for indice, (encabezado, _, ancho) in enumerate(columnas, 1):
+         hoja.column_dimensions[get_column_letter(indice)].width = ancho
+
+      fila_cabecera = []
+      for encabezado, _, _ in columnas:
+         celda = WriteOnlyCell(hoja, value=encabezado)
+         celda.fill = estilo_cabecera
+         celda.font = fuente_cabecera
+         celda.alignment = alineacion_centro
+         celda.border = borde_delgado
+         fila_cabecera.append(celda)
+      hoja.append(fila_cabecera)
+
+      columnas_centro = {"OT", "Anexo", "Vol. Producido", "Vol. Proyectado", "Vol. Programado", "Fecha", "Tipo"}
+
+      for fila_datos in resultados:
+         fila_excel = []
+         for encabezado, campo_bd, _ in columnas:
+            valor = fila_datos.get(campo_bd, "")
+            celda = WriteOnlyCell(hoja, value=valor)
+            celda.border = borde_delgado
+            celda.alignment = alineacion_centro if encabezado in columnas_centro else alineacion_izquierda
+            fila_excel.append(celda)
+         hoja.append(fila_excel)
+
+      if not resultados:
+         hoja_vacia_celda = WriteOnlyCell(hoja, value="No se encontraron registros para los filtros seleccionados.")
+         hoja.append([hoja_vacia_celda])
+
+      flujo_memoria = io.BytesIO()
+      libro_trabajo.save(flujo_memoria)
+      flujo_memoria.seek(0)
+
+      fecha_actual = datetime.now().strftime("%Y%m%d_%H%M")
+      nombre_archivo = f"Reporte_Produccion_{fecha_actual}.xlsx"
+
+      return FileResponse(
+         flujo_memoria,
+         as_attachment=True,
+         filename=nombre_archivo,
+         content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      )
+
+   except Exception as error_servidor:
+      print("Error crítico al generar Excel de producción info:")
+      traceback.print_exc()
+      return JsonResponse({"estatus": "error", "mensaje": "Falla al generar el archivo Excel."}, status=500)
+
+@csrf_exempt
+@require_http_methods(["POST"])
+@login_required
 def fn_api_enviar_correo_bi(request):
    """
    Endpoint para procesar filtros, generar el Excel en memoria validando pesos,
@@ -1011,6 +1614,83 @@ def fn_api_enviar_correo_bi(request):
 
       envio_exitoso = fn_enviar_correo_reporte_bi(lista_destinatarios, graficas_front, tupla_excel, mensaje_advertencia)
 
+      estatus_respuesta = "ok" if envio_exitoso else "error"
+      mensaje_respuesta = "Reporte enviado exitosamente." if envio_exitoso else "Hubo un error al intentar enviar el correo."
+
+      return JsonResponse({"estatus": estatus_respuesta, "mensaje": mensaje_respuesta})
+
+   except Exception as error_endpoint:
+      traceback.print_exc()
+      return JsonResponse({"estatus": "error", "mensaje": "Ocurrió un error interno procesando la solicitud."}, status=500)
+
+@csrf_exempt
+@require_http_methods(["POST"])
+@login_required
+def fn_api_enviar_correo_info(request):
+   try:
+      cuerpo_peticion    = json.loads(request.body)
+      cadena_correos     = cuerpo_peticion.get("correos", "")
+      filtros            = cuerpo_peticion.get("filtros", {})
+      graficas_front     = cuerpo_peticion.get("graficas", [])
+
+      lista_destinatarios = [correo.strip() for correo in cadena_correos.split(",") if correo.strip()]
+      if not lista_destinatarios:
+         return JsonResponse({"estatus": "error", "mensaje": "Correos no válidos."}, status=400)
+
+      resultados, total, _ = fn_ejecutar_query_prod_info(filtros, salto_bd=0, limite_bd=100000)
+
+      tupla_excel       = None
+      mensaje_advertencia = ""
+      supera_registros  = True if total > 100000 else False
+
+      if supera_registros:
+         mensaje_advertencia = "El volumen de datos supera los 100,000 registros permitidos. Por favor, descarga el Excel directamente desde el sistema."
+      else:
+         libro_trabajo = openpyxl.Workbook(write_only=True)
+         hoja          = libro_trabajo.create_sheet(title="Producción Información")
+
+         estilo_cabecera   = PatternFill(start_color="F05523", end_color="F05523", fill_type="solid")
+         fuente_cabecera   = Font(color="FFFFFF", bold=True)
+         alineacion_centro = Alignment(horizontal="center", vertical="center")
+
+         columnas = [
+            ("OT",              "ot"),
+            ("Anexo",           "anexo"),
+            ("Partida",         "partida"),
+            ("Vol. Producido",  "vol_producido"),
+            ("Vol. Proyectado", "vol_proyectado"),
+            ("Vol. Programado", "vol_programado"),
+            ("Fecha",           "fecha_produccion"),
+            ("Tipo",            "tipo_tiempo"),
+            ("Sitio",           "sitio"),
+         ]
+
+         fila_cabecera = []
+         for encabezado, _ in columnas:
+            celda            = WriteOnlyCell(hoja, value=encabezado)
+            celda.fill       = estilo_cabecera
+            celda.font       = fuente_cabecera
+            celda.alignment  = alineacion_centro
+            fila_cabecera.append(celda)
+         hoja.append(fila_cabecera)
+
+         for fila_datos in resultados:
+            hoja.append([WriteOnlyCell(hoja, value=fila_datos.get(campo, "")) for _, campo in columnas])
+
+         flujo_memoria = io.BytesIO()
+         libro_trabajo.save(flujo_memoria)
+
+         peso_mb      = flujo_memoria.getbuffer().nbytes / (1024 * 1024)
+         supera_peso  = True if peso_mb > 20 else False
+
+         if supera_peso:
+            mensaje_advertencia = f"El archivo Excel pesa {peso_mb:.2f} MB, superando el límite de 20 MB. Por favor, descárgalo desde el sistema."
+         else:
+            fecha_actual  = datetime.now().strftime("%Y%m%d_%H%M")
+            nombre_archivo = f"Reporte_Produccion_{fecha_actual}.xlsx"
+            tupla_excel   = (nombre_archivo, flujo_memoria.getvalue(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+      envio_exitoso     = fn_enviar_correo_reporte_bi(lista_destinatarios, graficas_front, tupla_excel, mensaje_advertencia)
       estatus_respuesta = "ok" if envio_exitoso else "error"
       mensaje_respuesta = "Reporte enviado exitosamente." if envio_exitoso else "Hubo un error al intentar enviar el correo."
 
@@ -1134,9 +1814,9 @@ def fn_api_buscar_partidas_cc(request):
 def fn_api_busqueda_prod_informacion(request):
    try:
       cuerpo_peticion  = json.loads(request.body)
-      salto_registros  = int(cuerpo_peticion.get("start", 0))
-      limite_registros = int(cuerpo_peticion.get("length", 10))
-      numero_dibujo    = int(cuerpo_peticion.get("draw", 1))
+      salto_registros  = int(cuerpo_peticion.get("start") or 0)
+      limite_registros = int(cuerpo_peticion.get("length") or 10)
+      numero_dibujo    = int(cuerpo_peticion.get("draw") or 1)
       filtros          = cuerpo_peticion.get("filtros", {})
 
       resultados_paginados, total_filtrados, datos_dashboard = fn_ejecutar_query_prod_info(filtros, salto_registros, limite_registros)
@@ -1163,8 +1843,11 @@ def fn_ejecutar_query_prod_info(filtros, salto_bd, limite_bd):
    lista_lideres      = filtros.get("lideres_id", [])
    lista_partidas     = filtros.get("partidas_id", [])
    lista_sitios       = filtros.get("sitios_id", [])
-   es_excedente       = filtros.get("es_excedente")
-   texto_busqueda     = filtros.get("texto_busqueda", "")
+   es_excedente         = filtros.get("es_excedente")
+   texto_busqueda       = filtros.get("texto_busqueda", "")
+   estado_prog_ejec     = filtros.get("estado_prog_ejec", True)
+   estado_prog_sin_ejec = filtros.get("estado_prog_sin_ejec", True)
+   estado_ejec_sin_prog = filtros.get("estado_ejec_sin_prog", True)
    fecha_ini_input    = filtros.get("fecha_inicio")
    fecha_fin_input    = filtros.get("fecha_fin")
 
@@ -1195,6 +1878,8 @@ def fn_ejecutar_query_prod_info(filtros, salto_bd, limite_bd):
    if lista_tipos_tiempo:
       condiciones_a.append("p.tipo_tiempo IN %(tipos_tiempo)s")
       params["tipos_tiempo"] = tuple(lista_tipos_tiempo)
+   else:
+      condiciones_a.append("(p.tipo_tiempo NOT IN ('TE', 'CMD') OR p.tipo_tiempo IS NULL)")
 
    if lista_anexos:
       condiciones_a.append("pai.anexo IN %(ids_anexos)s")
@@ -1216,11 +1901,13 @@ def fn_ejecutar_query_prod_info(filtros, salto_bd, limite_bd):
       condiciones_a.append("p.es_excedente = true")
       condiciones_b.append("FALSE")
 
-   if fecha_ini_input and fecha_fin_input:
+   if fecha_ini_input or fecha_fin_input:
+      fecha_ini_efectiva = fecha_ini_input if fecha_ini_input else "1970-01-01"
+      fecha_fin_efectiva = fecha_fin_input if fecha_fin_input else str(datetime.now().date())
       condiciones_a.append("p.fecha_produccion BETWEEN %(fecha_ini)s::date AND %(fecha_fin)s::date")
       condiciones_b.append("pp.fecha BETWEEN %(fecha_ini)s::date AND %(fecha_fin)s::date")
-      params["fecha_ini"] = fecha_ini_input
-      params["fecha_fin"] = fecha_fin_input
+      params["fecha_ini"] = fecha_ini_efectiva
+      params["fecha_fin"] = fecha_fin_efectiva
 
    if texto_busqueda:
       cond_texto = """
@@ -1233,6 +1920,16 @@ def fn_ejecutar_query_prod_info(filtros, salto_bd, limite_bd):
       condiciones_a.append(cond_texto)
       condiciones_b.append(cond_texto)
       params["texto"] = f"%{texto_busqueda}%"
+
+   if estado_prog_ejec and not estado_ejec_sin_prog:
+      condiciones_a.append("pp.partida_anexo_id IS NOT NULL")
+   elif estado_ejec_sin_prog and not estado_prog_ejec:
+      condiciones_a.append("pp.partida_anexo_id IS NULL")
+   elif not estado_prog_ejec and not estado_ejec_sin_prog:
+      condiciones_a.append("FALSE")
+
+   if not estado_prog_sin_ejec:
+      condiciones_b.append("FALSE")
 
    where_a = "WHERE " + " AND ".join(condiciones_a)
    where_b = "WHERE " + " AND ".join(condiciones_b) + """
@@ -1309,7 +2006,7 @@ def fn_ejecutar_query_prod_info(filtros, salto_bd, limite_bd):
       {where_b}
    """
 
-   where_outer = ""
+   where_outer = "" if estado_prog_sin_ejec else "WHERE vol_producido > 0"
 
    sql_conteo = f"""
       SELECT COUNT(*) AS total_registros
@@ -1360,6 +2057,7 @@ def fn_calcular_aggregados_info(sql_union, params):
             SUM(importe_producido)  AS importe_producido,
             SUM(importe_programado) AS importe_programado
          FROM ({sql_union}) AS c
+         WHERE vol_producido > 0
          GROUP BY fecha_produccion, _fecha_ord
          ORDER BY _fecha_ord ASC NULLS LAST
       """
@@ -1367,14 +2065,14 @@ def fn_calcular_aggregados_info(sql_union, params):
       sql_por_tipo = f"""
          SELECT tipo_tiempo, SUM(importe_producido) AS importe_producido
          FROM ({sql_union}) AS c
-         WHERE tipo_tiempo IS NOT NULL AND tipo_tiempo <> ''
+         WHERE tipo_tiempo IS NOT NULL AND tipo_tiempo <> '' AND vol_producido > 0
          GROUP BY tipo_tiempo
       """
 
       sql_por_sitio = f"""
          SELECT sitio, SUM(importe_producido) AS importe_producido
          FROM ({sql_union}) AS c
-         WHERE sitio <> 'SIN SITIO'
+         WHERE sitio <> 'SIN SITIO' AND vol_producido > 0
          GROUP BY sitio
          ORDER BY SUM(importe_producido) DESC
          LIMIT 15
@@ -1383,15 +2081,25 @@ def fn_calcular_aggregados_info(sql_union, params):
       sql_por_lider = f"""
          SELECT lider_proyecto, SUM(importe_producido) AS importe_producido
          FROM ({sql_union}) AS c
+         WHERE vol_producido > 0
          GROUP BY lider_proyecto
          ORDER BY SUM(importe_producido) DESC
          LIMIT 10
       """
 
+      sql_por_ot = f"""
+         SELECT ot, SUM(importe_producido) AS importe_producido, SUM(vol_producido) AS vol_producido
+         FROM ({sql_union}) AS c
+         WHERE ot IS NOT NULL AND ot <> '' AND vol_producido > 0
+         GROUP BY ot
+         ORDER BY SUM(importe_producido) DESC
+         LIMIT 15
+      """
+
       sql_por_fecha_sitio = f"""
          SELECT fecha_produccion, sitio, SUM(importe_producido) AS importe_producido, SUM(importe_programado) AS importe_programado
          FROM ({sql_union}) AS c
-         WHERE sitio <> 'SIN SITIO'
+         WHERE sitio <> 'SIN SITIO' AND vol_producido > 0
          GROUP BY fecha_produccion, sitio, _fecha_ord
          ORDER BY _fecha_ord ASC NULLS LAST, sitio ASC
       """
@@ -1402,6 +2110,7 @@ def fn_calcular_aggregados_info(sql_union, params):
       tipos          = ejecutar_query_sql(sql_por_tipo, params) or []
       sitios         = ejecutar_query_sql(sql_por_sitio, params) or []
       lideres        = ejecutar_query_sql(sql_por_lider, params) or []
+      ots            = ejecutar_query_sql(sql_por_ot, params) or []
       fecha_sitio    = ejecutar_query_sql(sql_por_fecha_sitio, params) or []
 
       return {
@@ -1431,6 +2140,10 @@ def fn_calcular_aggregados_info(sql_union, params):
          "por_lider": [
             {"lider": r["lider_proyecto"], "importe": float(r["importe_producido"] or 0)}
             for r in lideres
+         ],
+         "por_ot": [
+            {"ot": r["ot"], "importe": float(r["importe_producido"] or 0), "volumen": float(r["vol_producido"] or 0)}
+            for r in ots
          ],
          "por_fecha_sitio": [
             {

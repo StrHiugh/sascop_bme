@@ -53,6 +53,12 @@
                         <span id="cc-periodo-texto">Cargando...</span>
                     </div>
                 </div>
+                <div class="cc-periodo-indicator" id="cc-ots-container" style="display:none; text-align:center;">
+                    <div class="cc-periodo-badge">
+                        <i class="fas fa-file-contract me-2"></i>
+                        <span id="cc-ots-texto"></span>
+                    </div>
+                </div>
                 <div class="cc-kpis" id="cc-kpis-container" style="display:none;">
                     <div class="cc-kpi">
                         <div class="cc-kpi-label">Total registros</div>
@@ -139,9 +145,13 @@
                             </div>
                         </div>
                         <div class="col-md-2 col-lg-2" id="select-length"></div>
+                        <div class="col-md-2 col-lg-2" id="select-tamano-grupos-top" style="display:none;"></div>
                     </div>
-                    <div class="table-responsive w-100">
+                    <div id="tabla-doc-wrapper" class="table-responsive w-100">
                         <table id="tabla-resultados" class="table table-hover w-100"></table>
+                    </div>
+                    <div id="tabla-grupos-wrapper" style="display: none;">
+                        <table id="tabla-grupos" class="table table-hover w-100"></table>
                     </div>
                 </div>
                 <div class="cc-kpis" id="cc-kpis-info" style="display:none;">
@@ -171,8 +181,7 @@
                     <div class="cc-chart-header">
                         <div class="d-flex align-items-center justify-content-between w-100 pb-2 pb-md-0">
                             <div class="d-flex align-items-center gap-3">
-                                <span class="cc-chart-title mb-0 pb-0">GRÁFICAS DE PRODUCCIÓN</span>
-                                <span class="badge ms-2" style="background-color: #fad91f; color: #54565a; font-size: 0.7rem;">PROD — Información</span>
+                                <span class="cc-chart-title mb-0 pb-0">GRÁFICAS</span>
                             </div>
                             <button class="btn btn-sm btn-outline-secondary" id="btn-expandir-grafica-info" title="Expandir Gráficas">
                                 <i class="fas fa-expand"></i>
@@ -194,6 +203,9 @@
                             <button class="cc-tab-btn cc-tab-btn-info" data-info-tab="lideres">
                                 <i class="fas fa-users me-1"></i>Líderes
                             </button>
+                            <button class="cc-tab-btn cc-tab-btn-info" data-info-tab="ots">
+                                <i class="fas fa-briefcase me-1"></i>OTs
+                            </button>
                         </div>
                     </div>
                     <div class="cc-chart-body">
@@ -204,8 +216,7 @@
                 <div class="cc-chart-card" id="cc-table-info-card" style="display: none;">
                     <div class="cc-chart-header d-flex align-items-center justify-content-between pb-3 mb-3 border-bottom">
                         <div>
-                            <span class="cc-chart-title mb-0 pb-0">INFORMACIÓN DE PRODUCCIÓN</span>
-                            <span class="badge ms-2" style="background-color: #fad91f; color: #54565a; font-size: 0.7rem;">PROD — Información</span>
+                            <span class="cc-chart-title mb-0 pb-0">REGISTROS DETALLADOS</span>
                         </div>
                         <button class="btn btn-sm btn-outline-secondary" id="btn-expandir-tabla-info" title="Expandir Tabla">
                             <i class="fas fa-expand"></i>
@@ -308,12 +319,27 @@
                         <div class="group-checkboxes justify-content-start gap-4">
                             <div class="form-check mb-0">
                                 <input class="form-check-input" type="checkbox" id="chk_tipo_normal" value="TE" checked>
-                                <label class="form-check-label small" for="chk_tipo_normal">Tiempo Efectivo</label>
+                                <label class="form-check-label small" for="chk_tipo_normal">TE</label>
                             </div>
                             <div class="form-check mb-0">
                                 <input class="form-check-input" type="checkbox" id="chk_tipo_extraordinario" value="CMA" checked>
-                                <label class="form-check-label small" for="chk_tipo_extraordinario">Costo Mín./Muerto</label>
+                                <label class="form-check-label small" for="chk_tipo_extraordinario">CMA</label>
                             </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Estado de Producción</label>
+                        <div class="form-check mb-1">
+                            <input class="form-check-input" type="checkbox" id="chk_estado_prog_ejec" checked>
+                            <label class="form-check-label small" for="chk_estado_prog_ejec">Programada con ejecución</label>
+                        </div>
+                        <div class="form-check mb-1">
+                            <input class="form-check-input" type="checkbox" id="chk_estado_prog_sin_ejec">
+                            <label class="form-check-label small" for="chk_estado_prog_sin_ejec">Programada sin ejecución</label>
+                        </div>
+                        <div class="form-check mb-0">
+                            <input class="form-check-input" type="checkbox" id="chk_estado_ejec_sin_prog" checked>
+                            <label class="form-check-label small" for="chk_estado_ejec_sin_prog">Ejecutada sin programación</label>
                         </div>
                     </div>
                     <div class="mb-3">
@@ -323,6 +349,14 @@
                     <div class="mb-3">
                         <label class="form-label">Partida</label>
                         <select class="form-select" multiple="multiple" id="filtro-partida" name="partida"></select>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between p-3 bg-light rounded border">
+                        <label class="form-check-label small fw-bold text-dark mb-0" for="chk_excedentes">
+                            Solo excedentes
+                        </label>
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" role="switch" id="chk_excedentes">
+                        </div>
                     </div>
                 </div>
                 <span class="section-title" id="section-title-detalles">Detalles del Documento</span>
@@ -349,14 +383,6 @@
                                 <div class="form-text mt-1 text-xs text-muted">Hasta</div>
                             </div>
                         </div>
-                    </div>
-                </div>
-                <div class="d-flex align-items-center justify-content-between p-3 bg-light rounded border">
-                    <label class="form-check-label small fw-bold text-dark mb-0" for="chk_excedentes">
-                        Solo excedentes
-                    </label>
-                    <div class="form-check form-switch mb-0">
-                        <input class="form-check-input" type="checkbox" role="switch" id="chk_excedentes">
                     </div>
                 </div>
             </form>
@@ -390,6 +416,44 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-bold">Selecciona las gráficas a incluir:</label>
+                            <div class="row g-2" id="contenedor-graficas-correo-info" style="display:none;">
+                                <div class="col-md-4">
+                                    <div class="form-check custom-check-simple">
+                                        <input class="form-check-input chk-grafica-info" type="checkbox" value="ejecucion" id="chk-exp-info-ejecucion" checked>
+                                        <label class="form-check-label small" for="chk-exp-info-ejecucion">Ejecución</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check custom-check-simple">
+                                        <input class="form-check-input chk-grafica-info" type="checkbox" value="comportamiento" id="chk-exp-info-comportamiento" checked>
+                                        <label class="form-check-label small" for="chk-exp-info-comportamiento">Comportamiento Diario</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check custom-check-simple">
+                                        <input class="form-check-input chk-grafica-info" type="checkbox" value="tiempos" id="chk-exp-info-tiempos" checked>
+                                        <label class="form-check-label small" for="chk-exp-info-tiempos">Tiempos</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check custom-check-simple">
+                                        <input class="form-check-input chk-grafica-info" type="checkbox" value="sitios" id="chk-exp-info-sitios" checked>
+                                        <label class="form-check-label small" for="chk-exp-info-sitios">Sitios</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check custom-check-simple">
+                                        <input class="form-check-input chk-grafica-info" type="checkbox" value="lideres" id="chk-exp-info-lideres" checked>
+                                        <label class="form-check-label small" for="chk-exp-info-lideres">Líderes</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check custom-check-simple">
+                                        <input class="form-check-input chk-grafica-info" type="checkbox" value="ots" id="chk-exp-info-ots" checked>
+                                        <label class="form-check-label small" for="chk-exp-info-ots">OTs</label>
+                                    </div>
+                                </div>
+                            </div>
                             <div class="row g-2" id="contenedor-graficas-correo">
                                 <div class="col-md-4">
                                     <div class="form-check custom-check-simple">
@@ -503,11 +567,14 @@
         var urlBuscarDocumentos      = "{% url 'operaciones:api_busqueda_global' %}";
         var urlObtenerDashboard      = "{% url 'operaciones:api_busqueda_global_graficas' %}";
         var urlEnviarCorreoBi        = "{% url 'operaciones:api_enviar_correo_bi' %}";
+        var urlEnviarCorreoInfo      = "{% url 'operaciones:api_enviar_correo_info' %}";
         var urlObtenerOts            = "{% url 'operaciones:api_obtener_ots_cc' %}";
         var urlObtenerEstatusCobro   = "{% url 'operaciones:api_obtener_estatus_cobro_cc' %}";
         var urlObtenerAnexos         = "{% url 'operaciones:api_obtener_anexos_cc' %}";
         var urlBuscarPartidasCc      = "{% url 'operaciones:api_buscar_partidas_cc' %}";
         var urlBusquedaProdInfo      = "{% url 'operaciones:api_busqueda_prod_info' %}";
+        var urlBusquedaGrupos        = "{% url 'operaciones:api_busqueda_grupos' %}";
+        var urlDetalleGrupo          = "{% url 'operaciones:api_detalle_grupo' %}";
         var csrfToken                = "{{ csrf_token }}";
     </script>
 {% endblock %}
