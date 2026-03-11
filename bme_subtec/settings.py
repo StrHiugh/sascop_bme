@@ -44,6 +44,7 @@ INSTALLED_APPS += [
     'core',
     'costa_fuera', 
     'reportes',
+    'tiempos_barco',
 ]
 
 MIDDLEWARE = [
@@ -92,19 +93,20 @@ DATABASES = {
         }
     }
 }
-#
-## base de datos LOCAL - DESARROLLO
-#DATABASES = {
-#    'default': {
-#        'ENGINE': 'django.db.backends.postgresql',
-#        'NAME': 'sascop_local',       
-#        'USER': 'postgres',           
-#        'PASSWORD': 'root',    
-#        'HOST': 'localhost',         
-#        'PORT': '5433',
-#    }
-#}
-#
+
+
+#base de datos LOCAL - DESARROLLO
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'sascop_local',       
+#         'USER': 'postgres',           
+#         'PASSWORD': 'root',    
+#         'HOST': 'localhost',         
+#         'PORT': '5433',
+#     }
+# }
+
 
 AUTH_PASSWORD_VALIDATORS = [
     {

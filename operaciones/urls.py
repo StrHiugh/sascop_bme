@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import login, pte, ote, produccion, api, catalogos, registro_actividad, centro_consulta
+from .views import login, pte, ote, produccion, api, catalogos, registro_actividad, centro_consulta, tiempos_barco
 
 app_name = 'operaciones'
 
@@ -72,6 +72,10 @@ urlpatterns = [
     path('produccion/obtener_grid_gpus/', produccion.obtener_grid_gpus, name='obtener_grid_gpus'),
     path('produccion/guardar_estatus_gpu/', produccion.guardar_estatus_gpu, name='guardar_estatus_gpu'),
     path('produccion/obtener_arbol_mpp/', produccion.obtener_arbol_mpp, name='obtener_arbol_mpp'),
+
+    # URLs para Bitácora de Flota (Tiempos de Barco)
+    path('bitacora-flota/', tiempos_barco.lista_bitacoras_flota, name='lista_bitacoras_flota'),
+    path('bitacora-flota/datatable/', tiempos_barco.datatable_bitacoras, name='datatable_bitacoras'),
 
     #URLs para PRODUCTOS 
     path('catalogos/producto/', catalogos.lista_producto, name='lista_producto'),

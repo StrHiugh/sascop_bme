@@ -3,11 +3,13 @@ from .catalogos_models import Tipo, Frente, Estatus, Sitio, UnidadMedida, Respon
 from .ote_models import OTE, PasoOt, OTDetalle, ImportacionAnexo, PartidaAnexoImportada, PartidaProyectada
 from .produccion_models import Produccion, Producto, ReporteMensual, ReporteDiario, EstimacionHeader, EstimacionDetalle, CicloGuardia, Superintendente, RegistroGPU, CronogramaVersion, TareaCronograma, AvanceCronograma, DependenciaTarea
 from .registro_actividad_models import RegistroActividad
+from .tiempos_barco_models import ReporteDiarioEmbarcacion, BitacoraTiempo, InventarioDiario
 __all__ = [
     'PTEHeader', 'PTEDetalle', 'Paso', 'Tipo',
     'OTE', 'PasoOt', 'OTDetalle', 'Sitio', 'Estatus', 'Frente', 
     'UnidadMedida', 'Produccion', 'Producto', 'ResponsableProyecto', 'RegistroActividad','Cliente', 
     'ReporteMensual', 'ReporteDiario', 'EstimacionHeader', 'EstimacionDetalle', 'ImportacionAnexo', 'PartidaAnexoImportada',
     'AnexoContrato', 'SubAnexo', 'ConceptoMaestro', 'Categoria', 'SubCategoria', 'Clasificacion', 'Contrato', 'PartidaProyectada', 
-    'CicloGuardia', 'Superintendente', 'RegistroGPU', 'CronogramaVersion', 'TareaCronograma', 'AvanceCronograma', 'DependenciaTarea'
+    'CicloGuardia', 'Superintendente', 'RegistroGPU', 'CronogramaVersion', 'TareaCronograma', 'AvanceCronograma', 'DependenciaTarea',
+    'ReporteDiarioEmbarcacion', 'BitacoraTiempo', 'InventarioDiario'
 ]

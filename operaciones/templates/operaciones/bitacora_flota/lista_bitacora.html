@@ -1,0 +1,185 @@
+{% extends 'operaciones/base.html' %}
+{% load static %}
+
+{% block titulos %}
+<div class="header-modulo">
+    <div class="header-modulo-container">
+        <div class="header-title-section">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-2">
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'operaciones:index' %}" class="text-decoration-none">Inicio</a>
+                    </li>
+                    <li class="breadcrumb-item active">Control de Flota</li>
+                </ol>
+            </nav>
+            <h1 class="h2 fw-bold mb-0">BITÁCORA DE EMBARCACIONES</h1>
+        </div>
+        <div class="header-buttons-section">
+            <!-- Botón para ver el mapa en tiempo real -->
+            <a href="#" class="btn btn-outline-info me-2" id="btn-mapa-flota">
+                <i class="fas fa-satellite-dish me-2"></i>
+                <span>Radar de Flota</span>
+            </a>
+            <!-- Botón de creación -->
+            <button class="btn btn-primary" id="btn-crear-reporte" data-bs-toggle="modal" data-bs-target="#modalCrearReporte">
+                <i class="fas fa-plus me-2"></i>
+                <span>Nuevo Reporte Diario</span>
+            </button>
+            <!-- Botón de filtros -->
+            <button class="btn btn-outline-secondary ms-2" data-bs-toggle="offcanvas" data-bs-target="#panelFiltros">
+                <i class="fas fa-filter me-2"></i> Filtros
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="bm-content">
+    <div class="bm-cont-elementos">
+        <div class="bm-cont-elementos-body">
+            
+            <div class="row mb-3">
+                <div class="col-md-6 col-lg-4">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0">
+                            <i class="fas fa-search"></i>
+                        </span>
+                        <input type="text" class="form-control border-start-0" id="filtro-buscar" placeholder="Buscar por embarcación o fecha...">
+                    </div>
+                </div>
+                <div class="col-md-2 col-lg-2">
+                    <div id="select-length"></div>
+                </div>
+            </div>
+
+            <div class="nota mt-1 mb-3">
+                <i class="fas fa-info-circle text-16px" style="color: #f05523;"></i>
+                <p class="m-0 text-12px">
+                    Los reportes en estado <b>Borrador</b> pueden ser editados libremente. Una vez <b>Cerrados</b>, se bloquean y generan el PDF oficial.
+                </p>
+            </div>
+
+            <!-- Tabla DataTables -->
+            <table id="tabla-bitacoras" class="table table-hover dataTable-width-100">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Embarcación</th>
+                        <th>Fecha Operativa</th>
+                        <th>Representante</th>
+                        <th>Estado</th>
+                        <th class="text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Llenado por DataTables -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Panel de Filtros Offcanvas -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="panelFiltros">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title"><i class="fas fa-filter text-primary me-2"></i>Filtros de Búsqueda</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body">
+        <form id="form-filtros">
+            <div class="mb-3">
+                <label class="form-label fw-bold">Embarcación</label>
+                <select class="form-select" id="filtro_embarcacion">
+                    <option value="">Todas las embarcaciones</option>
+                    {% for emb in embarcaciones %}
+                    <option value="{{ emb.id }}">{{ emb.descripcion }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">Mes Operativo</label>
+                <input type="month" class="form-control" id="filtro_mes">
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">Estatus</label>
+                <select class="form-select" id="filtro_estatus">
+                    <option value="">Todos</option>
+                    <option value="Borrador">Borrador</option>
+                    <option value="Pre-Cierre">Pre-Cierre</option>
+                    <option value="Cerrado">Cerrado</option>
+                </select>
+            </div>
+            <div class="d-grid gap-2 mt-4">
+                <button type="button" class="btn btn-primary" id="btn-aplicar-filtros">
+                    <i class="fas fa-check me-2"></i>Aplicar Filtros
+                </button>
+                <button type="button" class="btn btn-outline-secondary" id="btn-limpiar-filtros">
+                    <i class="fas fa-eraser me-2"></i>Limpiar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal para Crear Reporte Diario -->
+<div class="modal fade" id="modalCrearReporte" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title"><i class="fas fa-file-signature me-2"></i>Iniciar Reporte Diario</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formCrearReporte">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Embarcación <span class="text-danger">*</span></label>
+                        <select class="form-select" name="embarcacion" id="modal_embarcacion" required>
+                            <option value="" disabled selected>Seleccione la embarcación...</option>
+                            {% for emb in embarcaciones %}
+                            <option value="{{ emb.id }}">{{ emb.descripcion }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Fecha Operativa <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" name="fecha" id="modal_fecha" required>
+                    </div>
+                    
+                    <div class="alert alert-info mt-3 py-2 small">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="check_clonar" name="clonar_ayer">
+                            <label class="form-check-label" for="check_clonar">
+                                <strong>Clonar bitácora del día anterior</strong><br>
+                                Importará tiempos y estatus para agilizar la captura.
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnGuardarNuevoReporte">
+                    <i class="fas fa-save me-2"></i>Iniciar Captura
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Cargamos el script específico de este módulo -->
+<script src="{% static 'operaciones/js/modulos/bitacora_flota/lista_bitacora.js'%}?v=1.0.0"></script>
+
+<script>
+    // Inyección de URLs de Django para que el JS las consuma limpiamente
+    const urls = {
+        datatable: "{% url 'operaciones:datatable_bitacoras' %}",
+        crearReporte: "#", // TODO: Reemplazar con url real cuando exista la vista de creación
+        detalleReporteBase: "/operaciones/bitacora-flota/detalle/" // Para concatenar el ID en JS
+    };
+</script>
+{% endblock %}
