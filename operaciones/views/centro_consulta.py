@@ -1690,7 +1690,6 @@ def fn_api_enviar_correo_info(request):
             ("Anexo",           "anexo"),
             ("Partida",         "partida"),
             ("Vol. Producido",  "vol_producido"),
-            ("Vol. Proyectado", "vol_proyectado"),
             ("Vol. Programado", "vol_programado"),
             ("Fecha",           "fecha_produccion"),
             ("Tipo",            "tipo_tiempo"),
