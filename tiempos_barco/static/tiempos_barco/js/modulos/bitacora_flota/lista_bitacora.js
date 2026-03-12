@@ -1,25 +1,56 @@
 $(document).ready(function() {
     
-    // 1. Inicialización del DataTable
-    let tablaBitacoras = $('#tabla-bitacoras').DataTable({
+    window.tablaBitacoras = $('#tabla-bitacoras').DataTable({
+        processing: true,
+        serverSide: true,
+        responsive: true,
+        order: [[0, "desc"]], 
+        lengthMenu: [10, 25, 50, 100],
+        dom: '<"row"<"col-sm-12 col-md-6"l>><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
+        language: {
+            "lengthMenu": "_MENU_",
+            "info": "Mostrando _END_ de _TOTAL_ registros.",
+            "infoFiltered": "(filtrado de _MAX_ registros)",
+            "paginate": {
+                "previous": "‹",
+                "next": "›"
+            }
+        },
         ajax: {
-            url: urls.datatable,
-            type: 'GET',
-            data: function(d) {
-                // Enviar parámetros del offcanvas al backend
-                d.embarcacion = $('#filtro_embarcacion').val();
-                d.mes = $('#filtro_mes').val();
-                d.estatus = $('#filtro_estatus').val();
+            url: urlDatatable,
+            type: "GET",
+            data: function (extra) {
+                extra.embarcacion = $('#filtro_embarcacion').val();
+                extra.mes = $('#filtro_mes').val();
+                extra.estatus = $('#filtro_estatus').val();
             }
         },
         columns: [
-            { data: 'id' },
-            { data: 'embarcacion', className: 'fw-bold text-primary' },
-            { data: 'fecha' },
-            { data: 'representante' },
-            { 
-                data: 'estado',
-                render: function(data, type, row) {
+            {
+                "data": "id",
+                "title": "ID",
+                "visible": false
+            },
+            {
+                "data": "embarcacion",
+                "title": "Embarcación",
+                "orderable": true
+            },
+            {
+                "data": "fecha",
+                "title": "Fecha",
+                "orderable": true
+            },
+            {
+                "data": "representante",
+                "title": "Representante",
+                "orderable": true
+            },
+            {
+                "data": "estado",
+                "title": "Estado",
+                "orderable": true,
+                "render": function(data, type, row) {
                     let badgeClass = 'bg-secondary';
                     if(data === 'Borrador') badgeClass = 'bg-warning text-dark';
                     if(data === 'Pre-Cierre') badgeClass = 'bg-info text-dark';
@@ -28,16 +59,18 @@ $(document).ready(function() {
                 }
             },
             {
-                data: null,
-                className: 'text-center',
-                orderable: false,
-                render: function(data, type, row) {
+                "data": null,
+                "title": "Opciones",
+                "className": "text-center",
+                "width": "70px",
+                "orderable": false,
+                "render": function(data, type, row) {
                     return `
                         <div class="btn-group btn-group-sm">
-                            <button class="btn btn-outline-primary btn-abrir" data-id="${row.id}" title="Abrir Bitácora">
+                            <button class="btn btn-abrir table-icon" data-id="${row.id}" title="Abrir Bitácora">
                                 <i class="fas fa-folder-open"></i>
                             </button>
-                            <button class="btn btn-outline-danger btn-pdf" data-id="${row.id}" title="Descargar PDF">
+                            <button class="btn btn-pdf table-icon" data-id="${row.id}" title="Descargar PDF">
                                 <i class="fas fa-file-pdf"></i>
                             </button>
                         </div>
@@ -45,19 +78,19 @@ $(document).ready(function() {
                 }
             }
         ],
-        language: {
-            url: "https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json"
-        },
-        dom: '<"top">rt<"bottom"lip><"clear">', // Quitamos el search nativo para usar el personalizado
-        pageLength: 10,
-    });
-
-    // 2. Conectar tu input de búsqueda personalizado al Datatable
-    $('#filtro-buscar').on('keyup', function (e) {
-        if (e.key === 'Enter' || e.keyCode === 13) {
-            tablaBitacoras.search(this.value).draw();
+        drawCallback: function (settings) {
+            $("[data-toggle='tooltip']").tooltip();
+            $("[title]").tooltip(); 
         }
     });
+
+    $("#filtro-buscar").keypress(function (event) {
+        if (event.which == 13) {
+            tablaBitacoras.draw();
+        }
+    });
+
+    $("#tabla-bitacoras_length").detach().appendTo("#select-length");
 
     // 3. Botones de Filtros (Offcanvas)
     $('#btn-aplicar-filtros').click(function() {
@@ -95,14 +128,14 @@ $(document).ready(function() {
         btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Iniciando...');
 
         $.ajax({
-            url: urls.crearReporte,
+            url: urlCrearReporte,
             type: 'POST',
             data: form.serialize(),
             success: function(response) {
                 if(response.exito) {
                     $('#modalCrearReporte').modal('hide');
                     // Redirigir directamente a la pantalla de captura del detalle
-                    window.location.href = urls.detalleReporteBase + response.id_reporte + '/';
+                    window.location.href = urlDetalleReporteBase + response.id_reporte + '/';
                 } else {
                     alert('Error: ' + response.detalles); // Cambiar por tu función aviso()
                 }
@@ -119,6 +152,6 @@ $(document).ready(function() {
     // 6. Acciones de la tabla
     $('#tabla-bitacoras').on('click', '.btn-abrir', function() {
         let id = $(this).data('id');
-        window.location.href = urls.detalleReporteBase + id + '/';
+        window.location.href = urlDetalleReporteBase + id + '/';
     });
 });

@@ -1,0 +1,194 @@
+{% extends 'tiempos_barco/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'tiempos_barco/css/dashboard.css' %}?v=1.0.0">
+<style>
+    /* WORKFLOW STEPS */
+    .workflow-line {
+        position: absolute;
+        top: 15px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: #e2e8f0;
+        z-index: 0;
+    }
+    .step {
+        position: relative;
+        z-index: 1;
+        text-align: center;
+        flex: 1;
+    }
+    .step-circle {
+        width: 30px;
+        height: 30px;
+        background: white;
+        border-radius: 50%;
+        margin: 0 auto 5px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        color: #94a3b8;
+        border: 2px solid #e2e8f0;
+    }
+    .step.active .step-circle { background: var(--accent-green); color: white; border-color: var(--accent-green); }
+    .step.pending .step-circle { background: #fff7ed; color: var(--accent-orange); border-color: var(--accent-orange); }
+</style>
+{% endblock %}
+
+{% block titulos %}
+<div class="header-modulo">
+    <div class="header-modulo-container">
+        <div class="header-title-section">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-2">
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'tiempos_barco:index' %}" class="text-decoration-none">Gestión de Embarcaciones</a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <a href="#" class="text-decoration-none">RRHH</a>
+                    </li>
+                    <li class="breadcrumb-item active">POB y Requisiciones</li>
+                </ol>
+            </nav>
+            <h1 class="h2 fw-bold mb-0 text-main">POB y Requisiciones de Personal</h1>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="bm-content">
+    <div class="row g-4 mb-4">
+        
+        <!-- Solicitar Personal -->
+        <div class="col-lg-5">
+            <div class="card h-100 shadow-sm border-0">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h6 class="mb-0 fw-bold text-main">Solicitar Personal (Requisición)</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-8">
+                            <label class="form-label text-muted-custom fw-bold" style="font-size:12px;">PUESTO</label>
+                            <select class="form-select bg-light" id="req-role">
+                                <option>Soldador Especialista</option>
+                                <option>Maniobrista</option>
+                                <option>Médico de Bordo</option>
+                                <option>Cocinero</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label text-muted-custom fw-bold" style="font-size:12px;">CANTIDAD</label>
+                            <input type="number" class="form-control bg-light" value="1" id="req-qty" min="1">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label text-muted-custom fw-bold" style="font-size:12px;">JUSTIFICACIÓN</label>
+                        <textarea class="form-control bg-light" rows="3" placeholder="Incremento de alcance en OT-4022..."></textarea>
+                    </div>
+                    
+                    <button class="btn btn-primary w-100 fw-bold shadow-sm" id="btn-add-req">
+                        <i class="fa-solid fa-paper-plane me-2"></i> Enviar a Aprobación
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Flujo Aprobaciones -->
+        <div class="col-lg-7">
+            <div class="card h-100 shadow-sm border-0">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h6 class="mb-0 fw-bold text-main">Flujo de Aprobaciones</h6>
+                </div>
+                <div class="card-body bg-light" id="req-list">
+                    
+                    <div class="card border mb-3 shadow-none">
+                        <div class="card-body p-3">
+                            <div class="fw-bold mb-3" style="font-size:13px;">REQ #492: 3 Soldadores especializados</div>
+                            <div class="workflow-steps-pob">
+                                <div class="workflow-line"></div>
+                                <div class="step active"><div class="step-circle"><i class="fa-solid fa-check"></i></div></div>
+                                <div class="step active"><div class="step-circle"><i class="fa-solid fa-check"></i></div></div>
+                                <div class="step pending" title="Pendiente de Rh"><div class="step-circle"><i class="fa-solid fa-user-pen"></i></div></div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        
+        <!-- POB Actual DataTable mock -->
+        <div class="col-lg-12 mt-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h6 class="mb-0 fw-bold text-main">Lista de Tripulación Actual (POB)</h6>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="text-muted-custom border-0 border-bottom">Nombre</th>
+                                <th class="text-muted-custom border-0 border-bottom">Puesto</th>
+                                <th class="text-muted-custom border-0 border-bottom">Empresa</th>
+                                <th class="text-muted-custom border-0 border-bottom">Camarote</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="text-main fw-bold">Juan Pérez</td>
+                                <td>Capitán</td>
+                                <td>BME</td>
+                                <td><span class="badge bg-light text-dark border">A-101</span></td>
+                            </tr>
+                            <tr>
+                                <td class="text-main fw-bold">Roberto Gomez</td>
+                                <td>Superintendente</td>
+                                <td>PEMEX</td>
+                                <td><span class="badge bg-light text-dark border">A-102</span></td>
+                            </tr>
+                            <tr>
+                                <td class="text-main fw-bold">Carlos Ruiz</td>
+                                <td>Soldador 1A</td>
+                                <td>Subcontratista ABC</td>
+                                <td><span class="badge bg-light text-dark border">B-205</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $('#btn-add-req').click(function() {
+        const role = $('#req-role').val();
+        const qty = $('#req-qty').val();
+        
+        const list = $('#req-list');
+        const itemHTML = `
+            <div class="card border mb-3 shadow-none">
+                <div class="card-body p-3">
+                    <div class="fw-bold mb-3" style="font-size:13px; color: var(--accent-blue);">NUEVA REQ: ${qty} ${role}(s)</div>
+                    <div class="workflow-steps-pob">
+                        <div class="workflow-line"></div>
+                        <div class="step active"><div class="step-circle"><i class="fa-solid fa-check"></i></div></div>
+                        <div class="step pending"><div class="step-circle">2</div></div>
+                        <div class="step"><div class="step-circle">3</div></div>
+                    </div>
+                </div>
+            </div>
+        `;
+        list.prepend(itemHTML);
+        alert("Requisición enviada a flujo de aprobación.");
+    });
+</script>
+{% endblock %}

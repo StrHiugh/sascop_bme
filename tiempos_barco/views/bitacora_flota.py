@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
-from ..models import Sitio
+from operaciones.models import Sitio
 
 
 @login_required(login_url='/accounts/login/')
@@ -14,7 +14,7 @@ def lista_bitacoras_flota(request):
     contexto = {
         'embarcaciones': embarcaciones
     }
-    return render(request, 'operaciones/bitacora_flota/lista_bitacora.html', contexto)
+    return render(request, 'tiempos_barco/bitacora_flota/lista_bitacora.html', contexto)
 
 
 @login_required(login_url='/accounts/login/')

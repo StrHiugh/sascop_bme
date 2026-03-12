@@ -1,0 +1,112 @@
+{% extends 'tiempos_barco/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'tiempos_barco/css/dashboard.css' %}?v=1.0.0">
+<style>
+    /* REPORTS GRID */
+    .reports-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 20px;
+    }
+    .report-card {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 25px 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .report-card:hover {
+        border-color: var(--accent-blue);
+        transform: translateY(-3px);
+        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+    }
+    .report-icon {
+        font-size: 38px;
+        color: var(--accent-blue);
+        margin-bottom: 15px;
+    }
+</style>
+{% endblock %}
+
+{% block titulos %}
+<div class="header-modulo">
+    <div class="header-modulo-container">
+        <div class="header-title-section">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-2">
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'tiempos_barco:index' %}" class="text-decoration-none">Gestión de Embarcaciones</a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <a href="#" class="text-decoration-none">Documentación</a>
+                    </li>
+                    <li class="breadcrumb-item active">Centro de Reportes</li>
+                </ol>
+            </nav>
+            <h1 class="h2 fw-bold mb-0 text-main">Centro de Reportes PDF</h1>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="bm-content">
+    
+    <div class="reports-grid mt-2">
+        
+        <div class="report-card report-btn" data-type="RDO">
+            <i class="fa-solid fa-file-contract report-icon"></i>
+            <div class="fw-bold text-main fs-6 mb-1">RDO Diario</div>
+            <div class="text-muted-custom" style="font-size:12px;">Reporte Diario de Operaciones</div>
+        </div>
+        
+        <div class="report-card report-btn" data-type="HSE">
+            <i class="fa-solid fa-helmet-safety report-icon" style="color: var(--accent-green)"></i>
+            <div class="fw-bold text-main fs-6 mb-1">Reporte HSE</div>
+            <div class="text-muted-custom" style="font-size:12px;">Seguridad y Medio Ambiente</div>
+        </div>
+        
+        <div class="report-card report-btn" data-type="POB">
+            <i class="fa-solid fa-users-viewfinder report-icon" style="color: var(--accent-orange)"></i>
+            <div class="fw-bold text-main fs-6 mb-1">Lista POB</div>
+            <div class="text-muted-custom" style="font-size:12px;">People On Board Oficial</div>
+        </div>
+        
+        <div class="report-card report-btn" data-type="Combustible">
+            <i class="fa-solid fa-gas-pump report-icon" style="color: var(--accent-red)"></i>
+            <div class="fw-bold text-main fs-6 mb-1">Audit. Combustible</div>
+            <div class="text-muted-custom" style="font-size:12px;">Consumos y Entregas</div>
+        </div>
+        
+        <div class="report-card report-btn" data-type="Incidencias">
+            <i class="fa-solid fa-triangle-exclamation report-icon" style="color: #64748b"></i>
+            <div class="fw-bold text-main fs-6 mb-1">Incidencias</div>
+            <div class="text-muted-custom" style="font-size:12px;">Log de Fallas y Paros</div>
+        </div>
+        
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $('.report-btn').click(function() {
+        let type = $(this).data('type');
+        
+        // Simular descarga
+        let btn = $(this);
+        let html = btn.html();
+        btn.html('<i class="fa-solid fa-spinner fa-spin report-icon" style="color: var(--text-muted)"></i><div class="fw-bold">Generando...</div>');
+        
+        setTimeout(() => {
+            btn.html(html);
+            alert(`Reporte PDF: ${type} \nDescarga iniciada exitosamente.`);
+        }, 800);
+    });
+</script>
+{% endblock %}

@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -36,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.gis',
     'operaciones',
     'anymail',
 ]
@@ -82,7 +84,7 @@ WSGI_APPLICATION = 'bme_subtec.wsgi.application'
 # base de datos RDS - PRODUCCION
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
+        'ENGINE': 'django.contrib.gis.db.backends.postgis',
         'NAME': os.environ.get('RDS_DB_NAME', 'postgres'),
         'USER': os.environ.get('RDS_USERNAME', 'postgres'),
         'PASSWORD': os.environ.get('RDS_PASSWORD', ''),
@@ -98,7 +100,7 @@ DATABASES = {
 #base de datos LOCAL - DESARROLLO
 # DATABASES = {
 #     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
+#         'ENGINE': 'django.contrib.gis.db.backends.postgis',
 #         'NAME': 'sascop_local',       
 #         'USER': 'postgres',           
 #         'PASSWORD': 'root',    
@@ -166,3 +168,14 @@ DEFAULT_FROM_EMAIL = os.getenv(
     "DEFAULT_FROM_EMAIL",
     "SASCOP <noreply@SASCOP.com>"
 )
+
+if os.name == 'nt':
+    import site
+    site_packages = site.getsitepackages()[1] if len(site.getsitepackages()) > 1 else site.getsitepackages()[0]
+    OSGEO_PATH = os.path.join(site_packages, 'osgeo')
+    if os.path.exists(OSGEO_PATH):
+        os.environ['PATH'] = OSGEO_PATH + ';' + os.environ['PATH']
+        GEOS_LIBRARY_PATH = os.path.join(OSGEO_PATH, 'geos_c.dll')
+        GDAL_LIBRARY_PATH = os.path.join(OSGEO_PATH, 'gdal304.dll')
+        if sys.version_info >= (3, 8):
+            os.add_dll_directory(OSGEO_PATH)

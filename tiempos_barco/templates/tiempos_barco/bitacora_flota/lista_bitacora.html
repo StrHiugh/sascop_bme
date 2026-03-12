@@ -1,4 +1,4 @@
-{% extends 'operaciones/base.html' %}
+{% extends 'tiempos_barco/base.html' %}
 {% load static %}
 
 {% block titulos %}
@@ -8,19 +8,14 @@
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-2">
                     <li class="breadcrumb-item">
-                        <a href="{% url 'operaciones:index' %}" class="text-decoration-none">Inicio</a>
+                        <a href="{% url 'tiempos_barco:index' %}" class="text-decoration-none">Inicio</a>
                     </li>
-                    <li class="breadcrumb-item active">Control de Flota</li>
+                    <li class="breadcrumb-item active">Movimientos de embarcación</li>
                 </ol>
             </nav>
-            <h1 class="h2 fw-bold mb-0">BITÁCORA DE EMBARCACIONES</h1>
+            <h1 class="h2 fw-bold mb-0">MOVIMIENTOS DE EMBARCACIÓN</h1>
         </div>
         <div class="header-buttons-section">
-            <!-- Botón para ver el mapa en tiempo real -->
-            <a href="#" class="btn btn-outline-info me-2" id="btn-mapa-flota">
-                <i class="fas fa-satellite-dish me-2"></i>
-                <span>Radar de Flota</span>
-            </a>
             <!-- Botón de creación -->
             <button class="btn btn-primary" id="btn-crear-reporte" data-bs-toggle="modal" data-bs-target="#modalCrearReporte">
                 <i class="fas fa-plus me-2"></i>
@@ -63,19 +58,6 @@
 
             <!-- Tabla DataTables -->
             <table id="tabla-bitacoras" class="table table-hover dataTable-width-100">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Embarcación</th>
-                        <th>Fecha Operativa</th>
-                        <th>Representante</th>
-                        <th>Estado</th>
-                        <th class="text-center">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Llenado por DataTables -->
-                </tbody>
             </table>
         </div>
     </div>
@@ -172,14 +154,11 @@
 
 {% block scripts %}
 <!-- Cargamos el script específico de este módulo -->
-<script src="{% static 'operaciones/js/modulos/bitacora_flota/lista_bitacora.js'%}?v=1.0.0"></script>
+<script src="{% static 'tiempos_barco/js/modulos/bitacora_flota/lista_bitacora.js'%}?v=1.0.0"></script>
 
 <script>
-    // Inyección de URLs de Django para que el JS las consuma limpiamente
-    const urls = {
-        datatable: "{% url 'operaciones:datatable_bitacoras' %}",
-        crearReporte: "#", // TODO: Reemplazar con url real cuando exista la vista de creación
-        detalleReporteBase: "/operaciones/bitacora-flota/detalle/" // Para concatenar el ID en JS
-    };
+    var urlDatatable = "{% url 'tiempos_barco:datatable_bitacoras' %}";
+    var urlCrearReporte = "#";
+    var urlDetalleReporteBase = "/tiempos-barco/bitacora-flota/detalle/";
 </script>
 {% endblock %}

@@ -1,0 +1,155 @@
+{% extends 'tiempos_barco/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'tiempos_barco/css/dashboard.css' %}?v=1.0.3">
+{% endblock %}
+
+{% block titulos %}
+<div class="header-modulo">
+    <div class="header-modulo-container">
+        <div class="header-title-section">
+            <h1 class="h2 fw-bold mb-0" id="titulo-embarcacion" style="color: #f05523;">EMBARCACIONES</h1>
+        </div>
+        <div class="header-buttons-section d-flex align-items-center gap-2">
+            <div class="d-flex align-items-center bg-white p-2 rounded" style="width: 300px;">
+                <i class="fa-solid fa-ship me-2" style="color: #54565a;"></i>
+                <select class="form-select form-select-sm border-0 fw-bold ps-0" id="dashboard_embarcacion" style="color: #54565a;">
+                    <option value="todas">TODAS LAS EMBARCACIONES</option>
+                    {% for emb in embarcaciones %}
+                    <option value="{{ emb.id }}" data-nombre="{{ emb.descripcion }}">{{ emb.descripcion }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="bm-content">
+    <div class="row g-4 mb-4">
+        
+        <div class="col-lg-9" id="map-col" style="transition: width 0.3s ease;">
+            <div class="card h-100 shadow-sm border-0">
+                <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-3">
+                    <h6 class="mb-0 fw-bold" style="color: #54565a;">
+                        <i class="fa-solid fa-location-dot me-2"></i> Embarcaciones en tiempo real
+                    </h6>
+                    <button id="btn-fullscreen-map" class="btn btn-sm btn-outline-secondary" title="Expandir Mapa">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                </div>
+                <div class="card-body p-0 position-relative">
+                    <!-- Borde sobreescrito a Azulito -->
+                    <div class="map-overlay" id="tarjeta-coordenadas" style="display: none; border-left: 4px solid #51c2eb;">
+                        <div class="fw-bold mb-1" style="color: #54565a; font-size:13px;">Coordenadas Actuales</div>
+                        <div class="font-monospace fw-bold" style="color: #20145f; font-size:13px;" id="val-lat">LAT: --</div>
+                        <div class="font-monospace fw-bold" style="color: #20145f; font-size:13px;" id="val-lng">LON: --</div>
+                        <div class="mt-1" style="color: #54565a; font-size:11px;">Último reporte: Hace 5 min</div>
+                    </div>
+                    <div id="map-container"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 d-flex flex-column gap-4" id="side-panel-col">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center py-3">
+                    <h6 class="mb-0 fw-bold" style="color: #54565a;"><i class="fa-solid fa-clock me-2"></i> Resumen Diario</h6>
+                    <!-- Badge en Azul oscuro -->
+                    <span class="stat-badge text-white" style="background-color: #20145f;">85% OPERATIVO</span>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0" style="font-size: 13px;">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="border-0" style="color: #54565a;">Horario</th>
+                                <th class="border-0" style="color: #54565a;">Actividad</th>
+                                <th class="border-0" style="color: #54565a;">Estatus</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="time-cell">06:00 - 08:30</td>
+                                <td class="fw-bold" style="color: #54565a;">Tránsito</td>
+                                <!-- Badges en Azulito -->
+                                <td><span class="stat-badge text-white" style="background-color: #51c2eb;">Operando</span></td>
+                            </tr>
+                            <tr>
+                                <td class="time-cell">08:30 - 14:00</td>
+                                <td class="fw-bold" style="color: #54565a;">Maniobras</td>
+                                <td><span class="stat-badge text-white" style="background-color: #51c2eb;">Operando</span></td>
+                            </tr>
+                            <tr>
+                                <td class="time-cell">14:00 - 18:00</td>
+                                <td class="fw-bold border-bottom-0" style="color: #54565a;">Clima</td>
+                                <!-- Badge en Naranja -->
+                                <td class="border-bottom-0"><span class="stat-badge text-white" style="background-color: #f05523;">Paro</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h6 class="mb-0 fw-bold" style="color: #f05523;"><i class="fa-solid fa-triangle-exclamation me-2"></i> Alertas Activas</h6>
+                </div>
+                <div class="card-body p-3">
+                    <!-- Borde sobreescrito a Naranja -->
+                    <div class="incident-item mb-0" style="border-left-color: #f05523;">
+                        <div class="incident-header">
+                            <span class="fw-bold" style="color: #f05523;">Falla Winche Principal</span>
+                            <span style="color: #54565a;">14:30 hrs</span>
+                        </div>
+                        <div style="color: #54565a; font-size:12px;">Paro operativo de 2 hrs.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 fw-bold" style="color: #54565a;"><i class="fa-solid fa-users me-2"></i> POB Actual</h6>
+                    <span class="stat-badge" style="background-color: #fad91f; color: #54565a;">142 PAX</span>
+                </div>
+                <div class="card-body py-3 px-4">
+                    <div class="workflow-steps-pob mb-3">
+                        <div class="text-center">
+                            <div class="fw-bold" style="font-size:20px; color: #20145f;">120</div>
+                            <div class="fw-bold" style="font-size:10px; color: #54565a;">BME SUBTEC</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="fw-bold" style="font-size:20px; color: #f05523;">15</div>
+                            <div class="fw-bold" style="font-size:10px; color: #54565a;">CLIENTE</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="fw-bold" style="font-size:20px; color: #51c2eb;">7</div>
+                            <div class="fw-bold" style="font-size:10px; color: #54565a;">TRIPULACIÓN</div>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-around position-relative">
+                        <div class="text-center">
+                            <div class="fw-bold" style="font-size:20px; color: #54565a;">7</div>
+                            <div class="fw-bold" style="font-size:10px; color: #54565a;">VISITAS</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="fw-bold" style="font-size:20px; color: #54565a;">7</div>
+                            <div class="fw-bold" style="font-size:10px; color: #54565a;">TERCEROS</div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'tiempos_barco/js/modulos/dashboard/dashboard.js' %}?v=1.0.3"></script>
+
+<script>
+    var urlPosicionesEmbarcacion = "{% url 'tiempos_barco:posiciones_embarcacion' %}";
+</script>
+{% endblock %}

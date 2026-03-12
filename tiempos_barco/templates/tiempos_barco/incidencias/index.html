@@ -1,0 +1,137 @@
+{% extends 'tiempos_barco/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'tiempos_barco/css/dashboard.css' %}?v=1.0.0">
+{% endblock %}
+
+{% block titulos %}
+<div class="header-modulo">
+    <div class="header-modulo-container">
+        <div class="header-title-section">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-2">
+                    <li class="breadcrumb-item">
+                        <a href="{% url 'tiempos_barco:index' %}" class="text-decoration-none">Gestión de Embarcaciones</a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <a href="#" class="text-decoration-none">QHSE</a>
+                    </li>
+                    <li class="breadcrumb-item active">Gestión de Incidencias</li>
+                </ol>
+            </nav>
+            <h1 class="h2 fw-bold mb-0 text-main">Gestión de Incidencias (Shadow Log)</h1>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="bm-content">
+    <div class="row g-4 mb-4">
+        
+        <!-- Reportar Nueva Incidencia -->
+        <div class="col-lg-5">
+            <div class="card h-100 shadow-sm border-0">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h6 class="mb-0 fw-bold text-main">Reportar Nueva Incidencia</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label text-muted-custom fw-bold" style="font-size:12px;">TÍTULO DEL INCIDENTE</label>
+                        <input type="text" class="form-control bg-light" id="inc-title" placeholder="Falla en equipo crítico...">
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted-custom fw-bold" style="font-size:12px;">HORA DETECCIÓN</label>
+                            <input type="time" class="form-control bg-light" id="inc-time">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted-custom fw-bold" style="font-size:12px;">VISIBILIDAD</label>
+                            <select class="form-select bg-light" id="inc-vis">
+                                <option value="internal">OCULTO (Solo Interno)</option>
+                                <option value="public">VISIBLE (Reporte Cliente)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label text-muted-custom fw-bold" style="font-size:12px;">DESCRIPCIÓN DETALLADA</label>
+                        <textarea class="form-control bg-light" rows="3" id="inc-desc" placeholder="Detalles técnicos y acciones correctivas..."></textarea>
+                    </div>
+                    
+                    <button class="btn w-100 fw-bold text-white shadow-sm" style="background-color: var(--accent-red);" id="btn-add-incident">
+                        <i class="fa-solid fa-triangle-exclamation me-2"></i> Registrar Incidencia
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Historial Activo -->
+        <div class="col-lg-7">
+            <div class="card h-100 shadow-sm border-0">
+                <div class="card-header bg-white border-bottom py-3">
+                    <h6 class="mb-0 fw-bold text-main">Historial Activo</h6>
+                </div>
+                <div class="card-body" id="incidents-list">
+                    <!-- Items añadidos vía JS -->
+                    <div class="incident-item">
+                        <div class="incident-header">
+                            <span class="fw-bold" style="color: var(--accent-red);">Falla Winche Principal</span>
+                            <span class="text-muted-custom">14:30 hrs</span>
+                        </div>
+                        <div class="text-main" style="font-size:12px;">Paro operativo de 2 hrs. Reparación en sitio.</div>
+                        <div class="mt-2 d-flex gap-2">
+                            <span class="badge border bg-white" style="color: var(--accent-red); border-color: var(--accent-red) !important;">
+                                <i class="fa-solid fa-eye-slash"></i> OCULTO
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    $('#btn-add-incident').click(function() {
+        const title = $('#inc-title').val();
+        const time = $('#inc-time').val() || "00:00";
+        const vis = $('#inc-vis').val();
+        
+        if(!title) {
+            alert("El título es obligatorio");
+            return;
+        }
+
+        const list = $('#incidents-list');
+        const visLabel = vis === 'internal' ? 'OCULTO' : 'VISIBLE';
+        const visIcon = vis === 'internal' ? 'fa-eye-slash' : 'fa-eye';
+        const visColor = vis === 'internal' ? 'var(--accent-red)' : 'var(--accent-green)';
+
+        const itemHTML = `
+            <div class="incident-item">
+                <div class="incident-header">
+                    <span class="fw-bold" style="color: var(--accent-red);">${title}</span>
+                    <span class="text-muted-custom">${time} hrs</span>
+                </div>
+                <div class="text-main" style="font-size:12px;">Registrado recientemente.</div>
+                <div class="mt-2 d-flex gap-2">
+                    <span class="badge border bg-white" style="color: ${visColor}; border-color: ${visColor} !important;">
+                        <i class="fa-solid ${visIcon}"></i> ${visLabel}
+                    </span>
+                </div>
+            </div>
+        `;
+        list.prepend(itemHTML);
+        
+        $('#inc-title').val("");
+        $('#inc-desc').val("");
+        alert("Incidencia reportada al equipo de Mantenimiento.");
+    });
+</script>
+{% endblock %}
