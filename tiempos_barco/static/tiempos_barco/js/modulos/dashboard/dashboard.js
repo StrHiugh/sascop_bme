@@ -11,12 +11,26 @@ $(document).ready(function() {
         html: `
             <div class="ship-marker-container">
                 <div class="radar-pulse"></div>
-                <i class="fa-solid fa-ship" style="color: #f05523; font-size: 24px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); position: relative; z-index: 2;"></i>
+                <div style="
+                    background:#f05523;
+                    width:36px;
+                    height:36px;
+                    border-radius:50%;
+                    border:2px solid #fff;
+                    display:flex;
+                    align-items:center;
+                    justify-content:center;
+                    box-shadow:0 4px 8px rgba(0,0,0,0.5);
+                    position:relative;
+                    z-index:2;
+                ">
+                    <i class="fa-solid fa-ship" style="color:white;font-size:16px;"></i>
+                </div>
             </div>
         `,
-        className: 'custom-ship-icon',
-        iconSize: [40, 40],   
-        iconAnchor: [20, 20]  
+        className: '',
+        iconSize: [40, 40],
+        iconAnchor: [20, 20]
     });
 
 

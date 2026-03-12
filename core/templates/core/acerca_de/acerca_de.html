@@ -10,10 +10,10 @@
                     <li class="breadcrumb-item">
                         <a href="{% url 'core:dashboard' %}" class="text-decoration-none">Inicio</a>
                     </li>
-                    <li class="breadcrumb-item active">Acerca del Sistema</li>
+                    <li class="breadcrumb-item active">Resumen Gerencial</li>
                 </ol>
             </nav>
-            <h1 class="h2 fw-bold mb-0">ACERCA DE</h1>
+            <h1 class="h2 fw-bold mb-0" style="color: var(--gris);">ACERCA DEL SISTEMA</h1>
         </div>
     </div>
 </div>
@@ -29,128 +29,95 @@
         --azul: #51c2eb;
         --gris: #54565a;
         --borde: #d0d1d3;
-        --exito: #4CAF50;
     }
 
+    /* Utilidades de Colores Corporativos */
+    .b-morado { border-color: var(--morado) !important; }
+    .b-azul { border-color: var(--azul) !important; }
+    .b-naranja { border-color: var(--naranja) !important; }
+    .b-gris { border-color: var(--gris) !important; }
+    
+    .bg-morado { background-color: var(--morado) !important; color: white !important; }
+    .bg-azul { background-color: var(--azul) !important; color: white !important; }
+    .bg-naranja { background-color: var(--naranja) !important; color: white !important; }
+    .bg-gris { background-color: var(--gris) !important; color: white !important; }
+
+    .t-morado { color: var(--morado) !important; }
+    .t-azul { color: var(--azul) !important; }
+    .t-naranja { color: var(--naranja) !important; }
+    .t-gris { color: var(--gris) !important; }
+
     .cc-kpi-card {
-        background: white;
-        border: 1px solid var(--borde);
-        border-radius: 8px;
-        padding: 1.25rem;
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        transition: transform 0.2s, box-shadow 0.2s;
-        height: 100%;
+        background: white; border: 1px solid var(--borde); border-radius: 8px;
+        padding: 1.25rem; display: flex; align-items: center; gap: 15px;
+        transition: transform 0.2s, box-shadow 0.2s; height: 100%;
     }
-    .cc-kpi-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-    }
+    .cc-kpi-card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
     .cc-kpi-icon-wrapper {
-        width: 60px;
-        height: 60px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 24px;
-        flex-shrink: 0;
+        width: 60px; height: 60px; border-radius: 50%; display: flex;
+        align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0;
     }
     .icon-naranja { background-color: var(--naranja-suave); color: var(--naranja); }
     .icon-morado { background-color: var(--morado-suave); color: var(--morado); }
     .icon-azul { background-color: rgba(81, 194, 235, 0.2); color: var(--azul); }
-    .icon-verde { background-color: rgba(76, 175, 80, 0.2); color: var(--exito); }
     
     .cc-kpi-info h3 { font-size: 1.5rem; font-weight: 700; color: var(--morado); margin: 0; }
     .cc-kpi-info p { font-size: 0.85rem; color: var(--gris); margin: 0; font-weight: 500; text-transform: uppercase; }
 
     .cc-panel {
-        background: white;
-        border: 1px solid var(--borde);
-        border-radius: 8px;
-        padding: 1.5rem;
-        margin-bottom: 1.5rem;
-        height: calc(100% - 1.5rem);
+        background: white; border: 1px solid var(--borde); border-radius: 8px;
+        padding: 1.5rem; margin-bottom: 1.5rem; height: calc(100% - 1.5rem);
     }
-    .cc-panel-title {
-        font-size: 1.1rem;
-        font-weight: 700;
-        color: var(--morado);
-        margin-bottom: 1.25rem;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
+    .cc-panel-title { font-size: 1.1rem; font-weight: 700; color: var(--morado); margin-bottom: 1.25rem; display: flex; align-items: center; gap: 10px; }
     .cc-panel-title i { color: var(--naranja); }
 
-    .task-list { list-style: none; padding: 0; margin: 0; }
-    .task-item {
-        border: 1px solid var(--borde);
-        border-left: 4px solid var(--borde);
-        border-radius: 6px;
-        padding: 10px 15px;
-        margin-bottom: 10px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        background-color: #fafafa;
-    }
-    .task-item.prioridad-alta { border-left-color: var(--naranja); }
-    .task-item.prioridad-media { border-left-color: var(--azul); }
-    .task-item.prioridad-baja { border-left-color: var(--gris); }
-    .task-name { font-size: 0.9rem; color: var(--morado); font-weight: 500; }
-    
-    .logro-item {
-        display: flex;
-        align-items: flex-start;
-        gap: 12px;
-        margin-bottom: 12px;
-    }
-    .logro-icon { color: var(--exito); margin-top: 2px; }
+    .logro-item { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+    .logro-icon { margin-top: 2px; }
     .logro-text { font-size: 0.95rem; color: var(--gris); }
 
-    .nav-tabs .nav-link {
-        color: #54565a !important;
-        font-weight: 500;
-        border: none;
-        padding: 0.75rem 1.5rem;
-    }
-    .nav-tabs .nav-link.active {
-        color: #000 !important;
-        font-weight: 600;
-        background-color: transparent;
-        border-bottom: 3px solid #f05523;
-    }
-    .nav-tabs .nav-link:hover {
-        color: #54565a !important;
-        border-bottom: 3px solid #dee2e6;
-    }
-    .nav-tabs .nav-link.active:hover {
-        border-bottom: 3px solid #f05523;
-    }
-    .card-header-tabs {
-        margin-bottom: 0;
-        border-bottom: 1px solid #dee2e6;
-    }
+    .nav-tabs .nav-link { color: #54565a !important; font-weight: 500; border: none; padding: 0.75rem 1.5rem; }
+    .nav-tabs .nav-link.active { color: #000 !important; font-weight: 600; background-color: transparent; border-bottom: 3px solid var(--naranja); }
+    .nav-tabs .nav-link:hover { color: #54565a !important; border-bottom: 3px solid #dee2e6; }
+    .nav-tabs .nav-link.active:hover { border-bottom: 3px solid var(--naranja); }
+    .card-header-tabs { margin-bottom: 0; border-bottom: 1px solid #dee2e6; }
 
-    /* Estilo para que la gráfica muestre cursor de clic */
-    #chartModulosProgreso {
-        cursor: pointer;
+    /* Estilos Gerenciales de Tarjetas (Módulos y Backlog) */
+    .module-card {
+        background: #fff; border: 1px solid var(--borde); border-radius: 8px; padding: 1.2rem;
+        cursor: pointer; transition: all 0.2s; position: relative; width: 100%;
+        display: flex; flex-direction: column; justify-content: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02); height: 100%; min-height: 110px;
     }
+    .module-card:hover { border-color: var(--naranja) !important; box-shadow: 0 6px 12px rgba(240, 85, 35, 0.1); transform: translateY(-3px); }
+    .module-card.active-card { border: 2px solid var(--naranja) !important; background-color: #fffaf8; }
+    
+    .mod-title { font-weight: 800; margin-bottom: 4px; font-size: 1.05rem; }
+    .mod-subtitle { font-size: 0.8rem; color: var(--gris); text-transform: uppercase; letter-spacing: 0.5px; }
+    
+    /* Conectores Visuales para el Árbol (Pestaña 1) */
+    .process-arrow { display: flex; align-items: center; justify-content: center; color: var(--borde); font-size: 1.5rem; }
+    
+    .tree-connector-vertical {
+        width: 2px; height: 25px; margin: 0 auto;
+    }
+    .tree-connector-horizontal {
+        height: 15px; margin: 0 auto;
+    }
+    .submod-card { min-height: 90px; padding: 1rem; border-style: dashed !important; }
 </style>
 
 <div class="bm-content">
     <div class="bm-cont-elementos">
         <div class="bm-cont-elementos-body p-5">
             
+            <!-- KPIs Superiores -->
             <div class="row g-3 mb-4">
                 <div class="col-md-3">
                     <div class="cc-kpi-card">
                         <div class="cc-kpi-icon-wrapper icon-naranja"><i class="fas fa-cubes"></i></div>
                         <div class="cc-kpi-info">
-                            <h3>6</h3>
-                            <p>Módulos Activos</p>
+                            <h3>4</h3>
+                            <p>Módulos Principales</p>
                         </div>
                     </div>
                 </div>
@@ -174,10 +141,10 @@
                 </div>
                 <div class="col-md-3">
                     <div class="cc-kpi-card">
-                        <div class="cc-kpi-icon-wrapper icon-verde"><i class="fas fa-check-double"></i></div>
+                        <div class="cc-kpi-icon-wrapper" style="background-color: var(--morado-suave); color: var(--morado);"><i class="fas fa-check-double"></i></div>
                         <div class="cc-kpi-info">
-                            <h3>67%</h3>
-                            <p>Avance Global Operable</p>
+                            <h3>100%</h3>
+                            <p>Módulos Base Operables</p>
                         </div>
                     </div>
                 </div>
@@ -187,13 +154,13 @@
                 <div class="card-header bg-transparent border-bottom-0 px-0">
                     <ul class="nav nav-tabs card-header-tabs" id="sascopTabs" role="tablist">
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link text-dark fw-semibold active" id="estado-tab" data-bs-toggle="tab" data-bs-target="#estado" type="button" role="tab" aria-controls="estado" aria-selected="true">
-                                <i class="fas fa-chart-pie me-2"></i>Estado de Módulos
+                            <button class="nav-link text-dark fw-semibold active" id="estado-tab" data-bs-toggle="tab" data-bs-target="#estado" type="button" role="tab">
+                                <i class="fas fa-sitemap me-2"></i>Estado de Módulos
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link text-secondary fw-medium" id="backlog-tab" data-bs-toggle="tab" data-bs-target="#backlog" type="button" role="tab" aria-controls="backlog" aria-selected="false">
-                                <i class="fas fa-tasks me-2"></i>Backlog
+                            <button class="nav-link text-secondary fw-medium" id="backlog-tab" data-bs-toggle="tab" data-bs-target="#backlog" type="button" role="tab">
+                                <i class="fas fa-tasks me-2"></i>Backlog y Peticiones
                             </button>
                         </li>
                     </ul>
@@ -202,152 +169,305 @@
                 <div class="card-body px-0 pt-4" style="overflow: hidden;">
                     <div class="tab-content" id="sascopTabsContent">
                         
-                        <div class="tab-pane fade show active" id="estado" role="tabpanel" aria-labelledby="estado-tab">
+                        <!-- ========================================== -->
+                        <!-- TAB 1: ESTADO DE MÓDULOS (ÁRBOL HORIZONTAL)-->
+                        <!-- ========================================== -->
+                        <div class="tab-pane fade show active" id="estado" role="tabpanel">
                             <div class="row">
-                                <div class="col-lg-7">
-                                    <div class="cc-panel">
-                                        <div class="cc-panel-title"><i class="fas fa-layer-group"></i> Progreso de Módulos Principales</div>
-                                        <div class="alert alert-light border small text-muted mb-3 py-2">
-                                            <i class="fas fa-hand-pointer me-1" style="color: var(--naranja)"></i> 
-                                            Haz clic sobre cualquier barra de la gráfica para ver la lista de características e implementaciones desarrolladas en ese módulo.
+                                <!-- PANEL IZQUIERDO: MAPA DE TARJETAS -->
+                                <div class="col-lg-8">
+                                    <div class="cc-panel" style="background-color: #f8fafc;">
+                                        <div class="cc-panel-title"><i class="fas fa-network-wired"></i> Flujo de Procesos del Sistema</div>
+                                        <div class="alert alert-light border small text-muted mb-4 py-2 shadow-sm">
+                                            <i class="fas fa-hand-pointer me-1 t-naranja"></i> 
+                                            Haz clic en las tarjetas de cada módulo para desplegar sus metas e hitos alcanzados.
                                         </div>
-                                        <div id="chartModulosProgreso" style="width: 100%; height: 320px;"></div>
+                                        
+                                        <!-- Línea Principal (Módulos 1, 2, 3, 4) -->
+                                        <div class="d-flex justify-content-between align-items-stretch text-center mb-0 position-relative">
+                                            
+                                            <!-- Módulo 1 -->
+                                            <div class="flex-grow-1" style="flex-basis: 0;">
+                                                <div class="module-card b-morado" data-mod="Módulo 1: PTEs">
+                                                    <div class="d-flex justify-content-between align-items-start w-100 mb-2">
+                                                        <span class="badge bg-morado"><i class="fas fa-check"></i> 100%</span>
+                                                        <i class="fas fa-file-contract text-muted opacity-50"></i>
+                                                    </div>
+                                                    <div class="mod-title t-morado">Módulo 1</div>
+                                                    <div class="mod-subtitle">PTEs</div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="process-arrow px-1"><i class="fas fa-chevron-right"></i></div>
+                                            
+                                            <!-- Módulo 2 -->
+                                            <div class="flex-grow-1" style="flex-basis: 0;">
+                                                <div class="module-card b-morado" data-mod="Módulo 2: OTs">
+                                                    <div class="d-flex justify-content-between align-items-start w-100 mb-2">
+                                                        <span class="badge bg-morado"><i class="fas fa-check"></i> 100%</span>
+                                                        <i class="fas fa-hard-hat text-muted opacity-50"></i>
+                                                    </div>
+                                                    <div class="mod-title t-morado">Módulo 2</div>
+                                                    <div class="mod-subtitle">Órdenes de Trabajo</div>
+                                                </div>
+                                            </div>
+
+                                            <div class="process-arrow px-1"><i class="fas fa-chevron-right"></i></div>
+
+                                            <!-- Módulo 3 -->
+                                            <div class="flex-grow-1 position-relative" style="flex-basis: 0;">
+                                                <div class="module-card b-azul" style="border-width: 2px;" data-mod="Módulo 3: Producción">
+                                                    <div class="d-flex justify-content-between align-items-start w-100 mb-2">
+                                                        <span class="badge bg-azul"><i class="fas fa-industry"></i> Operativo</span>
+                                                        <i class="fas fa-cogs text-muted opacity-50"></i>
+                                                    </div>
+                                                    <div class="mod-title t-azul">Módulo 3</div>
+                                                    <div class="mod-subtitle">Producción</div>
+                                                </div>
+                                                <!-- Conector vertical sale de aquí -->
+                                                <div class="tree-connector-vertical position-absolute bg-azul" style="bottom: -25px; left: 50%; transform: translateX(-50%); z-index: 1;"></div>
+                                            </div>
+
+                                            <div class="process-arrow px-1"><i class="fas fa-chevron-right"></i></div>
+
+                                            <!-- Módulo 4 -->
+                                            <div class="flex-grow-1" style="flex-basis: 0;">
+                                                <div class="module-card b-azul" data-mod="Módulo 4: Centro de Consulta">
+                                                    <div class="d-flex justify-content-between align-items-start w-100 mb-2">
+                                                        <span class="badge bg-azul"><i class="fas fa-chart-line"></i> Operativo</span>
+                                                        <i class="fas fa-search-plus text-muted opacity-50"></i>
+                                                    </div>
+                                                    <div class="mod-title t-azul">Módulo 4</div>
+                                                    <div class="mod-subtitle" style="font-size:0.75rem;">Centro de Consulta</div>
+                                                </div>
+                                            </div>
+
+                                        </div>
+
+                                        <!-- Línea Horizontal y Submódulos para Mod 3 -->
+                                        <div class="d-flex justify-content-between text-center mt-4 position-relative">
+                                            <!-- Columnas fantasmas para alinear perfectamente con la grilla de arriba -->
+                                            <div class="flex-grow-1" style="flex-basis: 0;"></div>
+                                            <div class="process-arrow px-1 invisible"><i class="fas fa-chevron-right"></i></div>
+                                            <div class="flex-grow-1" style="flex-basis: 0;"></div>
+                                            <div class="process-arrow px-1 invisible"><i class="fas fa-chevron-right"></i></div>
+                                            
+                                            <!-- Aquí van los submódulos de Mod 3 -->
+                                            <div class="flex-grow-1 position-relative" style="flex-basis: 0;">
+                                                <div class="tree-connector-horizontal b-azul mx-auto" style="width: 50%; border-top: 2px solid var(--azul); border-left: 2px solid var(--azul); border-right: 2px solid var(--azul);"></div>
+                                                <div class="d-flex gap-2 mt-0">
+                                                    <div class="flex-grow-1">
+                                                        <div class="module-card submod-card b-azul" data-mod="Submódulo 1: Reportes Diarios">
+                                                            <div class="mod-title t-azul" style="font-size: 0.8rem;">Submódulo 1</div>
+                                                            <div class="mod-subtitle" style="font-size: 0.65rem;">Reportes Diarios</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="flex-grow-1">
+                                                        <div class="module-card submod-card b-azul" data-mod="Submódulo 2: GPUs">
+                                                            <div class="mod-title t-azul" style="font-size: 0.8rem;">Submódulo 2</div>
+                                                            <div class="mod-subtitle" style="font-size: 0.65rem;">GPUs</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="process-arrow px-1 invisible"><i class="fas fa-chevron-right"></i></div>
+                                            <div class="flex-grow-1" style="flex-basis: 0;"></div>
+                                        </div>
+
                                     </div>
                                 </div>
 
-                                <div class="col-lg-5">
-                                    <!-- PANEL DEFAULT: HITOS Y METAS -->
-                                    <div class="cc-panel" id="panel-hitos-default">
-                                        <div class="cc-panel-title"><i class="fas fa-trophy"></i> Hitos y Metas Alcanzadas</div>
+                                <!-- PANEL DERECHO: DETALLES TAB 1 -->
+                                <div class="col-lg-4">
+                                    <div class="cc-panel" id="panel-hitos-default-1">
+                                        <div class="cc-panel-title"><i class="fas fa-trophy"></i> Hitos Globales</div>
                                         <div class="mt-4">
                                             <div class="logro-item">
-                                                <div class="logro-icon"><i class="fas fa-check-circle"></i></div>
-                                                <div class="logro-text"><strong>Módulos Base al 100%</strong><br>PTEs y Órdenes de Trabajo completamente funcionales.</div>
+                                                <div class="logro-icon t-morado"><i class="fas fa-check-circle"></i></div>
+                                                <div class="logro-text"><strong>Ciclo Base Completado</strong><br>El flujo desde la PTE hasta la Orden de Trabajo opera sin interrupciones.</div>
                                             </div>
                                             <div class="logro-item">
-                                                <div class="logro-icon"><i class="fas fa-check-circle"></i></div>
-                                                <div class="logro-text"><strong>Importaciones Masivas</strong><br>Capacidad de importar Anexo C y Programas de Trabajo.</div>
+                                                <div class="logro-icon t-morado"><i class="fas fa-check-circle"></i></div>
+                                                <div class="logro-text"><strong>Importaciones Masivas</strong><br>Capacidad de integrar Anexo C y Programas de Trabajo vía Excel y MS Project.</div>
                                             </div>
-                                            <div class="logro-item">
-                                                <div class="logro-icon"><i class="fas fa-check-circle"></i></div>
-                                                <div class="logro-text"><strong>Módulo de Producción</strong><br>Carga y procesamiento de produccion diaria operable.</div>
-                                            </div>
-                                            <div class="logro-item">
-                                                <div class="logro-icon"><i class="fas fa-check-circle"></i></div>
-                                                <div class="logro-text"><strong>Centro de Consulta</strong><br>Despliegue del módulo BI con filtros dinámicos.</div>
-                                            </div>
-                                            <div class="logro-item">
-                                                <div class="logro-icon"><i class="fas fa-check-circle"></i></div>
-                                                <div class="logro-text"><strong>Automatización</strong><br>Envío automatizado de reportes vía Email.</div>
+                                            <div class="logro-item text-center mt-5 pt-4 border-top">
+                                                <i class="fas fa-mouse-pointer fa-2x text-muted mb-2" style="opacity: 0.5;"></i>
+                                                <p class="text-muted small">Selecciona una tarjeta a la izquierda para ver su detalle de implementación.</p>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <!-- PANEL DINÁMICO: DETALLE DEL MÓDULO (Oculto por defecto) -->
-                                    <div class="cc-panel d-none shadow-sm border-secondary" id="panel-hitos-detalle">
+                                    <div class="cc-panel d-none shadow-sm b-naranja" id="panel-hitos-detalle-1">
                                         <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
-                                            <div class="cc-panel-title mb-0" id="titulo-detalle-modulo" style="font-size: 1rem;">
+                                            <div class="cc-panel-title mb-0 t-naranja" id="titulo-detalle-modulo-1" style="font-size: 1.1rem;">
                                                 <i class="fas fa-list-check"></i> Detalle
                                             </div>
-                                            <button class="btn btn-sm btn-light border text-secondary fw-bold" id="btn-volver-hitos">
-                                                <i class="fas fa-arrow-left me-1"></i> Volver
+                                            <button class="btn btn-sm btn-light border text-secondary fw-bold btn-volver-hitos">
+                                                <i class="fas fa-times"></i>
                                             </button>
                                         </div>
-                                        <div class="mt-3" id="lista-detalle-modulo" style="max-height: 280px; overflow-y: auto;">
-                                            <!-- Aquí se inyectan las tareas mediante JS -->
+                                        <div class="mt-3" id="lista-detalle-modulo-1" style="max-height: 400px; overflow-y: auto;">
+                                            <!-- Inyectado por JS -->
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="tab-pane fade" id="backlog" role="tabpanel" aria-labelledby="backlog-tab">
+                        <!-- ========================================== -->
+                        <!-- TAB 2: BACKLOG Y PETICIONES (GRID CARDS)   -->
+                        <!-- ========================================== -->
+                        <div class="tab-pane fade" id="backlog" role="tabpanel">
                             <div class="row">
+                                <!-- PANEL IZQUIERDO: MAPA DE TARJETAS -->
                                 <div class="col-lg-7">
                                     <div class="cc-panel">
-                                        <div class="cc-panel-title">
-                                            <i class="fas fa-cubes"></i> Módulos Faltantes / Backlog
+                                        <div class="cc-panel-title"><i class="fas fa-cubes"></i> Módulos Faltantes / Backlog</div>
+                                        <div class="alert alert-light border small text-muted mb-4 py-2 shadow-sm">
+                                            <i class="fas fa-hand-pointer me-1 t-naranja"></i> 
+                                            Haz clic en las tarjetas para visualizar el alcance y actividades a desarrollar de cada petición.
                                         </div>
-                                        <ul class="task-list mt-3">
-                                            <!-- Alta -->
-                                            <li class="task-item prioridad-alta">
-                                                <span class="task-name">Módulo de bitácora de embarcaciones</span>
-                                                <span class="badge bg-danger">Alta</span>
-                                            </li>
-                                            <li class="task-item prioridad-media">
-                                                <span class="task-name">Módulo de costos</span>
-                                                <span class="badge" style="background-color: var(--azul);">Media</span>
-                                            </li>
-                                            <li class="task-item prioridad-media">
-                                                <span class="task-name">Módulo de requisiciones</span>
-                                                <span class="badge" style="background-color: var(--azul);">Media</span>
-                                            </li>
-                                            <li class="task-item prioridad-media">
-                                                <span class="task-name">Módulo de PUES</span>
-                                                <span class="badge" style="background-color: var(--azul);">Media</span>
-                                            </li>
-                                            <li class="task-item prioridad-media">
-                                                <span class="task-name">Módulo para generacion de PTES</span>
-                                                <span class="badge" style="background-color: var(--azul);">Media</span>
-                                            </li>
-                                            <li class="task-item prioridad-media">
-                                                <span class="task-name">Desarrollo de aplicación móvil para generación de información offshore</span>
-                                                <span class="badge" style="background-color: var(--azul);">Media</span>
-                                            </li>
+                                        
+                                        <div class="row g-3">
                                             
-                                            <!-- Media -->
-                                            <li class="task-item prioridad-media">
-                                                <span class="task-name">Módulo para ingeniería</span>
-                                                <span class="badge" style="background-color: var(--azul);">Media</span>
-                                            </li>
-                                            <li class="task-item prioridad-media">
-                                                <span class="task-name">Módulo para Q's y P&L</span>
-                                                <span class="badge" style="background-color: var(--azul);">Media</span>
-                                            </li>
+                                            <!-- Tarjeta Backlog 1 -->
+                                            <div class="col-md-6">
+                                                <div class="module-card b-naranja" data-mod="Backlog: Generación de PTs">
+                                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                                        <span class="badge bg-naranja">Alta Prioridad</span>
+                                                        <i class="fas fa-drafting-compass text-muted opacity-50"></i>
+                                                    </div>
+                                                    <div class="mod-title t-naranja">Generación de PT's</div>
+                                                    <div class="mod-subtitle">Ingeniería y Planeación</div>
+                                                </div>
+                                            </div>
 
-                                            <!-- Baja / Al final -->
-                                            <li class="task-item prioridad-baja">
-                                                <span class="task-name">Módulo de almacén</span>
-                                                <span class="badge bg-secondary">Baja</span>
-                                            </li>
-                                            <li class="task-item prioridad-baja">
-                                                <span class="task-name">Módulo de logística</span>
-                                                <span class="badge bg-secondary">Baja</span>
-                                            </li>
-                                        </ul>
+                                            <!-- Tarjeta Backlog 2 -->
+                                            <div class="col-md-6">
+                                                <div class="module-card b-naranja" data-mod="Backlog: Embarcaciones">
+                                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                                        <span class="badge bg-naranja">Alta Prioridad</span>
+                                                        <i class="fas fa-ship text-muted opacity-50"></i>
+                                                    </div>
+                                                    <div class="mod-title t-naranja">Bitácora de Embarcaciones</div>
+                                                    <div class="mod-subtitle">Control Offshore (Bloque 1)</div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Tarjeta Backlog 3 -->
+                                            <div class="col-md-6">
+                                                <div class="module-card b-gris" data-mod="Backlog: Requisiciones">
+                                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                                        <span class="badge bg-gris text-white">Baja Prioridad</span>
+                                                        <i class="fas fa-file-signature text-muted opacity-50"></i>
+                                                    </div>
+                                                    <div class="mod-title t-gris">Requisiciones</div>
+                                                    <div class="mod-subtitle">Flujo de Firmas y Ajustes</div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Tarjeta Backlog 4 -->
+                                            <div class="col-md-6">
+                                                <div class="module-card b-gris" data-mod="Backlog: PUES">
+                                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                                        <span class="badge bg-gris text-white">Baja Prioridad</span>
+                                                        <i class="fas fa-calculator text-muted opacity-50"></i>
+                                                    </div>
+                                                    <div class="mod-title t-gris">Módulo PUES</div>
+                                                    <div class="mod-subtitle">En análisis</div>
+                                                </div>
+                                            </div>
+                                            
+                                        </div>
                                     </div>
                                 </div>
 
+                                <!-- PANEL DERECHO: DETALLES TAB 2 -->
                                 <div class="col-lg-5">
-                                    <div class="cc-panel">
-                                        <div class="cc-panel-title"><i class="fas fa-tachometer-alt"></i> Tiempo de Desarrollo</div>
+                                    <div class="cc-panel" id="panel-hitos-default-2">
+                                        <div class="cc-panel-title"><i class="fas fa-tachometer-alt"></i> Rendimiento del Backlog</div>
                                         
                                         <div class="text-center mb-4 mt-3">
-                                            <h2 class="fw-bold mb-0" style="color: var(--naranja); font-size: 2.5rem;">2 - 3</h2>
-                                            <span class="text-muted fw-bold">Tareas por semana</span>
+                                            <h2 class="fw-bold mb-0 t-naranja" style="font-size: 2.5rem;">2 - 3</h2>
+                                            <span class="text-muted fw-bold">Tareas implementadas por semana</span>
                                         </div>
 
-                                        <div class="row text-center mt-4">
+                                        <div class="row text-center mt-4 mb-4">
                                             <div class="col-6 border-end">
-                                                <h3 class="fw-bold text-success mb-0">117</h3>
+                                                <h3 class="fw-bold t-morado mb-0">117</h3>
                                                 <small class="text-muted fw-bold text-uppercase">Finalizadas</small>
                                             </div>
                                             <div class="col-6">
-                                                <h3 class="fw-bold text-primary mb-0">2</h3>
+                                                <h3 class="fw-bold t-azul mb-0">2</h3>
                                                 <small class="text-muted fw-bold text-uppercase">En Proceso</small>
                                             </div>
                                         </div>
-                                        
-                                        <div class="mt-4 pt-3 border-top">
-                                            <p class="small text-muted mb-0 text-center">
-                                                <i class="fas fa-info-circle me-1"></i> El ritmo de implementación depende de la complejidad del requerimiento.
-                                            </p>
+
+                                        <div class="logro-item text-center mt-5 pt-4 border-top">
+                                            <i class="fas fa-mouse-pointer fa-2x text-muted mb-2" style="opacity: 0.5;"></i>
+                                            <p class="text-muted small">Selecciona una tarjeta del Backlog para visualizar todas las actividades que lo componen.</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="cc-panel d-none shadow-sm b-naranja" id="panel-hitos-detalle-2">
+                                        <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+                                            <div class="cc-panel-title mb-0 t-naranja" id="titulo-detalle-modulo-2" style="font-size: 1.1rem;">
+                                                <i class="fas fa-list-check"></i> Actividades a Desarrollar
+                                            </div>
+                                            <button class="btn btn-sm btn-light border text-secondary fw-bold btn-volver-hitos">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                        <div class="mt-3" id="lista-detalle-modulo-2" style="max-height: 400px; overflow-y: auto;">
+                                            <!-- Inyectado por JS -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- ========================================== -->
+                    <!-- ENTREGABLES GERENCIA DE INNOVACIÓN         -->
+                    <!-- ========================================== -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="cc-panel mb-0" style="background-color: #f8f9fa; border: 1px solid var(--borde);">
+                                <div class="cc-panel-title mb-3 t-gris">
+                                    <i class="fas fa-lightbulb me-2 t-gris"></i> Entregables por la Gerencia de Innovación
+                                </div>
+                                <div class="row g-3">
+                                    <div class="col-md-3">
+                                        <div class="logro-item mb-0 align-items-center bg-white p-2 rounded border shadow-sm h-100">
+                                            <div class="logro-icon"><i class="fas fa-book t-gris"></i></div>
+                                            <div class="logro-text text-dark fw-bold" style="font-size:0.85rem;">Manual de Usuario</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="logro-item mb-0 align-items-center bg-white p-2 rounded border shadow-sm h-100">
+                                            <div class="logro-icon"><i class="fas fa-project-diagram t-gris"></i></div>
+                                            <div class="logro-text text-dark fw-bold" style="font-size:0.85rem;">Flujo de Trabajo Estandarizado</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="logro-item mb-0 align-items-center bg-white p-2 rounded border shadow-sm h-100">
+                                            <div class="logro-icon"><i class="fas fa-chart-pie t-gris"></i></div>
+                                            <div class="logro-text text-dark fw-bold" style="font-size:0.85rem;">KPIs de Monitoreo</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="logro-item mb-0 align-items-center bg-white p-2 rounded border shadow-sm h-100">
+                                            <div class="logro-icon"><i class="fas fa-file-alt t-gris"></i></div>
+                                            <div class="logro-text text-dark fw-bold" style="font-size:0.85rem;">Estandarización de Formatos Manuales</div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+
                 </div>
             </div>
         </div>
@@ -357,18 +477,17 @@
 
 {% block scripts %}
 <script>
-const urlActividadReciente = '{% url "operaciones:datatable_registro_actividad" %}';
-
-// DICCIONARIO DE IMPLEMENTACIONES POR MÓDULO
-const implementacionesModulos = {
-    'PTEs': [
+// DICCIONARIO PARA AMBAS PESTAÑAS
+const diccionariosDatos = {
+    // ---- PESTAÑA 1: ESTADO DE MÓDULOS ----
+    'Módulo 1: PTEs': [
         'Importación histórica de PTEs.',
         'Conciliación de entregables.',
         'Adición de las barras de progreso según los estatus.',
         'Conversión de una PTE a una Orden de Trabajo (OT).',
         'Dashboard de KPIs del módulo.'
     ],
-    'Órdenes de Trabajo': [
+    'Módulo 2: OTs': [
         'Migración inicial de una orden desde PTE.',
         'Configuración de frentes de trabajo.',
         'Configuración de fase de patio.',
@@ -378,395 +497,130 @@ const implementacionesModulos = {
         'Importación de Microsoft Project (Programa de trabajo).',
         'Cálculo de afectaciones de reprogramaciones al plazo de la orden.'
     ],
-    'Producción': [
+    'Módulo 3: Producción': [
         'Buscador de órdenes en ejecución con anexo importado según el frente.',
         'Desarrollo del grid de producción, dinamizando en tiempo real volúmenes, montos y plazos.',
         'Cálculo automático de excedentes según el volumen proyectado importado.',
+        'Exportación del grid de producción a sábana de excel.',
         'Separación de grid por afectación (TE, CMA).',
         'Resumen en vivo de KPIs financieros.'
     ],
-    'Reportes Diarios': [
-        'Desarrollo del grid interactivo de reportes diarios.',
-        'Bloqueo dinámico del grid de producción según estatus del reporte diario (Firma/Pendiente, etc).',
-        'Conjunción y administración de una carpeta mensual de evidencias.'
-    ],
-    'GPUs': [
-        'Desarrollo del grid de GPUs (Generadores de Pago Unitario).',
-        'Creación automática del registro a partir de un volumen capturado en producción.',
-        'Configuración de estatus de revisión y validación.',
-        'Configuración de carga de los generadores y anexos.'
-    ],
-    'Centro de Consulta': [
+    'Módulo 4: Centro de Consulta': [
         'Consulta documental dependiendo la fuente que queramos ver.',
         'Gráficas en tiempo real de los documentos cargados y KPIs faltantes de los mismos.',
         'Envío automático de gráficas por email.',
         'Generación de reportes Excel en base a la consulta.',
         'Pestaña interactiva para consulta y gráficas de producción (montos, proyecciones).',
         'Comparativa dinámica por frentes, líderes, etc.'
+    ],
+    'Submódulo 1: Reportes Diarios': [
+        'Desarrollo del grid interactivo de reportes diarios.',
+        'Bloqueo dinámico del grid de producción según estatus del reporte (Firma/Pendiente, etc).',
+        'Conjunción y administración de una carpeta mensual de evidencias.',
+    ],
+    'Submódulo 2: GPUs': [
+        'Desarrollo del grid de GPUs (Generadores de Precios Unitarios).',
+        'Creación automática del registro a partir de un volumen capturado en producción.',
+        'Configuración de estatus de revisión y validación.',
+        'Configuración de carga de los generadores y anexos.'
+    ],
+
+    // ---- PESTAÑA 2: BACKLOG ----
+    'Backlog: Generación de PTs': [
+        'Solicitud de propuestas técnicas.',
+        'Digitalización de levantamientos.',
+        'Centralización de revisiones de ingeniería.',
+        'Catálogo de rendimientos de recursos.',
+        'Mapeo de procesos de elaboración de una propuesta técnica.',
+        'Automatización en el cálculo de recursos y volumetría de recursos.',
+        'Ruta crítica para programa de actividades.',
+        'Seguimiento de desviaciones y alertas.',
+        'Comparativas planeación vs ejecución.',
+        'Diagrama de Gantt automatizado para programa de ejecución de actividades.',
+        'Difusiones de entregables.',
+        'Listado de materiales alineados a partidas del cliente y procesos de procura.'
+    ],
+    'Backlog: Embarcaciones': [
+        'Bitácora de movimientos operativos.',
+        'Vales de trasiegos automatizados.',
+        'Métricas de eficiencia operativa.',
+        'Monitoreo GIS en tiempo real (Coordenadas Espaciales).',
+        'Administración y control de POB (Personal a Bordo).',
+        'Gestión e historial de Incidencias.'
+    ],
+    'Backlog: Requisiciones': [
+        'Flujo automatizado de autorizaciones.',
+        'Implementación de firmas electrónicas.',
+        'Incremento o decremento masivo automatizado.'
+    ],
+    'Backlog: PUES': [
+        'En fase de levantamiento de requerimientos y análisis para futuras iteraciones.'
     ]
 };
 
 $(document).ready(function() {
     
+    // Control de Pestañas Bootstrap
     $('#sascopTabs button').on('click', function (e) {
-        $('#sascopTabs .nav-link').removeClass('active text-dark').addClass('text-secondary');
-        $('#sascopTabs .nav-link').removeClass('fw-semibold').addClass('fw-medium');
-        
-        $(this).removeClass('text-secondary').addClass('active text-dark fw-semibold');
+        $('#sascopTabs .nav-link').removeClass('active text-dark').addClass('text-secondary fw-medium');
+        $(this).removeClass('text-secondary fw-medium').addClass('active text-dark fw-semibold');
         
         const target = $(this).data('bs-target');
         $('.tab-pane').removeClass('show active');
         $(target).addClass('show active');
     });
 
-    function cargarEstadisticas() {
-        $.ajax({
-            url: '{% url "operaciones:api_estadisticas" %}',
-            method: 'GET',
-            success: function(data) {
-                $('#volumen-total').text(data.volumen_total.toLocaleString());
-            },
-            error: function() {
-            }
-        });
-    }
-    
-    function cargarActividadRecienteLocal() {
-        $.ajax({
-            url: urlActividadReciente,
-            type: "GET",
-            data: {
-                start: 0,
-                length: 4,
-                order: [{ column: 4, dir: 'desc' }]
-            },
-            success: function(response) {
-                if (response.data && response.data.length > 0) {
-                    let html = '';
-                    response.data.forEach(function(actividad) {
-                        let eventoClass = 'bg-secondary';
-                        switch(actividad.evento) {
-                            case 'CREAR': eventoClass = 'bg-success'; break;
-                            case 'MODIFICAR': eventoClass = 'bg-warning'; break;
-                            case 'ELIMINAR': eventoClass = 'bg-danger'; break;
-                            case 'ACTUALIZAR': eventoClass = 'bg-info'; break;
-                            case 'REGISTRAR': eventoClass = 'bg-primary'; break;
-                        }
-                        
-                        let descripcion = actividad.detalle_evento || '';
-                        
-                        html += `
-                            <tr>
-                                <td>
-                                    <span class="badge bg-light text-dark">${actividad.afectacion || 'Sistema'}</span>
-                                </td>
-                                <td>
-                                    <span class="badge ${eventoClass}">${actividad.evento}</span>
-                                </td>
-                                <td class="small">
-                                    ${actividad.fecha_formateada || '--'}
-                                </td>
-                                <td>
-                                    <div>
-                                        <strong class="d-block">${actividad.nombre_completo || 'Usuario'}</strong>
-                                        <small class="text-muted">${actividad.email || ''}</small>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="descripcion-actividad">
-                                        ${fnFormatDescripcion(actividad)}
-                                    </div>
-                                </td>
-                            </tr>
-                        `;
-                    });
-                    
-                    $('#actividad-reciente').html(html);
-                } else {
-                    $('#actividad-reciente').html(`
-                        <tr>
-                            <td colspan="5" class="text-center text-muted py-4">
-                                <i class="fas fa-inbox me-2"></i>No hay actividad reciente
-                            </td>
-                        </tr>
-                    `);
-                }
-            },
-            error: function(xhr, status, error) {
-                $('#actividad-reciente').html(`
-                    <tr>
-                        <td colspan="5" class="text-center text-danger py-4">
-                            <i class="fas fa-exclamation-triangle me-2"></i>Error al cargar actividad
-                        </td>
-                    </tr>
-                `);
-            }
-        });
-    }
-    
-    cargarEstadisticas();
-    cargarActividadRecienteLocal();
-    
-    const colores = {
-        naranja: '#f05523',
-        morado: '#20145f',
-        azul: '#51c2eb',
-        gris: '#54565a',
-        verde: '#4CAF50',
-        borde: '#d0d1d3'
-    };
+    // EVENTO CLICK EN LAS TARJETAS (Sirve para Tab 1 y Tab 2)
+    $('.module-card').on('click', function () {
+        // Saber en qué pestaña estamos (1 o 2)
+        const inTabEstado = $(this).closest('#estado').length > 0;
+        const panelPrefix = inTabEstado ? '-1' : '-2';
 
-    const chartModulos = echarts.init(document.getElementById('chartModulosProgreso'));
-    
-    const modulosOption = {
-        tooltip: {
-            trigger: 'axis',
-            axisPointer: { type: 'shadow' },
-            formatter: function (params) {
-                let data = params[0];
-                let infoExtra = '';
+        // Remover clase activa de las tarjetas de esa pestaña y asignar a la cliqueada
+        $(this).closest('.tab-pane').find('.module-card').removeClass('active-card');
+        $(this).addClass('active-card');
 
-                if (data.name === 'Producción' || data.name === 'GPUs' || data.name === 'Reportes Diarios') {
-                    infoExtra = 'Faltan pequeñas adiciones visuales, y confirmar el uso correcto sin errores de los usuarios.';
-                } else if (data.name === 'Centro de Consulta') {
-                    infoExtra = 'Falta verificar las consultas, añadir gráfica por OTs, y mejorar la visualización de la información.';
-                } else if (data.name === 'PTEs' || data.name === 'Órdenes de Trabajo') {
-                    infoExtra = 'Módulo completamente funcional y estable.';
-                }
-
-                return `
-                    <div style="max-width: 250px; white-space: normal; line-height: 1.4;">
-                        <div style="font-weight: bold; margin-bottom: 5px; color: ${data.color};">
-                            ${data.name} : ${data.value}%
-                        </div>
-                        <div style="font-size: 13px; color: #54565a;">
-                            ${infoExtra}
-                        </div>
-                        <div style="font-size: 11px; color: #f05523; margin-top: 6px; font-weight: bold;">
-                            <i class="fas fa-mouse-pointer"></i> Clic para ver implementaciones
-                        </div>
-                    </div>
-                `;
-            }
-        },
-        grid: { top: 10, left: 10, right: 40, bottom: 20, containLabel: true },
-        xAxis: {
-            type: 'value',
-            max: 100,
-            axisLabel: { formatter: '{value}%', color: colores.gris },
-            splitLine: { lineStyle: { type: 'dashed', color: colores.borde } }
-        },
-        yAxis: {
-            type: 'category',
-            data: [
-                'Centro de Consulta', 
-                'Reportes Diarios', 
-                'GPUs', 
-                'Producción', 
-                'Órdenes de Trabajo', 
-                'PTEs'
-            ],
-            axisLabel: { color: colores.morado, fontWeight: 'bold' },
-            axisLine: { show: false },
-            axisTick: { show: false }
-        },
-        series: [
-            {
-                name: 'Avance',
-                type: 'bar',
-                barWidth: '50%',
-                cursor: 'pointer',
-                data: [
-                    { value: 50, itemStyle: { color: colores.azul } },
-                    { value: 65, itemStyle: { color: colores.verde } },
-                    { value: 65, itemStyle: { color: colores.verde } },
-                    { value: 65, itemStyle: { color: colores.verde } },
-                    { value: 80, itemStyle: { color: colores.verde } },
-                    { value: 80, itemStyle: { color: colores.verde } }
-                ],
-                label: {
-                    show: true,
-                    position: 'right',
-                    formatter: '{c}%',
-                    color: colores.morado,
-                    fontWeight: 'bold'
-                },
-                itemStyle: {
-                    borderRadius: [0, 4, 4, 0]
-                }
-            }
-        ]
-    };
-    
-    chartModulos.setOption(modulosOption);
-
-    // EVENTO CLICK EN LA GRÁFICA
-    chartModulos.on('click', function (params) {
-        const nombreModulo = params.name;
-        const listaImplementaciones = implementacionesModulos[nombreModulo];
+        // Leer la data
+        const nombreModulo = $(this).data('mod');
+        const listaImplementaciones = diccionariosDatos[nombreModulo];
 
         if (listaImplementaciones) {
-            // Ocultar panel default
-            $('#panel-hitos-default').addClass('d-none');
+            // Ocultar panel por default de esa pestaña
+            $('#panel-hitos-default' + panelPrefix).addClass('d-none');
             
-            // Actualizar título
-            $('#titulo-detalle-modulo').html(`<i class="fas fa-puzzle-piece me-2"></i>Módulo: ${nombreModulo}`);
+            // Ícono condicional
+            let icon = 'fa-puzzle-piece';
+            if (nombreModulo.includes('Submódulo')) icon = 'fa-code-branch';
+            if (nombreModulo.includes('Backlog')) icon = 'fa-tasks';
             
-            // Construir lista de tareas
+            $('#titulo-detalle-modulo' + panelPrefix).html(`<i class="fas ${icon} me-2"></i> ${nombreModulo.replace('Backlog: ', '')}`);
+            
+            // Construir lista de HTML
             let htmlLista = '';
             listaImplementaciones.forEach(tarea => {
                 htmlLista += `
-                    <div class="logro-item mb-2">
-                        <div class="logro-icon"><i class="fas fa-check-square text-secondary"></i></div>
+                    <div class="logro-item mb-2 align-items-center">
+                        <div class="logro-icon"><i class="fas fa-check-square t-naranja"></i></div>
                         <div class="logro-text text-dark" style="font-size: 0.9rem;">${tarea}</div>
                     </div>
                 `;
             });
             
-            // Insertar y mostrar
-            $('#lista-detalle-modulo').html(htmlLista);
-            $('#panel-hitos-detalle').removeClass('d-none').hide().fadeIn(300);
+            $('#lista-detalle-modulo' + panelPrefix).html(htmlLista);
+            $('#panel-hitos-detalle' + panelPrefix).removeClass('d-none').hide().fadeIn(300);
         }
     });
 
-    // EVENTO DEL BOTÓN VOLVER
-    $('#btn-volver-hitos').on('click', function() {
-        $('#panel-hitos-detalle').addClass('d-none');
-        $('#panel-hitos-default').removeClass('d-none').hide().fadeIn(300);
-    });
+    // EVENTO DEL BOTÓN VOLVER (Cerrar Detalles)
+    $('.btn-volver-hitos').on('click', function() {
+        const inTabEstado = $(this).closest('#estado').length > 0;
+        const panelPrefix = inTabEstado ? '-1' : '-2';
 
-    window.addEventListener("resize", function() {
-        if(chartModulos) chartModulos.resize();
-        if (window.myChart) window.myChart.resize();
-    });
-
-    const tabTabs = document.querySelectorAll('button[data-bs-toggle="tab"]');
-    tabTabs.forEach(tab => {
-        tab.addEventListener('shown.bs.tab', function (event) {
-            if(chartModulos) chartModulos.resize();
-        });
+        $(this).closest('.tab-pane').find('.module-card').removeClass('active-card');
+        $('#panel-hitos-detalle' + panelPrefix).addClass('d-none');
+        $('#panel-hitos-default' + panelPrefix).removeClass('d-none').hide().fadeIn(300);
     });
 
 });
-
-function cargarActividadReciente() {
-    const spinner = $('#actividad-reciente');
-    spinner.html(`
-        <tr>
-            <td colspan="5" class="text-center py-5">
-                <i class="fas fa-spinner fa-spin me-2"></i>Cargando actividad...
-            </td>
-        </tr>
-    `);
-    
-    $(document).ready(function() {
-        $.ajax({
-            url: urlActividadReciente,
-            type: "GET",
-            data: {
-                start: 0,
-                length: 4,
-                order: [{ column: 4, dir: 'desc' }]
-            },
-            success: function(response) {
-                let html = '';
-                if (response.data && response.data.length > 0) {
-                    response.data.forEach(function(actividad) {
-                        let eventoClass = 'bg-secondary';
-                        switch(actividad.evento) {
-                            case 'CREAR': eventoClass = 'bg-success'; break;
-                            case 'MODIFICAR': eventoClass = 'bg-warning'; break;
-                            case 'ELIMINAR': eventoClass = 'bg-danger'; break;
-                            case 'ACTUALIZAR': eventoClass = 'bg-info'; break;
-                            case 'REGISTRAR': eventoClass = 'bg-primary'; break;
-                        }
-                        
-                        let descripcion = actividad.detalle_evento || '';
-                        
-                        html += `
-                            <tr>
-                                <td><span class="badge bg-light text-dark">${actividad.afectacion || 'Sistema'}</span></td>
-                                <td><span class="badge ${eventoClass}">${actividad.evento}</span></td>
-                                <td class="small">${actividad.fecha_formateada || '--'}</td>
-                                <td>
-                                    <strong class="d-block">${actividad.nombre_completo || 'Usuario'}</strong>
-                                    <small class="text-muted">${actividad.email || ''}</small>
-                                </td>
-                                <td>
-                                    <div class="descripcion-actividad">
-                                        ${fnFormatDescripcion(actividad)}
-                                    </div>
-                                </td>
-                            </tr>
-                        `;
-                    });
-                } else {
-                    html = `
-                        <tr>
-                            <td colspan="5" class="text-center text-muted py-4">
-                                <i class="fas fa-inbox me-2"></i>No hay actividad reciente
-                            </td>
-                        </tr>
-                    `;
-                }
-                $('#actividad-reciente').html(html);
-            },
-            error: function() {
-                $('#actividad-reciente').html(`
-                    <tr>
-                        <td colspan="5" class="text-center text-danger py-4">
-                            <i class="fas fa-exclamation-triangle me-2"></i>Error al cargar actividad
-                        </td>
-                    </tr>
-                `);
-            }
-        });
-    });
-}
 </script>
-
-<style>
-.actividad-reciente .card-header {
-    display: flex;
-    justify-content: between;
-    align-items: center;
-}
-
-.actividad-reciente .card-header h5 {
-    margin-bottom: 0;
-    flex-grow: 1;
-}
-
-.actividad-reciente {
-    height: auto !important;
-    min-height: auto !important;
-    overflow: visible !important;
-}
-
-.actividad-reciente .card-body {
-    padding: 1rem;
-    height: auto !important;
-    overflow: visible !important;
-}
-
-.actividad-reciente .table-responsive {
-    height: auto !important;
-    overflow: visible !important;
-}
-
-.descripcion-actividad {
-    white-space: normal;
-    word-wrap: break-word;
-    line-height: 1.4;
-}
-
-.table-sm td {
-    padding: 0.5rem;
-    vertical-align: top;
-}
-
-.badge {
-    font-size: 0.75em;
-}
-</style>
 {% endblock %}
