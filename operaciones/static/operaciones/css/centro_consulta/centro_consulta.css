@@ -236,6 +236,13 @@ body .offcanvas.offcanvas-end#panelFiltros {
     padding: 0.5rem 0.75rem;
 }
 
+#select-length select,
+#select-length-info select,
+#select-tamano-grupos-top select {
+    min-width: 70px;
+    padding-right: 2.25rem;
+}
+
 .group-checkboxes {
     background-color: #f8f9fa;
     border-radius: 6px;

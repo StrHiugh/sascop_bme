@@ -6,15 +6,12 @@ const fnFormatearFecha = (fecha) => {
 };
 
 const fnObtenerFiltrosEstaticos = () => {
-   const fechaActual = new Date();
-   const primerDiaMes = new Date(fechaActual.getFullYear(), fechaActual.getMonth(), 1);
-
    return {
       "origenes": ["PTE", "OT", "PROD"],
       "check_entregados": false,
       "check_no_entregados": false,
-      "fecha_inicio": fnFormatearFecha(primerDiaMes),
-      "fecha_fin": fnFormatearFecha(fechaActual),
+      "fecha_inicio": "",
+      "fecha_fin": "",
       "lideres_id": [],
       "clientes_id": [],
       "frentes_id": [],
@@ -27,17 +24,14 @@ const fnObtenerFiltrosEstaticos = () => {
 };
 
 const fnObtenerFiltrosEstaticosInfo = () => {
-   const fechaActual = new Date();
-   const primerDiaMes = new Date(fechaActual.getFullYear(), fechaActual.getMonth(), 1);
-
    return {
       "ots_id":        [],
       "tipos_tiempo":  ["TE", "CMA"],
       "anexos":        [],
       "clientes_id":   [],
       "lideres_id":    [],
-      "fecha_inicio":  fnFormatearFecha(primerDiaMes),
-      "fecha_fin":     fnFormatearFecha(fechaActual),
+      "fecha_inicio":  "",
+      "fecha_fin":     "",
       "es_excedente":  null,
       "texto_busqueda": ""
    };
@@ -61,12 +55,18 @@ const fnEstadoInicialPanel = () => {
    $("#filtro-sitio").empty().trigger("change");
 
    $("#orig_pro").prop("checked", true);
-   $("input[name='prod_tabs'][value='documentacion']").prop("checked", true);
+   const modoAntes = $("input[name='prod_tabs']:checked").val();
+   if (modoAntes !== "informacion") {
+      $("input[name='prod_tabs'][value='documentacion']").prop("checked", true);
+   }
    $("#filtro-ot").val(null).trigger("change");
    $("#filtro-anexo").val(null).trigger("change");
-   $("#chk_tipo_normal").prop("checked", true);
-   $("#chk_tipo_extraordinario").prop("checked", true);
+   $("#chk_tipo_normal").prop("checked", true).prop("disabled", false);
+   $("#chk_tipo_extraordinario").prop("checked", true).prop("disabled", false);
    $("#chk_excedentes").prop("checked", false);
+   $("#chk_estado_prog_ejec").prop("checked", true);
+   $("#chk_estado_prog_sin_ejec").prop("checked", false);
+   $("#chk_estado_ejec_sin_prog").prop("checked", true);
    const validador = $("#form-filtros-bi").data("validator");
    if (validador) {
       validador.resetForm();
@@ -193,36 +193,157 @@ const fnActualizarPeriodo = (filtros = null) => {
    const fInicio = (filtros && filtros.fecha_inicio !== undefined) ? filtros.fecha_inicio : $("#fecha_inicio").val();
    const fFin = (filtros && filtros.fecha_fin !== undefined) ? filtros.fecha_fin : $("#fecha_fin").val();
 
-   if (!fInicio || !fFin || fInicio === "" || fFin === "") {
-      const textoHistorico = "Periodo Histórico";
-      periodoTexto.text(textoHistorico);
-      tablaPeriodoTexto.text(textoHistorico);
-      containerPeriodo.show();
-      return;
-   }
-
    const formatearLegible = (fechaStr) => {
       const partes = fechaStr.split("-");
       const meses = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
       return `${partes[2]}/${meses[parseInt(partes[1]) - 1]}/${partes[0]}`;
    };
 
-   const textoFinal = `${formatearLegible(fInicio)} - ${formatearLegible(fFin)}`;
+   let textoFinal;
+   if (fInicio && fFin) {
+      textoFinal = `${formatearLegible(fInicio)} - ${formatearLegible(fFin)}`;
+   } else if (fInicio) {
+      textoFinal = `Desde ${formatearLegible(fInicio)}`;
+   } else if (fFin) {
+      textoFinal = `Hasta ${formatearLegible(fFin)}`;
+   } else {
+      textoFinal = "Periodo Histórico";
+   }
+
    periodoTexto.text(textoFinal);
    tablaPeriodoTexto.text(textoFinal);
    containerPeriodo.show();
+};
+
+const fn_actualizarLabelOts = () => {
+   const contenedor = $("#cc-ots-container");
+   const otsData = fn_getSelect2Data("#filtro-ot");
+   if (!otsData || otsData.length === 0) {
+      contenedor.hide();
+      return;
+   }
+   const textoOts = otsData.map(ot => ot.text).join(" / ");
+   $("#cc-ots-texto").text(`OTs: ${textoOts}`);
+   contenedor.show();
+};
+
+let modoPrevio = "documentacion";
+
+const estadoFiltrosDoc = {
+   ots: [], lideres: [], clientes: [], frentes: [], sitios: [],
+   tipoDoc: [], estatus: [],
+   fechaInicio: "", fechaFin: "",
+   entregados: true, pendientes: true, buscarPorFrente: true, excedentes: false
+};
+
+const estadoFiltrosInfo = {
+   ots: [], lideres: [], clientes: [], sitios: [],
+   anexos: [], partidas: [],
+   fechaInicio: "", fechaFin: "",
+   tipoNormal: true, tipoExtraordinario: true, excedentes: false,
+   progEjec: true, progSinEjec: false, ejecSinProg: true
+};
+
+const fn_restaurarSelect2 = (selector, items) => {
+   const $el = $(selector);
+   $el.val(null).trigger("change");
+   (items || []).forEach(item => {
+      if (!$el.find(`option[value="${item.id}"]`).length) {
+         $el.append(new Option(item.text, item.id, true, true));
+      } else {
+         $el.find(`option[value="${item.id}"]`).prop("selected", true);
+      }
+   });
+   $el.trigger("change");
+};
+
+const fn_getSelect2Data = (selector) => {
+   const $el = $(selector);
+   return ($el.length && $el.data("select2")) ? $el.select2("data") || [] : [];
+};
+
+const fn_guardarEstadoFiltros = (modo) => {
+   if (modo === "documentacion") {
+      estadoFiltrosDoc.ots           = fn_getSelect2Data("#filtro-ot");
+      estadoFiltrosDoc.lideres       = fn_getSelect2Data("#filtro-lider");
+      estadoFiltrosDoc.clientes      = fn_getSelect2Data("#filtro-cliente");
+      estadoFiltrosDoc.frentes       = fn_getSelect2Data("#filtro-frente");
+      estadoFiltrosDoc.sitios        = fn_getSelect2Data("#filtro-sitio");
+      estadoFiltrosDoc.tipoDoc       = fn_getSelect2Data("#filtro-tipo-doc");
+      estadoFiltrosDoc.estatus       = fn_getSelect2Data("#filtro-estatus");
+      estadoFiltrosDoc.fechaInicio   = $("#fecha_inicio").val();
+      estadoFiltrosDoc.fechaFin      = $("#fecha_fin").val();
+      estadoFiltrosDoc.entregados    = $("#chk_entregados").is(":checked");
+      estadoFiltrosDoc.pendientes    = $("#chk_pendientes").is(":checked");
+      estadoFiltrosDoc.buscarPorFrente = $("#chk_buscar_por_frente").is(":checked");
+      estadoFiltrosDoc.excedentes    = $("#chk_excedentes").is(":checked");
+   } else {
+      estadoFiltrosInfo.ots               = fn_getSelect2Data("#filtro-ot");
+      estadoFiltrosInfo.lideres           = fn_getSelect2Data("#filtro-lider");
+      estadoFiltrosInfo.clientes          = fn_getSelect2Data("#filtro-cliente");
+      estadoFiltrosInfo.sitios            = fn_getSelect2Data("#filtro-sitio");
+      estadoFiltrosInfo.anexos            = fn_getSelect2Data("#filtro-anexo");
+      estadoFiltrosInfo.partidas          = $("#filtro-partida").val() || [];
+      estadoFiltrosInfo.fechaInicio       = $("#fecha_inicio").val();
+      estadoFiltrosInfo.fechaFin          = $("#fecha_fin").val();
+      estadoFiltrosInfo.tipoNormal         = $("#chk_tipo_normal").is(":checked");
+      estadoFiltrosInfo.tipoExtraordinario = $("#chk_tipo_extraordinario").is(":checked");
+      estadoFiltrosInfo.excedentes         = $("#chk_excedentes").is(":checked");
+      estadoFiltrosInfo.progEjec           = $("#chk_estado_prog_ejec").is(":checked");
+      estadoFiltrosInfo.progSinEjec        = $("#chk_estado_prog_sin_ejec").is(":checked");
+      estadoFiltrosInfo.ejecSinProg        = $("#chk_estado_ejec_sin_prog").is(":checked");
+   }
+};
+
+const fn_restaurarEstadoFiltros = (modo) => {
+   if (modo === "documentacion") {
+      fn_restaurarSelect2("#filtro-ot",       estadoFiltrosDoc.ots);
+      fn_restaurarSelect2("#filtro-lider",    estadoFiltrosDoc.lideres);
+      fn_restaurarSelect2("#filtro-cliente",  estadoFiltrosDoc.clientes);
+      fn_restaurarSelect2("#filtro-frente",   estadoFiltrosDoc.frentes);
+      fn_restaurarSelect2("#filtro-sitio",    estadoFiltrosDoc.sitios);
+      fn_restaurarSelect2("#filtro-tipo-doc", estadoFiltrosDoc.tipoDoc);
+      fn_restaurarSelect2("#filtro-estatus",  estadoFiltrosDoc.estatus);
+      $("#fecha_inicio").val(estadoFiltrosDoc.fechaInicio);
+      $("#fecha_fin").val(estadoFiltrosDoc.fechaFin);
+      $("#chk_entregados").prop("checked", estadoFiltrosDoc.entregados);
+      $("#chk_pendientes").prop("checked", estadoFiltrosDoc.pendientes);
+      $("#chk_buscar_por_frente").prop("checked", estadoFiltrosDoc.buscarPorFrente);
+      $("#chk_excedentes").prop("checked", estadoFiltrosDoc.excedentes);
+   } else {
+      fn_restaurarSelect2("#filtro-ot",      estadoFiltrosInfo.ots);
+      fn_restaurarSelect2("#filtro-lider",   estadoFiltrosInfo.lideres);
+      fn_restaurarSelect2("#filtro-cliente", estadoFiltrosInfo.clientes);
+      fn_restaurarSelect2("#filtro-sitio",   estadoFiltrosInfo.sitios);
+      fn_restaurarSelect2("#filtro-anexo",   estadoFiltrosInfo.anexos);
+      $("#filtro-partida").val(estadoFiltrosInfo.partidas).trigger("change");
+      $("#fecha_inicio").val(estadoFiltrosInfo.fechaInicio);
+      $("#fecha_fin").val(estadoFiltrosInfo.fechaFin);
+      $("#chk_excedentes").prop("checked", estadoFiltrosInfo.excedentes);
+      $("#chk_estado_prog_ejec").prop("checked", estadoFiltrosInfo.progEjec);
+      $("#chk_estado_prog_sin_ejec").prop("checked", estadoFiltrosInfo.progSinEjec);
+      $("#chk_estado_ejec_sin_prog").prop("checked", estadoFiltrosInfo.ejecSinProg);
+      const tipoTiempoDeshabilitado = estadoFiltrosInfo.progSinEjec;
+      $("#chk_tipo_normal").prop("disabled", tipoTiempoDeshabilitado).prop("checked", tipoTiempoDeshabilitado ? false : estadoFiltrosInfo.tipoNormal);
+      $("#chk_tipo_extraordinario").prop("disabled", tipoTiempoDeshabilitado).prop("checked", tipoTiempoDeshabilitado ? false : estadoFiltrosInfo.tipoExtraordinario);
+   }
 };
 
 const fnActualizarTodo = (botonEjecutar = null) => {
    const textoOriginal = botonEjecutar ? botonEjecutar.html() : "";
    filtrosActivos = fnObtenerFiltrosActuales();
 
-   if (filtrosActivos.fecha_inicio === "" || filtrosActivos.fecha_fin === "") {
-      filtrosActivos.fecha_inicio = null;
-      filtrosActivos.fecha_fin = null;
-   }
+   const tieneFechaInicio = filtrosActivos.fecha_inicio !== "" && filtrosActivos.fecha_inicio !== null;
+   const tieneFechaFin = filtrosActivos.fecha_fin !== "" && filtrosActivos.fecha_fin !== null;
+   if (!tieneFechaInicio) filtrosActivos.fecha_inicio = null;
 
-   fnActualizarPeriodo(filtrosActivos);
+   const fechaInicioLabel = filtrosActivos.fecha_inicio;
+   const fechaFinLabel    = tieneFechaFin ? filtrosActivos.fecha_fin : null;
+
+   if (!tieneFechaFin) filtrosActivos.fecha_fin = tieneFechaInicio ? fnFormatearFecha(new Date()) : null;
+
+   fnActualizarPeriodo({ ...filtrosActivos, fecha_inicio: fechaInicioLabel, fecha_fin: fechaFinLabel });
+   fn_actualizarLabelOts();
 
    if (botonEjecutar) {
       botonEjecutar.prop("disabled", true).html("<i class=\"fas fa-spinner fa-spin me-2\"></i>Consultando...");
@@ -238,9 +359,24 @@ const fnActualizarTodo = (botonEjecutar = null) => {
       headers: { "X-CSRFToken": csrfToken }
    });
 
-   const promesaTabla = new Promise((resolver) => {
-      tablaResultados.ajax.reload(() => resolver(), true);
-   });
+   const usarGrupos = fn_usarModoGrupos();
+   if (usarGrupos) {
+      $("#tabla-doc-wrapper").hide();
+      $("#tabla-grupos-wrapper").show();
+      $("#select-length").hide();
+      $("#select-tamano-grupos-top").show();
+   } else {
+      $("#tabla-grupos-wrapper").hide();
+      $("#tabla-doc-wrapper").show();
+      $("#select-length").show();
+      $("#select-tamano-grupos-top").hide();
+   }
+
+   const promesaTabla = usarGrupos
+      ? fn_actualizarTablaGrupos(true)
+      : new Promise((resolver) => {
+         tablaResultados.ajax.reload(() => resolver(), true);
+      });
 
    Promise.all([peticionDashboard, promesaTabla])
       .then(respuestas => {
@@ -367,8 +503,281 @@ const fnGestionarVisibilidadUbicacion = () => {
 
 let tablaResultados;
 let tablaProduccionInfo = null;
+let tablaGrupos = null;
 let panelFiltrosOffcanvas = null;
 let periodoActivoInfo = null;
+
+const fn_usarModoGrupos = () => {
+   const origenes = $("input[name=\"origen\"]:checked").map(function () { return $(this).val(); }).get();
+   return origenes.some(o => o === "PTE" || o === "OT" || o === "PROD");
+};
+
+const fn_celdaAccionDetalle = (fila) => {
+   const clasesFlex = "d-inline-flex align-items-center justify-content-center gap-1";
+   const estiloBadge = "font-size: 0.75rem; min-width: 90px; padding: 5px 8px;";
+   const tieneArchivo = (fila.archivo && fila.archivo.trim() !== "") ? true : false;
+
+   if (tieneArchivo) {
+      const esDescarga = /\.(xlsx|xls|csv|zip)$/i.test(fila.archivo);
+      const iconoArchivo = esDescarga ? "fa-download" : "fa-eye";
+      const textoEtiqueta = esDescarga ? "Bajar" : "Ver";
+      const atributosEnlace = esDescarga ? "download" : "target=\"_blank\"";
+      return `<a href="${fila.archivo}" ${atributosEnlace} class="btn-accion-tabla activo text-decoration-none ${clasesFlex}">
+                  <i class="fas ${iconoArchivo}"></i>${textoEtiqueta}
+               </a>`;
+   }
+
+   const esNoAplica = (fila.estatus_paso_id == 14) ? true : false;
+   if (esNoAplica) {
+      return `<span class="badge bg-secondary text-white fw-normal ${clasesFlex}" style="${estiloBadge}">
+                  <i class="fas fa-ban" style="font-size: 0.7rem;"></i>No aplica
+               </span>`;
+   }
+
+   return `<span class="badge bg-transparent border text-muted fw-normal ${clasesFlex}" style="${estiloBadge} color: #54565a !important; border-color: #ccc !important;">
+               <i class="fas fa-clock" style="font-size: 0.7rem;"></i>Pendiente
+            </span>`;
+};
+
+const fn_nombreMes = (mes) => ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"][mes - 1] || "Sin mes";
+
+const fn_htmlContenedorDetalle = (idPadre, titulo = "Documentos") => {
+   return `
+      <div class="detalle-grupo-container p-2 ps-4" style="background-color: #f8f9fa;">
+         <div class="detalle-grupo-content">
+            <h6 class="mb-3">${titulo}</h6>
+            <table id="tabla-detalle-${idPadre}" class="table table-sm table-bordered w-100"></table>
+         </div>
+      </div>`;
+};
+
+const fn_htmlContenedorMeses = (idPadre) => {
+   return `
+      <div class="detalle-grupo-container p-2 ps-4" style="background-color: #f8f9fa;">
+         <div class="detalle-grupo-content">
+            <h6 class="mb-3">Períodos de producción</h6>
+            <table id="tabla-meses-${idPadre}" class="table table-sm table-bordered w-100"></table>
+         </div>
+      </div>`;
+};
+
+const fn_inicializarTablaDetalleDocs = (idPadre, tipo) => {
+   $(`#tabla-detalle-${idPadre}`).DataTable({
+      processing: true,
+      serverSide: false,
+      searching: true,
+      paging: true,
+      pageLength: 10,
+      info: true,
+      lengthChange: false,
+      ordering: false,
+      language: DT_IDIOMA,
+      dom: "<\"row\"<\"col-sm-12 mb-2\"f><\"col-sm-12\"tr>><\"row\"<\"col-sm-12 col-md-6\"i><\"col-sm-12 col-md-6\"p>>",
+      ajax: function (_parametros, callback) {
+         $.ajax({
+            url: urlDetalleGrupo,
+            type: "POST",
+            data: JSON.stringify({ "tipo": tipo, "id_grupo": idPadre, "filtros": filtrosActivos }),
+            contentType: "application/json",
+            headers: { "X-CSRFToken": csrfToken },
+            success: function (respuesta) {
+               callback({ data: respuesta.data || [] });
+            },
+            error: function () {
+               callback({ data: [] });
+            }
+         });
+      },
+      columns: [
+         {
+            title: "Documento / Entregable", data: null, className: "align-middle",
+            render: (_d, _t, fila) => {
+               const docTexto = (tipo !== "PROD_MES" && fila.orden_paso && fila.orden_paso !== "0")
+                  ? `${fila.orden_paso} — ${fila.documento}`
+                  : fila.documento;
+               return `<div class="texto-principal" style="font-size: 0.85rem;">${docTexto}</div><div class="texto-secundario">${fila._descripcion_estatus || "—"}</div>`;
+            }
+         },
+         { title: "Fecha", data: "fecha", width: "110px", className: "align-middle text-nowrap", render: (d) => fnFormatFecha(d || "") },
+         { title: "Acción", data: null, width: "90px", className: "text-center align-middle", orderable: false, render: (_d, _t, fila) => fn_celdaAccionDetalle(fila) }
+      ],
+      initComplete: function () {
+         const tablaDetalle = this.api();
+         const placeholder = "Escriba algo para filtrar...";
+         $(`#tabla-detalle-${idPadre}_filter`).html(`
+            <div class="input-group input-group-sm">
+               <span class="input-group-text bg-light border-end-0"><i class="fas fa-search"></i></span>
+               <input type="text" class="form-control border-start-0" placeholder="${placeholder}">
+            </div>
+         `);
+         $(`#tabla-detalle-${idPadre}_filter input`).on("keyup", function () {
+            tablaDetalle.search($(this).val()).draw();
+         });
+      }
+   });
+};
+
+const fn_inicializarTablaMeses = (idPadre) => {
+   const tablaMeses = $(`#tabla-meses-${idPadre}`).DataTable({
+      processing: true,
+      serverSide: false,
+      searching: false,
+      paging: false,
+      info: false,
+      lengthChange: false,
+      language: DT_IDIOMA,
+      dom: "<\"row\"<\"col-sm-12\"tr>>",
+      ajax: function (_parametros, callback) {
+         $.ajax({
+            url: urlDetalleGrupo,
+            type: "POST",
+            data: JSON.stringify({ "tipo": "PROD", "id_grupo": idPadre, "filtros": filtrosActivos }),
+            contentType: "application/json",
+            headers: { "X-CSRFToken": csrfToken },
+            success: function (respuesta) {
+               callback({ data: respuesta.data || [] });
+            },
+            error: function () {
+               callback({ data: [] });
+            }
+         });
+      },
+      columns: [
+         {
+            title: "Período", data: null, className: "align-middle",
+            render: (_d, _t, fila) => {
+               const label = (fila.mes && fila.anio) ? `${fn_nombreMes(fila.mes)} ${fila.anio}` : "Sin Fecha";
+               const idMes = `${idPadre}_${fila.mes}_${fila.anio}`;
+               return `<button class="btn-toggle-mes btn btn-sm p-0 me-1 text-secondary border-0 bg-transparent" data-id-padre="${idMes}" title="Expandir ${label}"><i class="fas fa-plus-square"></i></button>${label}`;
+            }
+         },
+         {
+            title: "Documentos", data: "total_docs", width: "150px", className: "align-middle text-muted",
+            render: (d) => `${d} documento${d !== 1 ? "s" : ""}`
+         }
+      ]
+   });
+
+   $(`#tabla-meses-${idPadre}`).on("click", ".btn-toggle-mes", function () {
+      const $btn      = $(this);
+      const idPadreMes = $btn.data("id-padre");
+      const $tr       = $btn.closest("tr");
+      const $icono    = $btn.find("i");
+      const filaMes   = tablaMeses.row($tr);
+
+      if (filaMes.child.isShown()) {
+         const $tablaDocsMes = $(`#tabla-detalle-${idPadreMes}`);
+         if ($tablaDocsMes.length && $.fn.DataTable.isDataTable($tablaDocsMes)) {
+            $tablaDocsMes.DataTable().destroy();
+         }
+         filaMes.child.hide();
+         $icono.removeClass("fa-minus-square").addClass("fa-plus-square");
+      } else {
+         $icono.removeClass("fa-plus-square").addClass("fa-minus-square");
+         filaMes.child($("<div>").html(fn_htmlContenedorDetalle(idPadreMes, "Documentos del período"))).show();
+         fn_inicializarTablaDetalleDocs(idPadreMes, "PROD_MES");
+      }
+   });
+};
+
+const DT_IDIOMA = {
+   "lengthMenu": "_MENU_",
+   "processing": "Procesando...",
+   "info": "Mostrando _END_ de _TOTAL_ registros.",
+   "infoEmpty": "No hay registros disponibles",
+   "infoFiltered": "(filtrado de _MAX_ registros totales)",
+   "emptyTable": "Ningún dato disponible en esta tabla",
+   "zeroRecords": "No se encontraron resultados",
+   "paginate": { "previous": "‹", "next": "›" }
+};
+
+const fn_inicializarTablaGrupos = () => {
+   if (tablaGrupos) return;
+   tablaGrupos = $("#tabla-grupos").DataTable({
+      serverSide: true,
+      processing: true,
+      pageLength: 10,
+      dom: '<"d-none"l><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
+      responsive: true,
+      searching: false,
+      lengthChange: true,
+      language: DT_IDIOMA,
+      ajax: function (parametrosDT, callbackDT) {
+         const payloadPaginacion = {
+            "draw": parametrosDT.draw,
+            "start": parametrosDT.start,
+            "length": parametrosDT.length,
+            "filtros": filtrosActivos
+         };
+         $.ajax({
+            url: urlBusquedaGrupos,
+            type: "POST",
+            data: JSON.stringify(payloadPaginacion),
+            contentType: "application/json",
+            headers: { "X-CSRFToken": csrfToken },
+            success: function (respuestaServidor) {
+               $("#badge-registros").text(`${respuestaServidor.recordsTotal} Registros`);
+               callbackDT(respuestaServidor);
+            },
+            error: function (error) {
+               console.error("Error en tabla grupos:", error);
+               callbackDT({ "draw": parametrosDT.draw, "recordsTotal": 0, "recordsFiltered": 0, "data": [] });
+            }
+         });
+      },
+      columns: [
+         {
+            title: "", data: null, width: "1%",
+            className: "text-center align-middle", orderable: false,
+            render: (_datoColumna, _tipoRender, fila) => {
+               const esExpandible = (fila.tipo === "PTE" || fila.tipo === "OT" || fila.tipo === "PROD");
+               return esExpandible
+                  ? `<button class="btn-toggle-grupo btn btn-sm p-0 text-secondary border-0 bg-transparent" data-id-padre="${fila.id_padre}" data-tipo="${fila.tipo}" title="Expandir"><i class="fas fa-plus-square"></i></button>`
+                  : "";
+            }
+         },
+         {
+            title: "Origen", data: null, width: "90px",
+            className: "text-center align-middle", orderable: false,
+            render: (_datoColumna, _tipoRender, fila) => fnBadgeTipo(fila.tipo)
+         },
+         {
+            title: "Folio / Proyecto", data: null, className: "align-middle",
+            render: (_datoColumna, _tipoRender, fila) => fnCeldaFolio(fila)
+         },
+         {
+            title: "Metadatos (Líder/Frente)", data: null, className: "align-middle",
+            render: (_datoColumna, _tipoRender, fila) => {
+               const sitioMostrable = fila.sitio && fila.sitio !== "NO APLICA" && fila.sitio !== "SIN UBICACIÓN";
+               const htmlSitio = sitioMostrable
+                  ? `<div class="meta-sitio"><i class="fas fa-map-marker-alt"></i>${fila.sitio}</div>`
+                  : "";
+               const htmlFrente = (fila.frente && fila.frente !== "N/A")
+                  ? `<div class="texto-secundario">Frente: ${fila.frente}</div>`
+                  : `<div class="texto-secundario">Cliente: ${fila.cliente}</div>`;
+               return `<div class="celda-contenedor">
+                  <div class="texto-lider">${fila.lider || "Sin Líder"}</div>
+                  ${htmlFrente}
+                  ${htmlSitio}
+               </div>`;
+            }
+         },
+      ],
+      initComplete: function () {
+         const contenedorSelector = $("#tabla-grupos_length").detach();
+         $("#select-tamano-grupos-top").html(contenedorSelector);
+         const selectGrupos = $("#select-tamano-grupos-top select");
+         selectGrupos.addClass("form-select form-select-sm d-inline-block w-auto mx-2");
+      }
+   });
+};
+
+const fn_actualizarTablaGrupos = (resetPagina = true) => {
+   fn_inicializarTablaGrupos();
+   return new Promise((resolver) => {
+      tablaGrupos.ajax.reload(() => resolver(), resetPagina);
+   });
+};
 
 $(document).ready(function () {
    const elementoDOMPanel = document.getElementById("panelFiltros");
@@ -394,7 +803,25 @@ $(document).ready(function () {
    });
 
    $("#filtro-ot").select2(opcionesAjaxSelect2(urlObtenerOts, "Buscar OT..."));
-   $("#filtro-partida").select2(opcionesAjaxSelect2(urlBuscarPartidasCc, "Buscar partida..."));
+   $("#filtro-partida").select2({
+      width: "100%",
+      dropdownParent: $("#panelFiltros"),
+      multiple: true,
+      placeholder: "Buscar partida...",
+      allowClear: true,
+      minimumInputLength: 2,
+      language: {
+         inputTooShort: () => "Escribe al menos 2 caracteres",
+         noResults: () => "Sin resultados"
+      },
+      ajax: {
+         url: urlBuscarProductosCatalogo,
+         dataType: "json",
+         delay: 300,
+         data: (params) => ({ q: params.term || "" }),
+         processResults: (datos) => ({ results: datos.results })
+      }
+   });
 
    fnEstadoInicialPanel();
    filtrosActivos = fnObtenerFiltrosEstaticos();
@@ -403,23 +830,11 @@ $(document).ready(function () {
       serverSide: true,
       processing: true,
       pageLength: 10,
-      dom: '<"row"><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
+      dom: '<"d-none"l><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
       responsive: true,
       searching: false,
       lengthChange: true,
-      language: {
-         "lengthMenu": "_MENU_",
-         "processing": "Procesando...",
-         "info": "Mostrando _END_ de _TOTAL_ registros.",
-         "infoEmpty": "No hay registros disponibles",
-         "infoFiltered": "(filtrado de _MAX_ registros totales)",
-         "emptyTable": "Ningún dato disponible en esta tabla",
-         "zeroRecords": "No se encontraron resultados",
-         "paginate": {
-            "previous": "‹",
-            "next": "›"
-         }
-      },
+      language: DT_IDIOMA,
       ajax: function (parametrosDT, callbackDT) {
          const payloadPaginacion = {
             "draw": parametrosDT.draw,
@@ -455,7 +870,16 @@ $(document).ready(function () {
       initComplete: function () {
          const contenedorSelector = $("#tabla-resultados_length").detach();
          $("#select-length").html(contenedorSelector);
-         $("#select-length select").addClass("form-select form-select-sm d-inline-block w-auto mx-2");
+         const selectDoc = $("#select-length select");
+         selectDoc.addClass("form-select form-select-sm d-inline-block w-auto mx-2");
+         selectDoc.val("10");
+         if (fn_usarModoGrupos()) {
+            $("#tabla-doc-wrapper").hide();
+            $("#tabla-grupos-wrapper").show();
+            $("#select-length").hide();
+            $("#select-tamano-grupos-top").show();
+            fn_actualizarTablaGrupos(true);
+         }
       }
    });
 
@@ -576,6 +1000,13 @@ $(document).ready(function () {
       }
    });
 
+   $("#chk_estado_prog_sin_ejec").on("change", function () {
+      const programadaSinEjecActiva = $(this).is(":checked");
+      $("#chk_tipo_normal, #chk_tipo_extraordinario")
+         .prop("disabled", programadaSinEjecActiva)
+         .prop("checked", !programadaSinEjecActiva);
+   });
+
 $("#filtro-buscar").on("keyup", function (eventoTeclado) {
       if (eventoTeclado.key === "Enter") {
          filtrosActivos = fnObtenerFiltrosActuales();
@@ -598,10 +1029,17 @@ $("#filtro-buscar").on("keyup", function (eventoTeclado) {
       const instanciaBoton = $(this);
 
       if (fnModoActual() === "informacion") {
+         const estadosActivos = $("#chk_estado_prog_ejec, #chk_estado_prog_sin_ejec, #chk_estado_ejec_sin_prog").filter(":checked").length;
+         if (estadosActivos === 0) {
+            alert("Selecciona al menos un Estado de Producción.");
+            return;
+         }
          periodoActivoInfo = fnObtenerFiltrosProdInfo();
          fnActualizarPeriodo(periodoActivoInfo);
+         fn_actualizarLabelOts();
          instanciaBoton.prop("disabled", true).html("<i class=\"fas fa-spinner fa-spin me-2\"></i>Consultando...");
          fnInicializarTablaInfo();
+         $("#select-length-info select").val("10").trigger("change");
          tablaProduccionInfo.ajax.reload(() => {
             instanciaBoton.prop("disabled", false).html("<i class=\"fas fa-search me-2\"></i>Buscar");
          }, true);
@@ -610,6 +1048,7 @@ $("#filtro-buscar").on("keyup", function (eventoTeclado) {
          return;
       }
 
+      $("#select-length select").val("10").trigger("change");
       filtrosActivos = fnObtenerFiltrosActuales();
       fnActualizarTodo(instanciaBoton);
    });
@@ -626,10 +1065,13 @@ $("#filtro-buscar").on("keyup", function (eventoTeclado) {
          fnMostrarModoInformacion();
          periodoActivoInfo = fnObtenerFiltrosProdInfo();
          fnActualizarPeriodo(periodoActivoInfo);
+         fn_actualizarLabelOts();
+         $("#select-length-info select").val("10").trigger("change");
          fnRecargarTablaInfo();
       } else {
          fnMostrarModoDocumentacion();
          filtrosActivos = fnObtenerFiltrosEstaticos();
+         $("#select-length select").val("10").trigger("change");
          fnActualizarTodo();
       }
    });
@@ -671,6 +1113,54 @@ $("#filtro-buscar").on("keyup", function (eventoTeclado) {
       }, 350);
    });
 
+   $(document).on("click", ".btn-toggle-grupo", function () {
+      const $btn      = $(this);
+      const idPadre   = $btn.data("id-padre");
+      const tipo      = $btn.data("tipo");
+      const $trHeader = $btn.closest("tr");
+      const $icono    = $btn.find("i");
+      const filaTabla = tablaGrupos.row($trHeader);
+
+      if (filaTabla.child.isShown()) {
+         const selectorTablaHija = tipo === "PROD" ? `#tabla-meses-${idPadre}` : `#tabla-detalle-${idPadre}`;
+         const $tablaHija = $(selectorTablaHija);
+         if ($tablaHija.length && $.fn.DataTable.isDataTable($tablaHija)) {
+            $tablaHija.DataTable().destroy();
+         }
+         filaTabla.child.hide();
+         $icono.removeClass("fa-minus-square").addClass("fa-plus-square");
+      } else {
+         $icono.removeClass("fa-plus-square").addClass("fa-minus-square");
+         if (tipo === "PROD") {
+            filaTabla.child($("<div>").html(fn_htmlContenedorMeses(idPadre))).show();
+            fn_inicializarTablaMeses(idPadre);
+         } else {
+            filaTabla.child($("<div>").html(fn_htmlContenedorDetalle(idPadre, `Documentos de la ${tipo}`))).show();
+            fn_inicializarTablaDetalleDocs(idPadre, tipo);
+         }
+      }
+   });
+
+   $("#grupos-paginacion").on("click", "li.paginate_button", function () {
+      if ($(this).hasClass("disabled") || $(this).hasClass("active")) return;
+      const totalPaginas = Math.ceil(estadoPaginaGrupos.total / estadoPaginaGrupos.tamano) || 1;
+      if ($(this).hasClass("previous")) {
+         if (estadoPaginaGrupos.pagina <= 1) return;
+         estadoPaginaGrupos.pagina--;
+      } else if ($(this).hasClass("next")) {
+         if (estadoPaginaGrupos.pagina >= totalPaginas) return;
+         estadoPaginaGrupos.pagina++;
+      } else {
+         estadoPaginaGrupos.pagina = parseInt($(this).data("pagina"));
+      }
+      fn_actualizarTablaGrupos(false);
+   });
+
+   $("#select-tamano-grupos").on("change", function () {
+      estadoPaginaGrupos.tamano = parseInt($(this).val());
+      fn_actualizarTablaGrupos(true);
+   });
+
    $("#btn-expandir-grafica-info").on("click", function () {
       const botonActual = $(this);
       const esModoExpandido = botonActual.find("i").hasClass("fa-compress") ? true : false;
@@ -708,20 +1198,28 @@ $("#filtro-buscar").on("keyup", function (eventoTeclado) {
 
       const botonExportar = $(this);
       const textoOriginal = botonExportar.html();
+      const esModuloInfo = $("#tab-info").is(":checked");
 
-      const itemsOrigenes = $("input[name=\"origen\"]:checked");
+      let urlEndpoint, payloadExportacion, nombreArchivo;
+      const fechaGeneracion = new Date().toISOString().slice(0, 10).replace(/-/g, "");
 
-      const filtrosParaExportar = (itemsOrigenes.length === 0)
-         ? fnObtenerFiltrosEstaticos()
-         : fnObtenerFiltrosActuales();
+      if (esModuloInfo) {
+         if (!periodoActivoInfo) {
+            alert("Primero ejecuta una búsqueda en el módulo de Información.");
+            return;
+         }
+         urlEndpoint = "/operaciones/centro_consulta/descargar-excel-info/";
+         payloadExportacion = { "filtros": periodoActivoInfo };
+         nombreArchivo = `Reporte_Produccion_${fechaGeneracion}.xlsx`;
+      } else {
+         urlEndpoint = "/operaciones/centro_consulta/descargar-excel/";
+         payloadExportacion = { "filtros": filtrosActivos };
+         nombreArchivo = `Reporte_SASCOP_BI_${fechaGeneracion}.xlsx`;
+      }
 
       botonExportar.prop("disabled", true).html("<i class=\"fas fa-spinner fa-spin me-2\"></i>Generando Reporte...");
 
-      const payloadExportacion = {
-         "filtros": filtrosParaExportar
-      };
-
-      fetch("/operaciones/centro_consulta/descargar-excel/", {
+      fetch(urlEndpoint, {
          method: "POST",
          headers: {
             "Content-Type": "application/json",
@@ -738,9 +1236,7 @@ $("#filtro-buscar").on("keyup", function (eventoTeclado) {
          const urlDescarga = window.URL.createObjectURL(archivoBinario);
          const enlaceDescarga = document.createElement("a");
          enlaceDescarga.href = urlDescarga;
-
-         const fechaGeneracion = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-         enlaceDescarga.download = `Reporte_SASCOP_BI_${fechaGeneracion}.xlsx`;
+         enlaceDescarga.download = nombreArchivo;
 
          document.body.appendChild(enlaceDescarga);
          enlaceDescarga.click();
@@ -809,6 +1305,9 @@ $("#filtro-buscar").on("keyup", function (eventoTeclado) {
 
    $("#btn-enviar-correo").on("click", function (eventoClick) {
       eventoClick.preventDefault();
+      const esInfoMode = fnModoActual() === "informacion";
+      $("#contenedor-graficas-correo").toggle(!esInfoMode);
+      $("#contenedor-graficas-correo-info").toggle(esInfoMode);
       modalCorreoInstancia.show();
    });
 
@@ -866,8 +1365,16 @@ $("#filtro-buscar").on("keyup", function (eventoTeclado) {
       if ($("#chk_tipo_normal").is(":checked")) tiposSeleccionados.push($("#chk_tipo_normal").val());
       if ($("#chk_tipo_extraordinario").is(":checked")) tiposSeleccionados.push($("#chk_tipo_extraordinario").val());
 
-      const anexos      = $("#filtro-anexo").val();
-      const partidas    = $("#filtro-partida").val();
+      const anexos         = $("#filtro-anexo").val();
+      const partidasData   = $("#filtro-partida").select2("data");
+      const partidas       = partidasData.map(d => {
+         const partes = d.text.split(" - ");
+         return {
+            partida:     d.partida,
+            descripcion: partes.slice(1, -1).join(" - "),
+            clave_anexo: d.clave_anexo
+         };
+      });
       const ots         = $("#filtro-ot").val();
       const clientes    = $("#filtro-cliente").val();
       const lideres     = $("#filtro-lider").val();
@@ -876,14 +1383,17 @@ $("#filtro-buscar").on("keyup", function (eventoTeclado) {
          "ots_id":        ots ? ots : [],
          "tipos_tiempo":  tiposSeleccionados,
          "anexos":        anexos ? anexos : [],
-         "partidas_id":   partidas ? partidas : [],
+         "partidas_id":   partidas,
          "clientes_id":   clientes ? clientes : [],
          "lideres_id":    lideres ? lideres : [],
          "sitios_id":     sitios ? sitios : [],
          "fecha_inicio":  $("#fecha_inicio").val() || null,
          "fecha_fin":     $("#fecha_fin").val() || null,
-         "es_excedente":  $("#chk_excedentes").is(":checked") ? true : null,
-         "texto_busqueda": $("#filtro-buscar-info").val()
+         "es_excedente":        $("#chk_excedentes").is(":checked") ? true : null,
+         "texto_busqueda":      $("#filtro-buscar-info").val(),
+         "estado_prog_ejec":    $("#chk_estado_prog_ejec").is(":checked"),
+         "estado_prog_sin_ejec": $("#chk_estado_prog_sin_ejec").is(":checked"),
+         "estado_ejec_sin_prog": $("#chk_estado_ejec_sin_prog").is(":checked")
       };
    };
 
@@ -996,20 +1506,11 @@ $("#filtro-buscar").on("keyup", function (eventoTeclado) {
          serverSide: true,
          processing: true,
          pageLength: 10,
-         dom: '<"row"><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
+         dom: '<"d-none"l><"row"<"col-sm-12"tr>><"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
          responsive: true,
          searching: false,
          lengthChange: true,
-         language: {
-            "lengthMenu": "_MENU_",
-            "processing": "Procesando...",
-            "info": "Mostrando _END_ de _TOTAL_ registros.",
-            "infoEmpty": "No hay registros disponibles",
-            "infoFiltered": "(filtrado de _MAX_ registros totales)",
-            "emptyTable": "Ningún dato disponible en esta tabla",
-            "zeroRecords": "No se encontraron resultados",
-            "paginate": { "previous": "‹", "next": "›" }
-         },
+         language: DT_IDIOMA,
          ajax: function (parametrosDT, callbackDT) {
             const payloadPaginacion = {
                "draw": parametrosDT.draw,
@@ -1041,7 +1542,6 @@ $("#filtro-buscar").on("keyup", function (eventoTeclado) {
             { title: "Anexo", data: "anexo", width: "70px", className: "align-middle text-center" },
             { title: "Partida", data: "partida", className: "align-middle" },
             { title: "Vol. Producido", data: "vol_producido", width: "110px", className: "align-middle text-end" },
-            { title: "Vol. Proyectado", data: "vol_proyectado", width: "120px", className: "align-middle text-end" },
             { title: "Vol. Programado", data: "vol_programado", width: "120px", className: "align-middle text-end" },
             { title: "Fecha", data: "fecha_produccion", width: "100px", className: "align-middle text-nowrap" },
             { title: "Tipo", data: "tipo_tiempo", width: "70px", className: "align-middle text-center" },
@@ -1053,14 +1553,16 @@ $("#filtro-buscar").on("keyup", function (eventoTeclado) {
             const hayProgramado = filasActuales.some(
                fila => fila.vol_programado !== null && fila.vol_programado !== undefined
             );
-            if (api.column(5).visible() !== hayProgramado) {
-               api.column(5).visible(hayProgramado, false);
+            if (api.column(4).visible() !== hayProgramado) {
+               api.column(4).visible(hayProgramado, false);
             }
          },
          initComplete: function () {
             const contenedorSelector = $("#tabla-produccion-info_length").detach();
             $("#select-length-info").html(contenedorSelector);
-            $("#select-length-info select").addClass("form-select form-select-sm d-inline-block w-auto mx-2");
+            const selectInfo = $("#select-length-info select");
+            selectInfo.addClass("form-select form-select-sm d-inline-block w-auto mx-2");
+            if (!selectInfo.val()) selectInfo.val("10").trigger("change");
          }
       });
    };
@@ -1090,6 +1592,10 @@ $("#filtro-buscar").on("keyup", function (eventoTeclado) {
 
    $("input[name='prod_tabs']").on("change", function () {
       const modoSeleccionado = $(this).val();
+      fn_guardarEstadoFiltros(modoPrevio);
+      modoPrevio = modoSeleccionado;
+      fn_restaurarEstadoFiltros(modoSeleccionado);
+      fn_actualizarLabelOts();
       if (modoSeleccionado === "informacion") {
          fnMostrarModoInformacion();
          if (periodoActivoInfo === null) {
@@ -1128,37 +1634,38 @@ $("#filtro-buscar").on("keyup", function (eventoTeclado) {
    $("#btn-procesar-envio").on("click", function () {
       const formularioCorreo = $("#form-enviar-correo");
       const esValido = formularioCorreo.valid();
-      if (!esValido) {
-         return;
-      }
+      if (!esValido) return;
 
       const cadenaCorreosCruda = $("#input-correos").val().trim();
       const arregloLimpio = cadenaCorreosCruda.split(",").map(correo => correo.trim()).filter(correo => correo !== "");
       const cadenaCorreosFinal = arregloLimpio.join(", ");
 
-      const checksActivos = $(".chk-grafica-exportar:checked");
-      const graficasSeleccionadas = checksActivos.length > 0 
-         ? checksActivos.map(function() { return $(this).val(); }).get() 
-         : [];
-
       const botonProcesar = $(this);
       const textoOriginal = botonProcesar.html();
       botonProcesar.prop("disabled", true).html("<i class=\"fas fa-spinner fa-spin me-2\"></i>Enviando...");
 
-      const imagenesExtraidas = fnGenerarImagenesBase64(graficasSeleccionadas);
+      let imagenesExtraidas = [];
+      let payloadCorreo = {};
+      let urlEnvio = "";
 
-      const payloadCorreo = {
-         "correos": cadenaCorreosFinal,
-         "filtros": fnObtenerFiltrosActuales(),
-         "graficas": imagenesExtraidas
-      };
+      if (fnModoActual() === "informacion") {
+         const tabsSeleccionadas = $(".chk-grafica-info:checked").map(function () { return $(this).val(); }).get();
+         imagenesExtraidas = ccDashboardInfo.fnCapturarGraficas(tabsSeleccionadas);
+         payloadCorreo = { "correos": cadenaCorreosFinal, "filtros": periodoActivoInfo, "graficas": imagenesExtraidas };
+         urlEnvio = urlEnviarCorreoInfo;
+      } else {
+         const checksActivos = $(".chk-grafica-exportar:checked");
+         const graficasSeleccionadas = checksActivos.length > 0
+            ? checksActivos.map(function () { return $(this).val(); }).get()
+            : [];
+         imagenesExtraidas = fnGenerarImagenesBase64(graficasSeleccionadas);
+         payloadCorreo = { "correos": cadenaCorreosFinal, "filtros": fnObtenerFiltrosActuales(), "graficas": imagenesExtraidas };
+         urlEnvio = urlEnviarCorreoBi;
+      }
 
-      fetch(urlEnviarCorreoBi, {
+      fetch(urlEnvio, {
          method: "POST",
-         headers: {
-            "Content-Type": "application/json",
-            "X-CSRFToken": csrfToken
-         },
+         headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken },
          body: JSON.stringify(payloadCorreo)
       })
       .then(respuestaServidor => {
@@ -1166,7 +1673,7 @@ $("#filtro-buscar").on("keyup", function (eventoTeclado) {
          if (!peticionExitosa) throw new Error("Error al enviar el correo desde el servidor.");
          return respuestaServidor.json();
       })
-      .then(datosRespuesta => {
+      .then(() => {
          modalCorreoInstancia.hide();
          $("#destinatarios-exito").text(cadenaCorreosFinal);
          modalExitoInstancia.show();

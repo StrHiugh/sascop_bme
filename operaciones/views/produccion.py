@@ -946,7 +946,8 @@ def buscar_productos_catalogo(request):
             'partida': codigo,
             'unidad': c.unidad_medida.clave if c.unidad_medida else 'N/A',
             'precio': float(c.precio_unitario_mn or 0),
-            'precio_usd': float(c.precio_unitario_usd or 0)
+            'precio_usd': float(c.precio_unitario_usd or 0),
+            'clave_anexo': c.sub_anexo.clave_anexo if c.sub_anexo else 'S/A'
         })
     
     return JsonResponse({'results': results})
