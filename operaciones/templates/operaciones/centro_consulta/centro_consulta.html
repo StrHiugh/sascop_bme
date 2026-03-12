@@ -245,7 +245,7 @@
     <div class="offcanvas offcanvas-end" tabindex="-1" id="panelFiltros" aria-labelledby="panelFiltrosLabel">
         <div class="offcanvas-header bg-light border-bottom py-3">
             <h5 class="offcanvas-title fw-bold" id="panelFiltrosLabel">
-                <i class="fas fa-sliders-h me-2 text-primary"></i>Filtros
+                <i></i>Filtros
             </h5>
             <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
         </div>
@@ -402,8 +402,8 @@
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header bg-light border-bottom">
-                    <h5 class="modal-title fw-bold text-primary" id="modalCorreoLabel">
-                        <i class="fas fa-envelope me-2"></i>Enviar Reporte y Gráficas
+                    <h5 class="modal-title fw-bold" id="modalCorreoLabel">
+                        <i></i>Enviar Reporte y Gráficas
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                 </div>
@@ -571,7 +571,7 @@
         var urlObtenerOts            = "{% url 'operaciones:api_obtener_ots_cc' %}";
         var urlObtenerEstatusCobro   = "{% url 'operaciones:api_obtener_estatus_cobro_cc' %}";
         var urlObtenerAnexos         = "{% url 'operaciones:api_obtener_anexos_cc' %}";
-        var urlBuscarPartidasCc      = "{% url 'operaciones:api_buscar_partidas_cc' %}";
+        var urlBuscarProductosCatalogo = "{% url 'operaciones:buscar_productos_catalogo' %}";
         var urlBusquedaProdInfo      = "{% url 'operaciones:api_busqueda_prod_info' %}";
         var urlBusquedaGrupos        = "{% url 'operaciones:api_busqueda_grupos' %}";
         var urlDetalleGrupo          = "{% url 'operaciones:api_detalle_grupo' %}";

@@ -246,7 +246,7 @@ def fn_obtener_subconsulta_origenes(lista_origenes):
          s_pat.descripcion AS sitio_pat_desc,
          s_emb.descripcion AS sitio_emb_desc,
          s_plat.descripcion AS sitio_plat_desc,
-         'GENERADOR DE PRECIOS UNITARIOS' AS documento,
+         COALESCE(pai.id_partida::text, '') || ' - GENERADOR DE PRECIOS UNITARIOS' AS documento,
          CASE
             WHEN p.fecha_produccion IS NULL THEN 'NO ENTREGADO'
             ELSE TO_CHAR(p.fecha_produccion, 'DD/MM/YYYY')
@@ -334,7 +334,8 @@ def fn_obtener_subconsulta_grupos(lista_origenes):
          NULL::integer AS _fid_embarcacion,
          NULL::integer AS _fid_plataforma,
          ce.descripcion AS _descripcion_estatus,
-         COALESCE(NULLIF(TRIM(p.orden), ''), '0') AS orden_paso
+         COALESCE(NULLIF(TRIM(p.orden), ''), '0') AS orden_paso,
+         pd.id_paso_id AS id_paso
       FROM
          pte_detalle pd
       INNER JOIN pte_header ph ON
@@ -390,7 +391,8 @@ def fn_obtener_subconsulta_grupos(lista_origenes):
          o.id_embarcacion AS _fid_embarcacion,
          o.id_plataforma AS _fid_plataforma,
          ce.descripcion AS _descripcion_estatus,
-         COALESCE(NULLIF(TRIM(pot.orden), ''), '0') AS orden_paso
+         COALESCE(NULLIF(TRIM(pot.orden), ''), '0') AS orden_paso,
+         od.id_paso_id AS id_paso
       FROM
          ot_detalle od
       INNER JOIN ot o ON
@@ -462,7 +464,8 @@ def fn_obtener_subconsulta_grupos(lista_origenes):
          o.id_embarcacion AS _fid_embarcacion,
          o.id_plataforma AS _fid_plataforma,
          ce.descripcion AS _descripcion_estatus,
-         NULL AS orden_paso
+         NULL AS orden_paso,
+         NULL::integer AS id_paso
       FROM
          reporte_mensual_header rmh
       INNER JOIN ot o ON
@@ -509,7 +512,7 @@ def fn_obtener_subconsulta_grupos(lista_origenes):
          s_pat.descripcion AS sitio_pat_desc,
          s_emb.descripcion AS sitio_emb_desc,
          s_plat.descripcion AS sitio_plat_desc,
-         'GENERADOR DE PRECIOS UNITARIOS' AS documento,
+         COALESCE(pai.id_partida::text, '') || ' - GENERADOR DE PRECIOS UNITARIOS' AS documento,
          CASE
             WHEN p.fecha_produccion IS NULL THEN 'NO ENTREGADO'
             ELSE TO_CHAR(p.fecha_produccion, 'DD/MM/YYYY')
@@ -524,7 +527,8 @@ def fn_obtener_subconsulta_grupos(lista_origenes):
          o.id_embarcacion AS _fid_embarcacion,
          o.id_plataforma AS _fid_plataforma,
          ce.descripcion AS _descripcion_estatus,
-         NULL AS orden_paso
+         NULL AS orden_paso,
+         NULL::integer AS id_paso
       FROM
          registro_generadores_pu gpu
       INNER JOIN produccion p ON
@@ -850,11 +854,11 @@ def fn_ejecutar_busqueda_grupos(payload, salto_bd, limite_bd):
          MAX(T.fecha) AS fecha,
          MAX(T.archivo) AS archivo,
          MAX(T._fid_estatus_paso) AS estatus_paso_id,
-         MIN(T._fecha_sort) AS _fecha_ord
+         MAX(T.id_origen) AS _id_ord
       FROM ({subconsulta}) AS T
       {clausula_where}
       GROUP BY tipo, id_padre, folio, cliente, lider, frente, sitio_oficial
-      ORDER BY _fecha_ord ASC NULLS LAST
+      ORDER BY _id_ord DESC NULLS LAST
       LIMIT %(limite_bd)s OFFSET %(salto_bd)s
    """
 
@@ -925,7 +929,7 @@ def fn_ejecutar_detalle_grupo(tipo, id_grupo, filtros):
             fecha
          FROM ({subconsulta}) AS T
          {clausula_where}
-         ORDER BY CAST(COALESCE(NULLIF(TRIM(orden_paso), ''), '0') AS DECIMAL(10,2)) ASC
+         ORDER BY id_paso ASC NULLS LAST
       """
 
       return ejecutar_query_sql(sql, params)
@@ -975,6 +979,10 @@ def fn_ejecutar_detalle_prod_mes_docs(ot_id, mes, anio, filtros=None):
       filtros = filtros or {}
       check_entregados = filtros.get("check_entregados")
       check_pendientes = filtros.get("check_no_entregados")
+      texto_busqueda   = filtros.get("texto_busqueda", "")
+      lista_lideres    = filtros.get("lideres_id", [])
+      lista_clientes   = filtros.get("clientes_id", [])
+      lista_estatus    = filtros.get("estatus_proceso_id", [])
       ninguno_marcado  = not check_entregados and not check_pendientes
       filtro_entregado = check_entregados or ninguno_marcado
       filtro_pendiente = check_pendientes or ninguno_marcado
@@ -985,6 +993,20 @@ def fn_ejecutar_detalle_prod_mes_docs(ot_id, mes, anio, filtros=None):
          clausula_archivo = "WHERE LENGTH(TRIM(T.archivo)) > 5"
       else:
          clausula_archivo = "WHERE LENGTH(TRIM(T.archivo)) <= 5"
+
+      if texto_busqueda:
+         conector = "AND" if clausula_archivo else "WHERE"
+         clausula_archivo = f"{clausula_archivo} {conector} T.documento ILIKE %(texto)s"
+
+      extra_conds = []
+      if lista_lideres:
+         extra_conds.append("o.id_responsable_proyecto_id::text IN %(ids_lideres)s")
+      if lista_clientes:
+         extra_conds.append("o.id_cliente_id::text IN %(ids_clientes)s")
+      extra_sql = "".join(f"\n               AND {c}" for c in extra_conds)
+
+      estatus_rmh = "\n               AND rmh.id_estatus_id::text IN %(ids_estatus)s" if lista_estatus else ""
+      estatus_gpu = "\n               AND gpu.id_estatus_id::text IN %(ids_estatus)s" if lista_estatus else ""
 
       filtro_gpu_fecha = (
          "p.fecha_produccion IS NULL"
@@ -1006,16 +1028,17 @@ def fn_ejecutar_detalle_prod_mes_docs(ot_id, mes, anio, filtros=None):
                ce.descripcion AS _descripcion_estatus,
                NULL AS orden_paso,
                0 AS sort_order,
+               NULL AS id_partida_ord,
                TO_DATE(rmh.anio::text || '-' || LPAD(rmh.mes::text, 2, '0') || '-01', 'YYYY-MM-DD') AS _fecha_sort
             FROM reporte_mensual_header rmh
             INNER JOIN ot o ON rmh.id_ot_id = o.id
             LEFT JOIN cat_estatus ce ON rmh.id_estatus_id = ce.id
-            WHERE o.id = %(ot_id)s AND rmh.mes = %(mes)s AND rmh.anio = %(anio)s AND o.estatus = 1
+            WHERE o.id = %(ot_id)s AND rmh.mes = %(mes)s AND rmh.anio = %(anio)s AND o.estatus = 1{estatus_rmh}{extra_sql}
 
             UNION ALL
 
             SELECT
-               'GENERADOR DE PRECIOS UNITARIOS' AS documento,
+               COALESCE(pai.id_partida::text, '') || ' - GENERADOR DE PRECIOS UNITARIOS' AS documento,
                CASE
                   WHEN p.fecha_produccion IS NULL THEN 'NO ENTREGADO'
                   ELSE TO_CHAR(p.fecha_produccion, 'DD/MM/YYYY')
@@ -1025,6 +1048,7 @@ def fn_ejecutar_detalle_prod_mes_docs(ot_id, mes, anio, filtros=None):
                ce.descripcion AS _descripcion_estatus,
                NULL AS orden_paso,
                1 AS sort_order,
+               pai.id_partida AS id_partida_ord,
                p.fecha_produccion AS _fecha_sort
             FROM registro_generadores_pu gpu
             INNER JOIN produccion p ON gpu.id_produccion_id = p.id
@@ -1032,13 +1056,22 @@ def fn_ejecutar_detalle_prod_mes_docs(ot_id, mes, anio, filtros=None):
             INNER JOIN importacion_anexo ia ON pai.importacion_anexo_id = ia.id
             INNER JOIN ot o ON ia.ot_id = o.id
             LEFT JOIN cat_estatus ce ON gpu.id_estatus_id = ce.id
-            WHERE o.id = %(ot_id)s AND {filtro_gpu_fecha} AND o.estatus = 1
+            WHERE o.id = %(ot_id)s AND {filtro_gpu_fecha} AND o.estatus = 1{estatus_gpu}{extra_sql}
          ) AS T
          {clausula_archivo}
-         ORDER BY sort_order ASC, _fecha_sort DESC NULLS LAST
+         ORDER BY sort_order ASC, id_partida_ord ASC NULLS LAST
       """
 
-      return ejecutar_query_sql(sql, {"ot_id": ot_id, "mes": mes, "anio": anio})
+      params = {"ot_id": ot_id, "mes": mes, "anio": anio}
+      if texto_busqueda:
+         params["texto"] = f"%{texto_busqueda}%"
+      if lista_lideres:
+         params["ids_lideres"] = tuple(lista_lideres)
+      if lista_clientes:
+         params["ids_clientes"] = tuple(lista_clientes)
+      if lista_estatus:
+         params["ids_estatus"] = tuple(lista_estatus)
+      return ejecutar_query_sql(sql, params)
 
    except Exception as error_bd:
       print(f"Error al obtener docs PROD mes: {str(error_bd)}")
@@ -1459,7 +1492,6 @@ def fn_api_descargar_excel_prod_info(request):
          ("Anexo",           "anexo",            12),
          ("Partida",         "partida",          45),
          ("Vol. Producido",  "vol_producido",    16),
-         ("Vol. Proyectado", "vol_proyectado",   16),
          ("Vol. Programado", "vol_programado",   16),
          ("Fecha",           "fecha_produccion", 14),
          ("Tipo",            "tipo_tiempo",      10),
@@ -1479,7 +1511,7 @@ def fn_api_descargar_excel_prod_info(request):
          fila_cabecera.append(celda)
       hoja.append(fila_cabecera)
 
-      columnas_centro = {"OT", "Anexo", "Vol. Producido", "Vol. Proyectado", "Vol. Programado", "Fecha", "Tipo"}
+      columnas_centro = {"OT", "Anexo", "Vol. Producido", "Vol. Programado", "Fecha", "Tipo"}
 
       for fila_datos in resultados:
          fila_excel = []
@@ -1769,44 +1801,6 @@ def fn_api_obtener_anexos_cc(request):
       print(f"Error al obtener catálogo de anexos: {str(error_proceso)}")
       return JsonResponse([], safe=False)
 
-@login_required
-def fn_api_buscar_partidas_cc(request):
-   try:
-      q      = request.GET.get("q", "").strip()
-      pagina = int(request.GET.get("page", 1))
-
-      if len(q) < 2:
-         return JsonResponse({"results": [], "more": False})
-
-      por_pagina = 20
-      salto      = (pagina - 1) * por_pagina
-      termino    = f"%{q}%"
-
-      sql = """
-         SELECT DISTINCT
-            pai.id_partida AS id,
-            pai.id_partida || ' — ' || COALESCE(pai.descripcion_concepto, '') AS texto
-         FROM partida_anexo_importada pai
-         WHERE
-            pai.id_partida IS NOT NULL
-            AND (
-               pai.id_partida ILIKE %(termino)s
-               OR pai.descripcion_concepto ILIKE %(termino)s
-            )
-         ORDER BY pai.id_partida
-         LIMIT %(limite)s OFFSET %(salto)s
-      """
-      params     = {"termino": termino, "limite": por_pagina + 1, "salto": salto}
-      resultados = ejecutar_query_sql(sql, params)
-
-      hay_mas   = len(resultados) > por_pagina
-      listado   = resultados[:por_pagina]
-      respuesta = [{"id": r["id"], "text": r["texto"]} for r in listado]
-
-      return JsonResponse({"results": respuesta, "more": hay_mas})
-   except Exception as error_proceso:
-      print(f"Error al buscar partidas: {str(error_proceso)}")
-      return JsonResponse({"results": [], "more": False})
 
 @csrf_exempt
 @require_http_methods(["POST"])
@@ -1871,9 +1865,23 @@ def fn_ejecutar_query_prod_info(filtros, salto_bd, limite_bd):
       params["ids_lideres"] = tuple(lista_lideres)
 
    if lista_partidas:
-      condiciones_a.append("pai.id_partida IN %(ids_partidas)s")
-      condiciones_b.append("pai.id_partida IN %(ids_partidas)s")
-      params["ids_partidas"] = tuple(lista_partidas)
+      clausulas_or = []
+      for i, p in enumerate(lista_partidas):
+         clausulas_or.append(
+            f"(pai2.id_partida = %(p_par_{i})s AND pai2.descripcion_concepto = %(p_des_{i})s AND pai2.anexo = %(p_ane_{i})s)"
+         )
+         params[f"p_par_{i}"] = p["partida"]
+         params[f"p_des_{i}"] = p["descripcion"]
+         params[f"p_ane_{i}"] = p["clave_anexo"]
+      condicion_partidas = f"""pai.id IN (
+            SELECT pai2.id
+            FROM partida_anexo_importada pai2
+            INNER JOIN importacion_anexo ia2 ON ia2.id = pai2.importacion_anexo_id
+            WHERE ia2.es_activo = true
+            AND ({" OR ".join(clausulas_or)})
+         )"""
+      condiciones_a.append(condicion_partidas)
+      condiciones_b.append(condicion_partidas)
 
    if lista_tipos_tiempo:
       condiciones_a.append("p.tipo_tiempo IN %(tipos_tiempo)s")

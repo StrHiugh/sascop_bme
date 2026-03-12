@@ -6,15 +6,12 @@ const fnFormatearFecha = (fecha) => {
 };
 
 const fnObtenerFiltrosEstaticos = () => {
-   const fechaActual = new Date();
-   const primerDiaMes = new Date(fechaActual.getFullYear(), fechaActual.getMonth(), 1);
-
    return {
       "origenes": ["PTE", "OT", "PROD"],
       "check_entregados": false,
       "check_no_entregados": false,
-      "fecha_inicio": fnFormatearFecha(primerDiaMes),
-      "fecha_fin": fnFormatearFecha(fechaActual),
+      "fecha_inicio": "",
+      "fecha_fin": "",
       "lideres_id": [],
       "clientes_id": [],
       "frentes_id": [],
@@ -27,17 +24,14 @@ const fnObtenerFiltrosEstaticos = () => {
 };
 
 const fnObtenerFiltrosEstaticosInfo = () => {
-   const fechaActual = new Date();
-   const primerDiaMes = new Date(fechaActual.getFullYear(), fechaActual.getMonth(), 1);
-
    return {
       "ots_id":        [],
       "tipos_tiempo":  ["TE", "CMA"],
       "anexos":        [],
       "clientes_id":   [],
       "lideres_id":    [],
-      "fecha_inicio":  fnFormatearFecha(primerDiaMes),
-      "fecha_fin":     fnFormatearFecha(fechaActual),
+      "fecha_inicio":  "",
+      "fecha_fin":     "",
       "es_excedente":  null,
       "texto_busqueda": ""
    };
@@ -547,134 +541,154 @@ const fn_celdaAccionDetalle = (fila) => {
 
 const fn_nombreMes = (mes) => ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"][mes - 1] || "Sin mes";
 
-const fn_cargarDetalleGrupo = (tipo, idPadre, $trHeader) => {
-   const $existentes = $(`.fila-detalle-${idPadre}`);
-   if ($existentes.length) {
-      $existentes.show();
-      return;
-   }
+const fn_htmlContenedorDetalle = (idPadre, titulo = "Documentos") => {
+   return `
+      <div class="detalle-grupo-container p-2 ps-4" style="background-color: #f8f9fa;">
+         <div class="detalle-grupo-content">
+            <h6 class="mb-3">${titulo}</h6>
+            <table id="tabla-detalle-${idPadre}" class="table table-sm table-bordered w-100"></table>
+         </div>
+      </div>`;
+};
 
-   $.ajax({
-      url: urlDetalleGrupo,
-      type: "POST",
-      data: JSON.stringify({ "tipo": tipo, "id_grupo": idPadre, "filtros": filtrosActivos }),
-      contentType: "application/json",
-      headers: { "X-CSRFToken": csrfToken },
-      success: function (respuesta) {
-         const detalles = respuesta.data || [];
+const fn_htmlContenedorMeses = (idPadre) => {
+   return `
+      <div class="detalle-grupo-container p-2 ps-4" style="background-color: #f8f9fa;">
+         <div class="detalle-grupo-content">
+            <h6 class="mb-3">Períodos de producción</h6>
+            <table id="tabla-meses-${idPadre}" class="table table-sm table-bordered w-100"></table>
+         </div>
+      </div>`;
+};
 
-         if (tipo === "PROD") {
-            let htmlFilasMeses = "";
-            detalles.forEach(d => {
-               const labelPeriodo = (d.mes && d.anio) ? `${fn_nombreMes(d.mes)} ${d.anio}` : "Sin Fecha";
-               const idPadreMes = `${idPadre}_${d.mes}_${d.anio}`;
-               htmlFilasMeses += `
-                  <tr>
-                     <td class="align-middle">
-                        <button class="btn-toggle-grupo btn btn-sm p-0 me-1 text-secondary border-0 bg-transparent" data-tipo="PROD_MES" data-id-padre="${idPadreMes}" title="Expandir ${labelPeriodo}">
-                           <i class="fas fa-plus-square"></i>
-                        </button>
-                        ${labelPeriodo}
-                     </td>
-                     <td class="align-middle text-muted" style="font-size: 0.85rem;">${d.total_docs} documento${d.total_docs !== 1 ? "s" : ""}</td>
-                  </tr>`;
-            });
-
-            const htmlVacioMeses = `<tr><td colspan="2" class="text-center text-muted py-2">Sin períodos registrados</td></tr>`;
-            $trHeader.after(`
-               <tr class="fila-detalle fila-detalle-${idPadre}" style="background-color: #f0f4f8;">
-                  <td colspan="3" class="p-0 ps-5" style="border-left: 3px solid #F05523;">
-                     <table class="table table-sm mb-0 w-100">
-                        <thead class="table-light">
-                           <tr>
-                              <th>Período</th>
-                              <th style="width: 150px;">Documentos</th>
-                           </tr>
-                        </thead>
-                        <tbody>
-                           ${htmlFilasMeses || htmlVacioMeses}
-                        </tbody>
-                     </table>
-                  </td>
-               </tr>`);
-
-         } else if (tipo === "PROD_MES") {
-            let htmlFilasDetalle = "";
-            detalles.forEach(d => {
-               htmlFilasDetalle += `
-                  <tr>
-                     <td class="align-middle" style="border-left: 3px solid #F05523;">
-                        <div class="texto-principal" style="font-size: 0.85rem;">${d.documento}</div>
-                        <div class="texto-secundario">${d._descripcion_estatus || "—"}</div>
-                     </td>
-                     <td class="align-middle text-nowrap" style="font-size: 0.85rem;">${fnFormatFecha(d.fecha || "")}</td>
-                     <td class="text-center align-middle">${fn_celdaAccionDetalle(d)}</td>
-                  </tr>`;
-            });
-
-            const htmlVacioDocs = `<tr><td colspan="3" class="text-center text-muted py-2">Sin documentos registrados</td></tr>`;
-            $trHeader.after(`
-               <tr class="fila-detalle fila-detalle-${idPadre}">
-                  <td colspan="2" class="p-0 ps-4">
-                     <table class="table table-sm mb-0 w-100">
-                        <thead class="table-light">
-                           <tr>
-                              <th>Documento / Entregable</th>
-                              <th style="width: 110px;">Fecha</th>
-                              <th class="text-center" style="width: 90px;">Acción</th>
-                           </tr>
-                        </thead>
-                        <tbody>
-                           ${htmlFilasDetalle || htmlVacioDocs}
-                        </tbody>
-                     </table>
-                  </td>
-               </tr>`);
-
-         } else {
-            let htmlFilasDetalle = "";
-            detalles.forEach(d => {
-               const docTexto = d.orden_paso && d.orden_paso !== "0"
-                  ? `${d.orden_paso} — ${d.documento}`
-                  : d.documento;
-               htmlFilasDetalle += `
-                  <tr>
-                     <td class="align-middle" style="border-left: 3px solid #F05523;">
-                        <div class="texto-principal" style="font-size: 0.85rem;">${docTexto}</div>
-                        <div class="texto-secundario">${d._descripcion_estatus || "—"}</div>
-                     </td>
-                     <td class="align-middle text-nowrap" style="font-size: 0.85rem;">${fnFormatFecha(d.fecha || "")}</td>
-                     <td class="text-center align-middle">${fn_celdaAccionDetalle(d)}</td>
-                  </tr>`;
-            });
-
-            const htmlVacio = `<tr><td colspan="3" class="text-center text-muted py-2">Sin documentos registrados</td></tr>`;
-            $trHeader.after(`
-               <tr class="fila-detalle fila-detalle-${idPadre}" style="background-color: #f8f9fa;">
-                  <td colspan="3" class="p-0 ps-5">
-                     <table class="table table-sm mb-0 w-100">
-                        <thead class="table-light">
-                           <tr>
-                              <th>Documento / Entregable</th>
-                              <th style="width: 110px;">Fecha</th>
-                              <th class="text-center" style="width: 90px;">Acción</th>
-                           </tr>
-                        </thead>
-                        <tbody>
-                           ${htmlFilasDetalle || htmlVacio}
-                        </tbody>
-                     </table>
-                  </td>
-               </tr>`);
-         }
+const fn_inicializarTablaDetalleDocs = (idPadre, tipo) => {
+   $(`#tabla-detalle-${idPadre}`).DataTable({
+      processing: true,
+      serverSide: false,
+      searching: true,
+      paging: true,
+      pageLength: 10,
+      info: true,
+      lengthChange: false,
+      ordering: false,
+      language: DT_IDIOMA,
+      dom: "<\"row\"<\"col-sm-12 mb-2\"f><\"col-sm-12\"tr>><\"row\"<\"col-sm-12 col-md-6\"i><\"col-sm-12 col-md-6\"p>>",
+      ajax: function (_parametros, callback) {
+         $.ajax({
+            url: urlDetalleGrupo,
+            type: "POST",
+            data: JSON.stringify({ "tipo": tipo, "id_grupo": idPadre, "filtros": filtrosActivos }),
+            contentType: "application/json",
+            headers: { "X-CSRFToken": csrfToken },
+            success: function (respuesta) {
+               callback({ data: respuesta.data || [] });
+            },
+            error: function () {
+               callback({ data: [] });
+            }
+         });
       },
-      error: function () {
-         const colSpan = tipo === "PROD_MES" ? 2 : 3;
-         $trHeader.after(`<tr class="fila-detalle fila-detalle-${idPadre}">
-            <td colspan="${colSpan}" class="text-center text-danger py-2">Error al cargar los documentos.</td>
-         </tr>`);
+      columns: [
+         {
+            title: "Documento / Entregable", data: null, className: "align-middle",
+            render: (_d, _t, fila) => {
+               const docTexto = (tipo !== "PROD_MES" && fila.orden_paso && fila.orden_paso !== "0")
+                  ? `${fila.orden_paso} — ${fila.documento}`
+                  : fila.documento;
+               return `<div class="texto-principal" style="font-size: 0.85rem;">${docTexto}</div><div class="texto-secundario">${fila._descripcion_estatus || "—"}</div>`;
+            }
+         },
+         { title: "Fecha", data: "fecha", width: "110px", className: "align-middle text-nowrap", render: (d) => fnFormatFecha(d || "") },
+         { title: "Acción", data: null, width: "90px", className: "text-center align-middle", orderable: false, render: (_d, _t, fila) => fn_celdaAccionDetalle(fila) }
+      ],
+      initComplete: function () {
+         const tablaDetalle = this.api();
+         const placeholder = "Escriba algo para filtrar...";
+         $(`#tabla-detalle-${idPadre}_filter`).html(`
+            <div class="input-group input-group-sm">
+               <span class="input-group-text bg-light border-end-0"><i class="fas fa-search"></i></span>
+               <input type="text" class="form-control border-start-0" placeholder="${placeholder}">
+            </div>
+         `);
+         $(`#tabla-detalle-${idPadre}_filter input`).on("keyup", function () {
+            tablaDetalle.search($(this).val()).draw();
+         });
       }
    });
+};
+
+const fn_inicializarTablaMeses = (idPadre) => {
+   const tablaMeses = $(`#tabla-meses-${idPadre}`).DataTable({
+      processing: true,
+      serverSide: false,
+      searching: false,
+      paging: false,
+      info: false,
+      lengthChange: false,
+      language: DT_IDIOMA,
+      dom: "<\"row\"<\"col-sm-12\"tr>>",
+      ajax: function (_parametros, callback) {
+         $.ajax({
+            url: urlDetalleGrupo,
+            type: "POST",
+            data: JSON.stringify({ "tipo": "PROD", "id_grupo": idPadre, "filtros": filtrosActivos }),
+            contentType: "application/json",
+            headers: { "X-CSRFToken": csrfToken },
+            success: function (respuesta) {
+               callback({ data: respuesta.data || [] });
+            },
+            error: function () {
+               callback({ data: [] });
+            }
+         });
+      },
+      columns: [
+         {
+            title: "Período", data: null, className: "align-middle",
+            render: (_d, _t, fila) => {
+               const label = (fila.mes && fila.anio) ? `${fn_nombreMes(fila.mes)} ${fila.anio}` : "Sin Fecha";
+               const idMes = `${idPadre}_${fila.mes}_${fila.anio}`;
+               return `<button class="btn-toggle-mes btn btn-sm p-0 me-1 text-secondary border-0 bg-transparent" data-id-padre="${idMes}" title="Expandir ${label}"><i class="fas fa-plus-square"></i></button>${label}`;
+            }
+         },
+         {
+            title: "Documentos", data: "total_docs", width: "150px", className: "align-middle text-muted",
+            render: (d) => `${d} documento${d !== 1 ? "s" : ""}`
+         }
+      ]
+   });
+
+   $(`#tabla-meses-${idPadre}`).on("click", ".btn-toggle-mes", function () {
+      const $btn      = $(this);
+      const idPadreMes = $btn.data("id-padre");
+      const $tr       = $btn.closest("tr");
+      const $icono    = $btn.find("i");
+      const filaMes   = tablaMeses.row($tr);
+
+      if (filaMes.child.isShown()) {
+         const $tablaDocsMes = $(`#tabla-detalle-${idPadreMes}`);
+         if ($tablaDocsMes.length && $.fn.DataTable.isDataTable($tablaDocsMes)) {
+            $tablaDocsMes.DataTable().destroy();
+         }
+         filaMes.child.hide();
+         $icono.removeClass("fa-minus-square").addClass("fa-plus-square");
+      } else {
+         $icono.removeClass("fa-plus-square").addClass("fa-minus-square");
+         filaMes.child($("<div>").html(fn_htmlContenedorDetalle(idPadreMes, "Documentos del período"))).show();
+         fn_inicializarTablaDetalleDocs(idPadreMes, "PROD_MES");
+      }
+   });
+};
+
+const DT_IDIOMA = {
+   "lengthMenu": "_MENU_",
+   "processing": "Procesando...",
+   "info": "Mostrando _END_ de _TOTAL_ registros.",
+   "infoEmpty": "No hay registros disponibles",
+   "infoFiltered": "(filtrado de _MAX_ registros totales)",
+   "emptyTable": "Ningún dato disponible en esta tabla",
+   "zeroRecords": "No se encontraron resultados",
+   "paginate": { "previous": "‹", "next": "›" }
 };
 
 const fn_inicializarTablaGrupos = () => {
@@ -687,16 +701,7 @@ const fn_inicializarTablaGrupos = () => {
       responsive: true,
       searching: false,
       lengthChange: true,
-      language: {
-         "lengthMenu": "_MENU_",
-         "processing": "Procesando...",
-         "info": "Mostrando _END_ de _TOTAL_ registros.",
-         "infoEmpty": "No hay registros disponibles",
-         "infoFiltered": "(filtrado de _MAX_ registros totales)",
-         "emptyTable": "Ningún dato disponible en esta tabla",
-         "zeroRecords": "No se encontraron resultados",
-         "paginate": { "previous": "‹", "next": "›" }
-      },
+      language: DT_IDIOMA,
       ajax: function (parametrosDT, callbackDT) {
          const payloadPaginacion = {
             "draw": parametrosDT.draw,
@@ -722,22 +727,23 @@ const fn_inicializarTablaGrupos = () => {
       },
       columns: [
          {
-            title: "Origen", data: null, width: "90px",
+            title: "", data: null, width: "1%",
             className: "text-center align-middle", orderable: false,
             render: (_datoColumna, _tipoRender, fila) => {
                const esExpandible = (fila.tipo === "PTE" || fila.tipo === "OT" || fila.tipo === "PROD");
-               const htmlToggle = esExpandible
-                  ? `<button class="btn-toggle-grupo btn btn-sm p-0 me-1 text-secondary border-0 bg-transparent" data-id-padre="${fila.id_padre}" data-tipo="${fila.tipo}" title="Expandir"><i class="fas fa-plus-square"></i></button>`
-                  : `<span class="d-inline-block" style="width: 1.4rem;"></span>`;
-               return `${htmlToggle}${fnBadgeTipo(fila.tipo)}`;
+               return esExpandible
+                  ? `<button class="btn-toggle-grupo btn btn-sm p-0 text-secondary border-0 bg-transparent" data-id-padre="${fila.id_padre}" data-tipo="${fila.tipo}" title="Expandir"><i class="fas fa-plus-square"></i></button>`
+                  : "";
             }
          },
          {
+            title: "Origen", data: null, width: "90px",
+            className: "text-center align-middle", orderable: false,
+            render: (_datoColumna, _tipoRender, fila) => fnBadgeTipo(fila.tipo)
+         },
+         {
             title: "Folio / Proyecto", data: null, className: "align-middle",
-            render: (_datoColumna, _tipoRender, fila) => `<div class="celda-contenedor">
-               <div class="texto-principal">${fila.folio}</div>
-               <div class="texto-secundario">${fila.cliente}</div>
-            </div>`
+            render: (_datoColumna, _tipoRender, fila) => fnCeldaFolio(fila)
          },
          {
             title: "Metadatos (Líder/Frente)", data: null, className: "align-middle",
@@ -797,7 +803,25 @@ $(document).ready(function () {
    });
 
    $("#filtro-ot").select2(opcionesAjaxSelect2(urlObtenerOts, "Buscar OT..."));
-   $("#filtro-partida").select2(opcionesAjaxSelect2(urlBuscarPartidasCc, "Buscar partida..."));
+   $("#filtro-partida").select2({
+      width: "100%",
+      dropdownParent: $("#panelFiltros"),
+      multiple: true,
+      placeholder: "Buscar partida...",
+      allowClear: true,
+      minimumInputLength: 2,
+      language: {
+         inputTooShort: () => "Escribe al menos 2 caracteres",
+         noResults: () => "Sin resultados"
+      },
+      ajax: {
+         url: urlBuscarProductosCatalogo,
+         dataType: "json",
+         delay: 300,
+         data: (params) => ({ q: params.term || "" }),
+         processResults: (datos) => ({ results: datos.results })
+      }
+   });
 
    fnEstadoInicialPanel();
    filtrosActivos = fnObtenerFiltrosEstaticos();
@@ -810,19 +834,7 @@ $(document).ready(function () {
       responsive: true,
       searching: false,
       lengthChange: true,
-      language: {
-         "lengthMenu": "_MENU_",
-         "processing": "Procesando...",
-         "info": "Mostrando _END_ de _TOTAL_ registros.",
-         "infoEmpty": "No hay registros disponibles",
-         "infoFiltered": "(filtrado de _MAX_ registros totales)",
-         "emptyTable": "Ningún dato disponible en esta tabla",
-         "zeroRecords": "No se encontraron resultados",
-         "paginate": {
-            "previous": "‹",
-            "next": "›"
-         }
-      },
+      language: DT_IDIOMA,
       ajax: function (parametrosDT, callbackDT) {
          const payloadPaginacion = {
             "draw": parametrosDT.draw,
@@ -1102,21 +1114,30 @@ $("#filtro-buscar").on("keyup", function (eventoTeclado) {
    });
 
    $(document).on("click", ".btn-toggle-grupo", function () {
-      const $btn       = $(this);
-      const idPadre    = $btn.data("id-padre");
-      const tipo       = $btn.data("tipo");
-      const $trHeader  = $btn.closest("tr");
-      const expandido  = $trHeader.data("expandido") === true;
-      const $icono     = $btn.find("i");
+      const $btn      = $(this);
+      const idPadre   = $btn.data("id-padre");
+      const tipo      = $btn.data("tipo");
+      const $trHeader = $btn.closest("tr");
+      const $icono    = $btn.find("i");
+      const filaTabla = tablaGrupos.row($trHeader);
 
-      if (expandido) {
-         $(`.fila-detalle-${idPadre}`).hide();
-         $trHeader.data("expandido", false);
+      if (filaTabla.child.isShown()) {
+         const selectorTablaHija = tipo === "PROD" ? `#tabla-meses-${idPadre}` : `#tabla-detalle-${idPadre}`;
+         const $tablaHija = $(selectorTablaHija);
+         if ($tablaHija.length && $.fn.DataTable.isDataTable($tablaHija)) {
+            $tablaHija.DataTable().destroy();
+         }
+         filaTabla.child.hide();
          $icono.removeClass("fa-minus-square").addClass("fa-plus-square");
       } else {
          $icono.removeClass("fa-plus-square").addClass("fa-minus-square");
-         fn_cargarDetalleGrupo(tipo, idPadre, $trHeader);
-         $trHeader.data("expandido", true);
+         if (tipo === "PROD") {
+            filaTabla.child($("<div>").html(fn_htmlContenedorMeses(idPadre))).show();
+            fn_inicializarTablaMeses(idPadre);
+         } else {
+            filaTabla.child($("<div>").html(fn_htmlContenedorDetalle(idPadre, `Documentos de la ${tipo}`))).show();
+            fn_inicializarTablaDetalleDocs(idPadre, tipo);
+         }
       }
    });
 
@@ -1344,8 +1365,16 @@ $("#filtro-buscar").on("keyup", function (eventoTeclado) {
       if ($("#chk_tipo_normal").is(":checked")) tiposSeleccionados.push($("#chk_tipo_normal").val());
       if ($("#chk_tipo_extraordinario").is(":checked")) tiposSeleccionados.push($("#chk_tipo_extraordinario").val());
 
-      const anexos      = $("#filtro-anexo").val();
-      const partidas    = $("#filtro-partida").val();
+      const anexos         = $("#filtro-anexo").val();
+      const partidasData   = $("#filtro-partida").select2("data");
+      const partidas       = partidasData.map(d => {
+         const partes = d.text.split(" - ");
+         return {
+            partida:     d.partida,
+            descripcion: partes.slice(1, -1).join(" - "),
+            clave_anexo: d.clave_anexo
+         };
+      });
       const ots         = $("#filtro-ot").val();
       const clientes    = $("#filtro-cliente").val();
       const lideres     = $("#filtro-lider").val();
@@ -1354,7 +1383,7 @@ $("#filtro-buscar").on("keyup", function (eventoTeclado) {
          "ots_id":        ots ? ots : [],
          "tipos_tiempo":  tiposSeleccionados,
          "anexos":        anexos ? anexos : [],
-         "partidas_id":   partidas ? partidas : [],
+         "partidas_id":   partidas,
          "clientes_id":   clientes ? clientes : [],
          "lideres_id":    lideres ? lideres : [],
          "sitios_id":     sitios ? sitios : [],
@@ -1481,16 +1510,7 @@ $("#filtro-buscar").on("keyup", function (eventoTeclado) {
          responsive: true,
          searching: false,
          lengthChange: true,
-         language: {
-            "lengthMenu": "_MENU_",
-            "processing": "Procesando...",
-            "info": "Mostrando _END_ de _TOTAL_ registros.",
-            "infoEmpty": "No hay registros disponibles",
-            "infoFiltered": "(filtrado de _MAX_ registros totales)",
-            "emptyTable": "Ningún dato disponible en esta tabla",
-            "zeroRecords": "No se encontraron resultados",
-            "paginate": { "previous": "‹", "next": "›" }
-         },
+         language: DT_IDIOMA,
          ajax: function (parametrosDT, callbackDT) {
             const payloadPaginacion = {
                "draw": parametrosDT.draw,

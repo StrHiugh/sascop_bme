@@ -196,7 +196,6 @@ urlpatterns = [
     path("centro_consulta/catalogos/ots/", centro_consulta.fn_api_obtener_ots_cc, name="api_obtener_ots_cc"),
     path("centro_consulta/catalogos/estatus-cobro/", centro_consulta.fn_api_obtener_estatus_cobro_cc, name="api_obtener_estatus_cobro_cc"),
     path("centro_consulta/catalogos/anexos/", centro_consulta.fn_api_obtener_anexos_cc, name="api_obtener_anexos_cc"),
-    path("centro_consulta/catalogos/partidas/", centro_consulta.fn_api_buscar_partidas_cc, name="api_buscar_partidas_cc"),
     path("centro_consulta/busqueda-prod-info/", centro_consulta.fn_api_busqueda_prod_informacion, name="api_busqueda_prod_info"),
     path("centro_consulta/busqueda-grupos/", centro_consulta.fn_api_busqueda_grupos, name="api_busqueda_grupos"),
     path("centro_consulta/detalle-grupo/", centro_consulta.fn_api_detalle_grupo, name="api_detalle_grupo"),
