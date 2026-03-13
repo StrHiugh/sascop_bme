@@ -13,7 +13,7 @@
                     <li class="breadcrumb-item active">Resumen Gerencial</li>
                 </ol>
             </nav>
-            <h1 class="h2 fw-bold mb-0" style="color: var(--gris);">ACERCA DEL SISTEMA</h1>
+            <h1 class="h2 fw-bold mb-0" style="color: var(--naranja);">ACERCA DEL SISTEMA</h1>
         </div>
     </div>
 </div>
@@ -27,6 +27,9 @@
         --morado: #20145f;
         --morado-suave: #ede9f8;
         --azul: #51c2eb;
+        --azul-suave: rgba(81, 194, 235, 0.15);
+        --verde: #2ca02c;
+        --verde-suave: #e6f5e6;
         --gris: #54565a;
         --borde: #d0d1d3;
     }
@@ -35,34 +38,38 @@
     .b-morado { border-color: var(--morado) !important; }
     .b-azul { border-color: var(--azul) !important; }
     .b-naranja { border-color: var(--naranja) !important; }
+    .b-verde { border-color: var(--verde) !important; }
     .b-gris { border-color: var(--gris) !important; }
     
     .bg-morado { background-color: var(--morado) !important; color: white !important; }
     .bg-azul { background-color: var(--azul) !important; color: white !important; }
     .bg-naranja { background-color: var(--naranja) !important; color: white !important; }
+    .bg-verde { background-color: var(--verde) !important; color: white !important; }
     .bg-gris { background-color: var(--gris) !important; color: white !important; }
 
     .t-morado { color: var(--morado) !important; }
     .t-azul { color: var(--azul) !important; }
     .t-naranja { color: var(--naranja) !important; }
+    .t-verde { color: var(--verde) !important; }
     .t-gris { color: var(--gris) !important; }
 
     .cc-kpi-card {
         background: white; border: 1px solid var(--borde); border-radius: 8px;
-        padding: 1.25rem; display: flex; align-items: center; gap: 15px;
+        padding: 1.5rem; display: flex; align-items: center; gap: 20px;
         transition: transform 0.2s, box-shadow 0.2s; height: 100%;
     }
     .cc-kpi-card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
     .cc-kpi-icon-wrapper {
-        width: 60px; height: 60px; border-radius: 50%; display: flex;
-        align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0;
+        width: 70px; height: 70px; border-radius: 50%; display: flex;
+        align-items: center; justify-content: center; font-size: 28px; flex-shrink: 0;
     }
     .icon-naranja { background-color: var(--naranja-suave); color: var(--naranja); }
     .icon-morado { background-color: var(--morado-suave); color: var(--morado); }
-    .icon-azul { background-color: rgba(81, 194, 235, 0.2); color: var(--azul); }
+    .icon-azul { background-color: var(--azul-suave); color: var(--azul); }
+    .icon-verde { background-color: var(--verde-suave); color: var(--verde); }
     
-    .cc-kpi-info h3 { font-size: 1.5rem; font-weight: 700; color: var(--morado); margin: 0; }
-    .cc-kpi-info p { font-size: 0.85rem; color: var(--gris); margin: 0; font-weight: 500; text-transform: uppercase; }
+    .cc-kpi-info h3 { font-size: 2rem; font-weight: 800; color: var(--morado); margin: 0; line-height: 1; }
+    .cc-kpi-info p { font-size: 0.95rem; color: var(--gris); margin: 5px 0 0 0; font-weight: 600; text-transform: uppercase; }
 
     .cc-panel {
         background: white; border: 1px solid var(--borde); border-radius: 8px;
@@ -104,53 +111,143 @@
         height: 15px; margin: 0 auto;
     }
     .submod-card { min-height: 90px; padding: 1rem; border-style: dashed !important; }
+    
+    /* Simbología */
+    .legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 600; color: var(--gris); }
+    .legend-color { width: 14px; height: 14px; border-radius: 3px; display: inline-block; }
+
+    /* Tarjetas de Innovación */
+    .innovacion-card {
+        background: #fff; border: 1px solid var(--borde); border-radius: 12px;
+        padding: 1.75rem 1.5rem; text-align: center; transition: all 0.3s ease;
+        height: 100%; box-shadow: 0 4px 6px rgba(0,0,0,0.02); position: relative; overflow: hidden;
+    }
+    .innovacion-card::before {
+        content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px;
+        background: var(--borde); transition: all 0.3s ease;
+    }
+    .innovacion-card.c-morado::before { background: var(--morado); }
+    .innovacion-card.c-azul::before { background: var(--azul); }
+    .innovacion-card.c-verde::before { background: var(--verde); }
+    .innovacion-card.c-naranja::before { background: var(--naranja); }
+
+    .innovacion-card:hover { transform: translateY(-5px); box-shadow: 0 12px 24px rgba(32, 20, 95, 0.08); }
+    .innovacion-card .icon-box {
+        width: 64px; height: 64px; border-radius: 16px; display: flex; align-items: center; justify-content: center;
+        font-size: 1.75rem; margin: 0 auto 1.25rem auto; transition: all 0.3s ease;
+    }
+    .innovacion-card:hover .icon-box { transform: scale(1.1); }
+    .innovacion-card .icon-box.i-morado { background: var(--morado-suave); color: var(--morado); }
+    .innovacion-card .icon-box.i-azul { background: var(--azul-suave); color: var(--azul); }
+    .innovacion-card .icon-box.i-verde { background: var(--verde-suave); color: var(--verde); }
+    .innovacion-card .icon-box.i-naranja { background: var(--naranja-suave); color: var(--naranja); }
+
+    /* Panel Areas Beneficiadas */
+    .areas-info-box {
+        background-color: #f8fafc; border: 1px solid var(--borde);
+        border-radius: 6px; padding: 12px; margin-bottom: 1rem;
+    }
+    .areas-badge {
+        min-width: 100px; text-align: center; font-size: 0.75rem; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.5px;
+    }
 </style>
 
 <div class="bm-content">
     <div class="bm-cont-elementos">
         <div class="bm-cont-elementos-body p-5">
             
-            <!-- KPIs Superiores -->
-            <div class="row g-3 mb-4">
-                <div class="col-md-3">
-                    <div class="cc-kpi-card">
-                        <div class="cc-kpi-icon-wrapper icon-naranja"><i class="fas fa-cubes"></i></div>
+            <!-- KPIs Superiores (Solo Operables y Porcentaje) -->
+            <div class="row g-4 mb-4">
+                <div class="col-md-6">
+                    <div class="cc-kpi-card border-success shadow-sm" style="border-width: 2px !important;">
+                        <div class="cc-kpi-icon-wrapper icon-verde"><i class="fas fa-check-double"></i></div>
                         <div class="cc-kpi-info">
-                            <h3>4</h3>
-                            <p>Módulos Principales</p>
+                            <h3 class="t-verde">4</h3>
+                            <p class="t-verde">Módulos Base Operables</p>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="cc-kpi-card">
-                        <div class="cc-kpi-icon-wrapper icon-morado"><i class="fas fa-calendar-alt"></i></div>
+                <div class="col-md-6">
+                    <div class="cc-kpi-card b-azul shadow-sm" style="border-width: 2px !important;">
+                        <div class="cc-kpi-icon-wrapper icon-azul"><i class="fas fa-tasks"></i></div>
                         <div class="cc-kpi-info">
-                            <h3>5.5 Meses</h3>
-                            <p>Tiempo de Desarrollo</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="cc-kpi-card">
-                        <div class="cc-kpi-icon-wrapper icon-azul"><i class="fas fa-users-cog"></i></div>
-                        <div class="cc-kpi-info">
-                            <h3>3</h3>
-                            <p>Equipo (2 Dev / 1 Adm)</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="cc-kpi-card">
-                        <div class="cc-kpi-icon-wrapper" style="background-color: var(--morado-suave); color: var(--morado);"><i class="fas fa-check-double"></i></div>
-                        <div class="cc-kpi-info">
-                            <h3>100%</h3>
-                            <p>Módulos Base Operables</p>
+                            <h3 class="t-azul">60%</h3>
+                            <p class="t-azul">Avance de Desarrollo General</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="card bg-transparent border-0">
+            <!-- Comparativa: Antes vs Beneficios Actuales -->
+            <div class="row g-4 mb-4">
+                <div class="col-md-6">
+                    <div class="cc-panel mb-0 h-100 b-gris shadow-sm" style="background: linear-gradient(145deg, #ffffff, #f8f9fa); padding: 1.25rem 1.5rem;">
+                        <div class="d-flex align-items-center mb-3 pb-2 border-bottom">
+                            <div class="me-3 rounded-circle d-flex align-items-center justify-content-center bg-light text-secondary border" style="width: 40px; height: 40px;">
+                                <i class="fas fa-history"></i>
+                            </div>
+                            <h5 class="fw-bold mb-0 t-gris">Modelo de Trabajo Anterior</h5>
+                        </div>
+                        <ul class="list-unstyled mb-0">
+                            <li class="mb-2 text-muted d-flex align-items-start">
+                                <i class="fas fa-times-circle text-danger mt-1 me-2 opacity-75"></i> 
+                                <span>Múltiples archivos de Excel fragmentados por usuario.</span>
+                            </li>
+                            <li class="mb-2 text-muted d-flex align-items-start">
+                                <i class="fas fa-times-circle text-danger mt-1 me-2 opacity-75"></i> 
+                                <span>Caos en el versionado e historial de los documentos.</span>
+                            </li>
+                            <li class="mb-2 text-muted d-flex align-items-start">
+                                <i class="fas fa-times-circle text-danger mt-1 me-2 opacity-75"></i> 
+                                <span>Seguimiento y aprobaciones a través de largos hilos de correos.</span>
+                            </li>
+                            <li class="text-muted d-flex align-items-start">
+                                <i class="fas fa-times-circle text-danger mt-1 me-2 opacity-75"></i> 
+                                <span>Procedimientos, cálculos analíticos y reportes hechos a mano.</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="cc-panel mb-0 h-100 b-verde shadow-sm" style="padding: 1.25rem 1.5rem; border-width: 2px !important;">
+                        <div class="d-flex align-items-center mb-3 pb-2 border-bottom" style="border-color: rgba(32, 20, 95, 0.1) !important;">
+                            <div class="me-3 rounded-circle d-flex align-items-center justify-content-center bg-verde text-white shadow-sm" style="width: 40px; height: 40px;">
+                                <i class="fas fa-rocket"></i>
+                            </div>
+                            <h5 class="fw-bold mb-0 t-verde">Beneficios e Impacto de SASCOP</h5>
+                        </div>
+                        <ul class="list-unstyled mb-0">
+                            <li class="mb-2 text-dark d-flex align-items-start">
+                                <i class="fas fa-check-circle t-verde mt-1 me-2"></i> 
+                                <span class="fw-medium">Importaciones masivas e integración de datos automatizada.</span>
+                            </li>
+                            <li class="mb-2 text-dark d-flex align-items-start">
+                                <i class="fas fa-check-circle t-verde mt-1 me-2"></i> 
+                                <span class="fw-medium">Agilización de tiempos de consulta y respuesta.</span>
+                            </li>
+                            <li class="mb-2 text-dark d-flex align-items-start">
+                                <i class="fas fa-check-circle t-verde mt-1 me-2"></i> 
+                                <span class="fw-medium">Flujos de trabajo operativos estandarizados.</span>
+                            </li>
+                            <li class="mb-2 text-dark d-flex align-items-start">
+                                <i class="fas fa-check-circle t-verde mt-1 me-2"></i> 
+                                <span class="fw-medium">Envios de reportes automáticos.</span>
+                            </li>
+                            <li class="mb-2 text-dark d-flex align-items-start">
+                                <i class="fas fa-check-circle t-verde mt-1 me-2"></i> 
+                                <span class="fw-medium">Dashboards y KPIs en tiempo real.</span>
+                            </li>
+                            <li class="text-dark d-flex align-items-start">
+                                <i class="fas fa-check-circle t-verde mt-1 me-2"></i> 
+                                <span class="fw-medium">Única fuente de verdad.</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card bg-transparent border-0 mt-2">
                 <div class="card-header bg-transparent border-bottom-0 px-0">
                     <ul class="nav nav-tabs card-header-tabs" id="sascopTabs" role="tablist">
                         <li class="nav-item" role="presentation">
@@ -160,7 +257,7 @@
                         </li>
                         <li class="nav-item" role="presentation">
                             <button class="nav-link text-secondary fw-medium" id="backlog-tab" data-bs-toggle="tab" data-bs-target="#backlog" type="button" role="tab">
-                                <i class="fas fa-tasks me-2"></i>Backlog y Peticiones
+                                <i class="fas fa-tasks me-2"></i>Backlog
                             </button>
                         </li>
                     </ul>
@@ -175,12 +272,22 @@
                         <div class="tab-pane fade show active" id="estado" role="tabpanel">
                             <div class="row">
                                 <!-- PANEL IZQUIERDO: MAPA DE TARJETAS -->
-                                <div class="col-lg-8">
+                                <div class="col-lg-7">
                                     <div class="cc-panel" style="background-color: #f8fafc;">
-                                        <div class="cc-panel-title"><i class="fas fa-network-wired"></i> Flujo de Procesos del Sistema</div>
-                                        <div class="alert alert-light border small text-muted mb-4 py-2 shadow-sm">
-                                            <i class="fas fa-hand-pointer me-1 t-naranja"></i> 
-                                            Haz clic en las tarjetas de cada módulo para desplegar sus metas e hitos alcanzados.
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <div class="cc-panel-title mb-0"><i class="fas fa-network-wired"></i> Flujo de Procesos del Sistema</div>
+                                        </div>
+                                        
+                                        <!-- Simbología Integrada Tab 1 -->
+                                        <div class="d-flex flex-wrap gap-4 mb-4 p-2 border rounded bg-white shadow-sm align-items-left justify-content-left">
+                                            <div class="legend-item m-0">
+                                                <span class="legend-color bg-verde"></span>
+                                                <span class="text-muted" style="font-size: 0.8rem;">En espera de introducción de dirección para su uso</span>
+                                            </div>
+                                            <div class="legend-item m-0">
+                                                <span class="legend-color bg-azul"></span>
+                                                <span class="text-muted" style="font-size: 0.8rem;">En despliegue final</span>
+                                            </div>
                                         </div>
                                         
                                         <!-- Línea Principal (Módulos 1, 2, 3, 4) -->
@@ -188,12 +295,12 @@
                                             
                                             <!-- Módulo 1 -->
                                             <div class="flex-grow-1" style="flex-basis: 0;">
-                                                <div class="module-card b-morado" data-mod="Módulo 1: PTEs">
+                                                <div class="module-card b-verde" data-mod="Módulo 1: PTEs">
                                                     <div class="d-flex justify-content-between align-items-start w-100 mb-2">
-                                                        <span class="badge bg-morado"><i class="fas fa-check"></i> 100%</span>
+                                                        <span class="badge bg-verde"><i class="fas fa-check"></i> Operativo</span>
                                                         <i class="fas fa-file-contract text-muted opacity-50"></i>
                                                     </div>
-                                                    <div class="mod-title t-morado">Módulo 1</div>
+                                                    <div class="mod-title t-verde">Módulo 1</div>
                                                     <div class="mod-subtitle">PTEs</div>
                                                 </div>
                                             </div>
@@ -202,12 +309,12 @@
                                             
                                             <!-- Módulo 2 -->
                                             <div class="flex-grow-1" style="flex-basis: 0;">
-                                                <div class="module-card b-morado" data-mod="Módulo 2: OTs">
+                                                <div class="module-card b-verde" data-mod="Módulo 2: OTs">
                                                     <div class="d-flex justify-content-between align-items-start w-100 mb-2">
-                                                        <span class="badge bg-morado"><i class="fas fa-check"></i> 100%</span>
+                                                        <span class="badge bg-verde"><i class="fas fa-check"></i> Operativo</span>
                                                         <i class="fas fa-hard-hat text-muted opacity-50"></i>
                                                     </div>
-                                                    <div class="mod-title t-morado">Módulo 2</div>
+                                                    <div class="mod-title t-verde">Módulo 2</div>
                                                     <div class="mod-subtitle">Órdenes de Trabajo</div>
                                                 </div>
                                             </div>
@@ -216,16 +323,16 @@
 
                                             <!-- Módulo 3 -->
                                             <div class="flex-grow-1 position-relative" style="flex-basis: 0;">
-                                                <div class="module-card b-azul" style="border-width: 2px;" data-mod="Módulo 3: Producción">
+                                                <div class="module-card b-verde" style="border-width: 2px;" data-mod="Módulo 3: Producción">
                                                     <div class="d-flex justify-content-between align-items-start w-100 mb-2">
-                                                        <span class="badge bg-azul"><i class="fas fa-industry"></i> Operativo</span>
+                                                        <span class="badge bg-verde"><i class="fas fa-industry"></i> Operativo</span>
                                                         <i class="fas fa-cogs text-muted opacity-50"></i>
                                                     </div>
-                                                    <div class="mod-title t-azul">Módulo 3</div>
+                                                    <div class="mod-title t-verde">Módulo 3</div>
                                                     <div class="mod-subtitle">Producción</div>
                                                 </div>
                                                 <!-- Conector vertical sale de aquí -->
-                                                <div class="tree-connector-vertical position-absolute bg-azul" style="bottom: -25px; left: 50%; transform: translateX(-50%); z-index: 1;"></div>
+                                                <div class="tree-connector-vertical position-absolute bg-verde" style="bottom: -25px; left: 50%; transform: translateX(-50%); z-index: 1;"></div>
                                             </div>
 
                                             <div class="process-arrow px-1"><i class="fas fa-chevron-right"></i></div>
@@ -254,17 +361,17 @@
                                             
                                             <!-- Aquí van los submódulos de Mod 3 -->
                                             <div class="flex-grow-1 position-relative" style="flex-basis: 0;">
-                                                <div class="tree-connector-horizontal b-azul mx-auto" style="width: 50%; border-top: 2px solid var(--azul); border-left: 2px solid var(--azul); border-right: 2px solid var(--azul);"></div>
+                                                <div class="tree-connector-horizontal b-verde mx-auto" style="width: 50%; border-top: 2px solid var(--verde); border-left: 2px solid var(--verde); border-right: 2px solid var(--verde);"></div>
                                                 <div class="d-flex gap-2 mt-0">
                                                     <div class="flex-grow-1">
-                                                        <div class="module-card submod-card b-azul" data-mod="Submódulo 1: Reportes Diarios">
-                                                            <div class="mod-title t-azul" style="font-size: 0.8rem;">Submódulo 1</div>
+                                                        <div class="module-card submod-card b-verde" data-mod="Submódulo 1: Reportes Diarios">
+                                                            <div class="mod-title t-verde" style="font-size: 0.8rem;">Submódulo 1</div>
                                                             <div class="mod-subtitle" style="font-size: 0.65rem;">Reportes Diarios</div>
                                                         </div>
                                                     </div>
                                                     <div class="flex-grow-1">
-                                                        <div class="module-card submod-card b-azul" data-mod="Submódulo 2: GPUs">
-                                                            <div class="mod-title t-azul" style="font-size: 0.8rem;">Submódulo 2</div>
+                                                        <div class="module-card submod-card b-verde" data-mod="Submódulo 2: GPUs">
+                                                            <div class="mod-title t-verde" style="font-size: 0.8rem;">Submódulo 2</div>
                                                             <div class="mod-subtitle" style="font-size: 0.65rem;">GPUs</div>
                                                         </div>
                                                     </div>
@@ -279,21 +386,25 @@
                                 </div>
 
                                 <!-- PANEL DERECHO: DETALLES TAB 1 -->
-                                <div class="col-lg-4">
+                                <div class="col-lg-5">
                                     <div class="cc-panel" id="panel-hitos-default-1">
                                         <div class="cc-panel-title"><i class="fas fa-trophy"></i> Hitos Globales</div>
                                         <div class="mt-4">
                                             <div class="logro-item">
-                                                <div class="logro-icon t-morado"><i class="fas fa-check-circle"></i></div>
+                                                <div class="logro-icon t-verde"><i class="fas fa-check-circle"></i></div>
                                                 <div class="logro-text"><strong>Ciclo Base Completado</strong><br>El flujo desde la PTE hasta la Orden de Trabajo opera sin interrupciones.</div>
                                             </div>
                                             <div class="logro-item">
-                                                <div class="logro-icon t-morado"><i class="fas fa-check-circle"></i></div>
+                                                <div class="logro-icon t-verde"><i class="fas fa-check-circle"></i></div>
                                                 <div class="logro-text"><strong>Importaciones Masivas</strong><br>Capacidad de integrar Anexo C y Programas de Trabajo vía Excel y MS Project.</div>
                                             </div>
-                                            <div class="logro-item text-center mt-5 pt-4 border-top">
-                                                <i class="fas fa-mouse-pointer fa-2x text-muted mb-2" style="opacity: 0.5;"></i>
-                                                <p class="text-muted small">Selecciona una tarjeta a la izquierda para ver su detalle de implementación.</p>
+                                            <div class="logro-item">
+                                                <div class="logro-icon t-verde"><i class="fas fa-check-circle"></i></div>
+                                                <div class="logro-text"><strong>Gestión de producción</strong><br>Capacidad de gestionar la producción diaria y visualizar el progreso de los proyectos.</div>
+                                            </div>
+                                            <div class="logro-item">
+                                                <div class="logro-icon t-verde"><i class="fas fa-check-circle"></i></div>
+                                                <div class="logro-text"><strong>Sascop BI</strong><br>Consulta documental y visualización de datos en tiempo real con filtros dinamicos para agilizar toma de decisiones.</div>
                                             </div>
                                         </div>
                                     </div>
@@ -307,26 +418,33 @@
                                                 <i class="fas fa-times"></i>
                                             </button>
                                         </div>
-                                        <div class="mt-3" id="lista-detalle-modulo-1" style="max-height: 400px; overflow-y: auto;">
-                                            <!-- Inyectado por JS -->
-                                        </div>
+                                        <!-- Contenedor dinámico (Áreas y Tareas) -->
+                                        <div id="contenido-dinamico-modulo-1" style="max-height: 400px; overflow-y: auto; padding-right: 5px;"></div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         <!-- ========================================== -->
-                        <!-- TAB 2: BACKLOG Y PETICIONES (GRID CARDS)   -->
+                        <!-- TAB 2: BACKLOG (GRID CARDS)                -->
                         <!-- ========================================== -->
                         <div class="tab-pane fade" id="backlog" role="tabpanel">
                             <div class="row">
                                 <!-- PANEL IZQUIERDO: MAPA DE TARJETAS -->
                                 <div class="col-lg-7">
                                     <div class="cc-panel">
-                                        <div class="cc-panel-title"><i class="fas fa-cubes"></i> Módulos Faltantes / Backlog</div>
-                                        <div class="alert alert-light border small text-muted mb-4 py-2 shadow-sm">
-                                            <i class="fas fa-hand-pointer me-1 t-naranja"></i> 
-                                            Haz clic en las tarjetas para visualizar el alcance y actividades a desarrollar de cada petición.
+                                        <div class="cc-panel-title"><i class="fas fa-lightbulb"></i> Proyectos de Innovación Faltantes</div>
+                                        
+                                        <!-- Simbología Integrada Tab 2 -->
+                                        <div class="d-flex flex-wrap gap-4 mb-4 p-2 border rounded bg-white shadow-sm align-items-center justify-content-center">
+                                            <div class="legend-item m-0">
+                                                <span class="legend-color bg-naranja"></span>
+                                                <span class="text-muted" style="font-size: 0.8rem;">Alta Prioridad</span>
+                                            </div>
+                                            <div class="legend-item m-0">
+                                                <span class="legend-color bg-gris"></span>
+                                                <span class="text-muted" style="font-size: 0.8rem;">Baja Prioridad</span>
+                                            </div>
                                         </div>
                                         
                                         <div class="row g-3">
@@ -350,12 +468,12 @@
                                                         <span class="badge bg-naranja">Alta Prioridad</span>
                                                         <i class="fas fa-ship text-muted opacity-50"></i>
                                                     </div>
-                                                    <div class="mod-title t-naranja">Bitácora de Embarcaciones</div>
+                                                    <div class="mod-title t-naranja">Módulo de Embarcaciones</div>
                                                     <div class="mod-subtitle">Control Offshore (Bloque 1)</div>
                                                 </div>
                                             </div>
 
-                                            <!-- Tarjeta Backlog 3 -->
+                                            <!-- Tarjeta Backlog 3 (Gris - Baja Prioridad) -->
                                             <div class="col-md-6">
                                                 <div class="module-card b-gris" data-mod="Backlog: Requisiciones">
                                                     <div class="d-flex justify-content-between align-items-start mb-2">
@@ -367,7 +485,7 @@
                                                 </div>
                                             </div>
 
-                                            <!-- Tarjeta Backlog 4 -->
+                                            <!-- Tarjeta Backlog 4 (Gris - Baja Prioridad) -->
                                             <div class="col-md-6">
                                                 <div class="module-card b-gris" data-mod="Backlog: PUES">
                                                     <div class="d-flex justify-content-between align-items-start mb-2">
@@ -395,7 +513,7 @@
 
                                         <div class="row text-center mt-4 mb-4">
                                             <div class="col-6 border-end">
-                                                <h3 class="fw-bold t-morado mb-0">117</h3>
+                                                <h3 class="fw-bold t-verde mb-0">117</h3>
                                                 <small class="text-muted fw-bold text-uppercase">Finalizadas</small>
                                             </div>
                                             <div class="col-6">
@@ -404,10 +522,6 @@
                                             </div>
                                         </div>
 
-                                        <div class="logro-item text-center mt-5 pt-4 border-top">
-                                            <i class="fas fa-mouse-pointer fa-2x text-muted mb-2" style="opacity: 0.5;"></i>
-                                            <p class="text-muted small">Selecciona una tarjeta del Backlog para visualizar todas las actividades que lo componen.</p>
-                                        </div>
                                     </div>
 
                                     <div class="cc-panel d-none shadow-sm b-naranja" id="panel-hitos-detalle-2">
@@ -419,9 +533,8 @@
                                                 <i class="fas fa-times"></i>
                                             </button>
                                         </div>
-                                        <div class="mt-3" id="lista-detalle-modulo-2" style="max-height: 400px; overflow-y: auto;">
-                                            <!-- Inyectado por JS -->
-                                        </div>
+                                        <!-- Contenedor dinámico (Áreas y Tareas) -->
+                                        <div id="contenido-dinamico-modulo-2" style="max-height: 400px; overflow-y: auto; padding-right: 5px;"></div>
                                     </div>
                                 </div>
                             </div>
@@ -432,37 +545,46 @@
                     <!-- ========================================== -->
                     <!-- ENTREGABLES GERENCIA DE INNOVACIÓN         -->
                     <!-- ========================================== -->
-                    <div class="row mt-4">
-                        <div class="col-12">
-                            <div class="cc-panel mb-0" style="background-color: #f8f9fa; border: 1px solid var(--borde);">
-                                <div class="cc-panel-title mb-3 t-gris">
-                                    <i class="fas fa-lightbulb me-2 t-gris"></i> Entregables por la Gerencia de Innovación
+                    <div class="mt-2 pt-3 border-top">
+                        <div class="d-flex align-items-center mb-1">
+                            <div class="cc-panel-title" style="margin-left: 20px;"><i class="fas fa-rocket"></i> Entregables por la Gerencia de Innovación</div>
+                        </div>
+                        
+                        <div class="row g-4">
+                            <div class="col-md-3">
+                                <div class="innovacion-card c-morado">
+                                    <div class="icon-box i-morado">
+                                        <i class="fas fa-book"></i>
+                                    </div>
+                                    <h5 class="fw-bold text-dark mb-2" style="font-size: 1.05rem;">Manual de Usuario</h5>
+                                    <p class="text-muted small mb-0">Documentación y guía paso a paso del sistema.</p>
                                 </div>
-                                <div class="row g-3">
-                                    <div class="col-md-3">
-                                        <div class="logro-item mb-0 align-items-center bg-white p-2 rounded border shadow-sm h-100">
-                                            <div class="logro-icon"><i class="fas fa-book t-gris"></i></div>
-                                            <div class="logro-text text-dark fw-bold" style="font-size:0.85rem;">Manual de Usuario</div>
-                                        </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="innovacion-card c-azul">
+                                    <div class="icon-box i-azul">
+                                        <i class="fas fa-project-diagram"></i>
                                     </div>
-                                    <div class="col-md-3">
-                                        <div class="logro-item mb-0 align-items-center bg-white p-2 rounded border shadow-sm h-100">
-                                            <div class="logro-icon"><i class="fas fa-project-diagram t-gris"></i></div>
-                                            <div class="logro-text text-dark fw-bold" style="font-size:0.85rem;">Flujo de Trabajo Estandarizado</div>
-                                        </div>
+                                    <h5 class="fw-bold text-dark mb-2" style="font-size: 1.05rem;">Flujo Estandarizado</h5>
+                                    <p class="text-muted small mb-0">Mapeo y optimización de procesos operativos.</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="innovacion-card c-verde">
+                                    <div class="icon-box i-verde">
+                                        <i class="fas fa-chart-pie"></i>
                                     </div>
-                                    <div class="col-md-3">
-                                        <div class="logro-item mb-0 align-items-center bg-white p-2 rounded border shadow-sm h-100">
-                                            <div class="logro-icon"><i class="fas fa-chart-pie t-gris"></i></div>
-                                            <div class="logro-text text-dark fw-bold" style="font-size:0.85rem;">KPIs de Monitoreo</div>
-                                        </div>
+                                    <h5 class="fw-bold text-dark mb-2" style="font-size: 1.05rem;">KPIs de Monitoreo</h5>
+                                    <p class="text-muted small mb-0">Métricas en tiempo real para la toma de decisiones.</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="innovacion-card c-naranja">
+                                    <div class="icon-box i-naranja">
+                                        <i class="fas fa-file-signature"></i>
                                     </div>
-                                    <div class="col-md-3">
-                                        <div class="logro-item mb-0 align-items-center bg-white p-2 rounded border shadow-sm h-100">
-                                            <div class="logro-icon"><i class="fas fa-file-alt t-gris"></i></div>
-                                            <div class="logro-text text-dark fw-bold" style="font-size:0.85rem;">Estandarización de Formatos Manuales</div>
-                                        </div>
-                                    </div>
+                                    <h5 class="fw-bold text-dark mb-2" style="font-size: 1.05rem;">Formatos Estandarizados</h5>
+                                    <p class="text-muted small mb-0">Estandarización y digitalización de entregables.</p>
                                 </div>
                             </div>
                         </div>
@@ -477,85 +599,125 @@
 
 {% block scripts %}
 <script>
-// DICCIONARIO PARA AMBAS PESTAÑAS
+// BASE DE DATOS DE MÓDULOS (Ahora incluye Áreas)
 const diccionariosDatos = {
     // ---- PESTAÑA 1: ESTADO DE MÓDULOS ----
-    'Módulo 1: PTEs': [
-        'Importación histórica de PTEs.',
-        'Conciliación de entregables.',
-        'Adición de las barras de progreso según los estatus.',
-        'Conversión de una PTE a una Orden de Trabajo (OT).',
-        'Dashboard de KPIs del módulo.'
-    ],
-    'Módulo 2: OTs': [
-        'Migración inicial de una orden desde PTE.',
-        'Configuración de frentes de trabajo.',
-        'Configuración de fase de patio.',
-        'Conciliación de entregables y dashboard de KPIs.',
-        'Creación de reprogramaciones.',
-        'Importación de Anexo C mediante Excel.',
-        'Importación de Microsoft Project (Programa de trabajo).',
-        'Cálculo de afectaciones de reprogramaciones al plazo de la orden.'
-    ],
-    'Módulo 3: Producción': [
-        'Buscador de órdenes en ejecución con anexo importado según el frente.',
-        'Desarrollo del grid de producción, dinamizando en tiempo real volúmenes, montos y plazos.',
-        'Cálculo automático de excedentes según el volumen proyectado importado.',
-        'Exportación del grid de producción a sábana de excel.',
-        'Separación de grid por afectación (TE, CMA).',
-        'Resumen en vivo de KPIs financieros.'
-    ],
-    'Módulo 4: Centro de Consulta': [
-        'Consulta documental dependiendo la fuente que queramos ver.',
-        'Gráficas en tiempo real de los documentos cargados y KPIs faltantes de los mismos.',
-        'Envío automático de gráficas por email.',
-        'Generación de reportes Excel en base a la consulta.',
-        'Pestaña interactiva para consulta y gráficas de producción (montos, proyecciones).',
-        'Comparativa dinámica por frentes, líderes, etc.'
-    ],
-    'Submódulo 1: Reportes Diarios': [
-        'Desarrollo del grid interactivo de reportes diarios.',
-        'Bloqueo dinámico del grid de producción según estatus del reporte (Firma/Pendiente, etc).',
-        'Conjunción y administración de una carpeta mensual de evidencias.',
-    ],
-    'Submódulo 2: GPUs': [
-        'Desarrollo del grid de GPUs (Generadores de Precios Unitarios).',
-        'Creación automática del registro a partir de un volumen capturado en producción.',
-        'Configuración de estatus de revisión y validación.',
-        'Configuración de carga de los generadores y anexos.'
-    ],
+    'Módulo 1: PTEs': {
+        areaUsuaria: 'Ingeniería y Planeación',
+        areasBeneficiadas: 'Ejecución de proyectos, PTEs, PUEs, Procura, Materiales',
+        tareas: [
+            'Importación histórica de PTEs.',
+            'Conciliación de entregables.',
+            'Adición de las barras de progreso según los estatus.',
+            'Conversión de una PTE a una Orden de Trabajo.',
+            'Dashboard de KPIs del módulo.'
+        ]
+    },
+    'Módulo 2: OTs': {
+        areaUsuaria: 'Control de Obra, Planeación',
+        areasBeneficiadas: 'Ejecución de proyectos, Administrador de contrato',
+        tareas: [
+            'Migración inicial de una orden desde PTE.',
+            'Configuración de frentes de trabajo.',
+            'Configuración de fase de patio.',
+            'Conciliación de entregables y dashboard de KPIs.',
+            'Creación de reprogramaciones.',
+            'Importación de Anexo C mediante Excel.',
+            'Importación de Microsoft Project (Programa de trabajo).',
+            'Cálculo de afectaciones de reprogramaciones al plazo de la orden.'
+        ]
+    },
+    'Módulo 3: Producción': {
+        areaUsuaria: 'Producción / Operaciones',
+        areasBeneficiadas: 'Facturación, Finanzas, Operaciones, Dirección',
+        tareas: [
+            'Buscador de órdenes en ejecución con anexo importado según el frente.',
+            'Desarrollo del grid de producción, dinamizando en tiempo real volúmenes, montos y plazos.',
+            'Cálculo automático de excedentes según el volumen proyectado importado.',
+            'Exportación del grid de producción a sábana de excel.',
+            'Separación de grid por afectación (TE, CMA).',
+            'Resumen en vivo de KPIs financieros.'
+        ]
+    },
+    'Módulo 4: Centro de Consulta': {
+        areaUsuaria: 'Dirección General',
+        areasBeneficiadas: 'Dirección, Gerencias, Auditoría',
+        tareas: [
+            'Consulta documental dependiendo la fuente que queramos ver.',
+            'Gráficas en tiempo real de los documentos cargados y KPIs faltantes de los mismos.',
+            'Envío automático de gráficas por email.',
+            'Generación de reportes Excel en base a la consulta.',
+            'Pestaña interactiva para consulta y gráficas de producción (montos, proyecciones).',
+            'Comparativa dinámica por frentes, líderes, etc.'
+        ]
+    },
+    'Submódulo 1: Reportes Diarios': {
+        areaUsuaria: 'Supervisores / Operaciones',
+        areasBeneficiadas: 'Operaciones, Control de Obra, Calidad',
+        tareas: [
+            'Desarrollo del grid interactivo de reportes diarios.',
+            'Bloqueo dinámico del grid de producción según estatus del reporte (Firma/Pendiente, etc).',
+            'Conjunción y administración de una carpeta mensual de evidencias.',
+        ]
+    },
+    'Submódulo 2: GPUs': {
+        areaUsuaria: 'Control de Obra / Facturación',
+        areasBeneficiadas: 'Facturación, PUES, Finanzas',
+        tareas: [
+            'Desarrollo del grid de GPUs (Generadores de Precios Unitarios).',
+            'Creación automática del registro a partir de un volumen capturado en producción.',
+            'Configuración de estatus de revisión y validación.',
+            'Configuración de carga de los generadores y anexos.'
+        ]
+    },
 
     // ---- PESTAÑA 2: BACKLOG ----
-    'Backlog: Generación de PTs': [
-        'Solicitud de propuestas técnicas.',
-        'Digitalización de levantamientos.',
-        'Centralización de revisiones de ingeniería.',
-        'Catálogo de rendimientos de recursos.',
-        'Mapeo de procesos de elaboración de una propuesta técnica.',
-        'Automatización en el cálculo de recursos y volumetría de recursos.',
-        'Ruta crítica para programa de actividades.',
-        'Seguimiento de desviaciones y alertas.',
-        'Comparativas planeación vs ejecución.',
-        'Diagrama de Gantt automatizado para programa de ejecución de actividades.',
-        'Difusiones de entregables.',
-        'Listado de materiales alineados a partidas del cliente y procesos de procura.'
-    ],
-    'Backlog: Embarcaciones': [
-        'Bitácora de movimientos operativos.',
-        'Vales de trasiegos automatizados.',
-        'Métricas de eficiencia operativa.',
-        'Monitoreo GIS en tiempo real (Coordenadas Espaciales).',
-        'Administración y control de POB (Personal a Bordo).',
-        'Gestión e historial de Incidencias.'
-    ],
-    'Backlog: Requisiciones': [
-        'Flujo automatizado de autorizaciones.',
-        'Implementación de firmas electrónicas.',
-        'Incremento o decremento masivo automatizado.'
-    ],
-    'Backlog: PUES': [
-        'En fase de levantamiento de requerimientos y análisis para futuras iteraciones.'
-    ]
+    'Backlog: Generación de PTs': {
+        areaUsuaria: 'Ingeniería y Planeación',
+        areasBeneficiadas: 'Ingeniería, Procura, Finanzas, Operaciones',
+        tareas: [
+            'Solicitud de propuestas técnicas.',
+            'Digitalización de levantamientos.',
+            'Centralización de revisiones de ingeniería.',
+            'Catálogo de rendimientos de recursos.',
+            'Mapeo de procesos de elaboración de una propuesta técnica.',
+            'Automatización en el cálculo de recursos y volumetría de recursos.',
+            'Ruta crítica para programa de actividades.',
+            'Seguimiento de desviaciones y alertas.',
+            'Comparativas planeación vs ejecución.',
+            'Diagrama de Gantt automatizado para programa de ejecución de actividades.',
+            'Difusiones de entregables.',
+            'Listado de materiales alineados a partidas del cliente y procesos de procura.'
+        ]
+    },
+    'Backlog: Embarcaciones': {
+        areaUsuaria: 'Despacho / Logística',
+        areasBeneficiadas: 'Logística, Operaciones Offshore, Finanzas',
+        tareas: [
+            'Bitácora de movimientos operativos.',
+            'Vales de trasiegos automatizados.',
+            'Métricas de eficiencia operativa.',
+            'Monitoreo GIS en tiempo real (Coordenadas Espaciales).',
+            'Administración y control de POB (Personal a Bordo).',
+            'Gestión e historial de Incidencias.'
+        ]
+    },
+    'Backlog: Requisiciones': {
+        areaUsuaria: 'Todas las áreas operativas',
+        areasBeneficiadas: 'Compras, Finanzas, Almacén',
+        tareas: [
+            'Flujo automatizado de autorizaciones.',
+            'Implementación de firmas electrónicas.',
+            'Incremento o decremento masivo automatizado.'
+        ]
+    },
+    'Backlog: PUES': {
+        areaUsuaria: 'Ingeniería de Costos / PUES',
+        areasBeneficiadas: 'Presupuestos, Control de Obra, Ventas',
+        tareas: [
+            'En fase de levantamiento de requerimientos y análisis para futuras iteraciones.'
+        ]
+    }
 };
 
 $(document).ready(function() {
@@ -582,23 +744,37 @@ $(document).ready(function() {
 
         // Leer la data
         const nombreModulo = $(this).data('mod');
-        const listaImplementaciones = diccionariosDatos[nombreModulo];
+        const moduloData = diccionariosDatos[nombreModulo];
 
-        if (listaImplementaciones) {
+        if (moduloData) {
             // Ocultar panel por default de esa pestaña
             $('#panel-hitos-default' + panelPrefix).addClass('d-none');
             
-            // Ícono condicional
+            // Ícono condicional del título
             let icon = 'fa-puzzle-piece';
             if (nombreModulo.includes('Submódulo')) icon = 'fa-code-branch';
             if (nombreModulo.includes('Backlog')) icon = 'fa-tasks';
             
             $('#titulo-detalle-modulo' + panelPrefix).html(`<i class="fas ${icon} me-2"></i> ${nombreModulo.replace('Backlog: ', '')}`);
             
-            // Construir lista de HTML
-            let htmlLista = '';
-            listaImplementaciones.forEach(tarea => {
-                htmlLista += `
+            // Construir Bloque de Áreas Usuarias
+            let htmlContenido = `
+                <div class="areas-info-box shadow-sm mb-4">
+                    <div class="d-flex align-items-center mb-2 pb-2 border-bottom">
+                        <span class="badge bg-morado areas-badge me-2">Área Usuaria</span>
+                        <span class="fw-bold t-gris" style="font-size: 0.9rem;">${moduloData.areaUsuaria}</span>
+                    </div>
+                    <div class="d-flex align-items-start pt-1">
+                        <span class="badge bg-azul areas-badge me-2 mt-1">Beneficiados</span>
+                        <span class="t-gris fw-medium" style="font-size: 0.85rem; line-height: 1.4;">${moduloData.areasBeneficiadas}</span>
+                    </div>
+                </div>
+                <h6 class="fw-bold t-morado mb-3"><i class="fas fa-clipboard-list me-2"></i>Alcance y Tareas:</h6>
+            `;
+
+            // Construir Lista de Tareas
+            moduloData.tareas.forEach(tarea => {
+                htmlContenido += `
                     <div class="logro-item mb-2 align-items-center">
                         <div class="logro-icon"><i class="fas fa-check-square t-naranja"></i></div>
                         <div class="logro-text text-dark" style="font-size: 0.9rem;">${tarea}</div>
@@ -606,7 +782,7 @@ $(document).ready(function() {
                 `;
             });
             
-            $('#lista-detalle-modulo' + panelPrefix).html(htmlLista);
+            $('#contenido-dinamico-modulo' + panelPrefix).html(htmlContenido);
             $('#panel-hitos-detalle' + panelPrefix).removeClass('d-none').hide().fadeIn(300);
         }
     });
